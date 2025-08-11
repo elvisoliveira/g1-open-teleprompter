@@ -20,11 +20,18 @@ class BluetoothService {
     private static readonly EVENAI_CMD = 0x4E;
     private static readonly EXIT_CMD = 0x18;
     private static readonly HEARTBEAT_CMD = 0x25;
+    private static readonly BMP_DATA_CMD = 0x15;
+    private static readonly BMP_END_CMD = [0x20, 0x0d, 0x0e];
+    private static readonly CRC_CMD = 0x16;
     private static readonly CHUNK_SIZE = 200;
+    private static readonly BMP_CHUNK_SIZE = 194;
+    private static readonly BMP_STORAGE_ADDRESS = [0x00, 0x1c, 0x00, 0x00];
     private static readonly NEW_SCREEN_FLAG = 0x71;
     private static readonly MAX_LINE_LENGTH = 60;
     private static readonly MAX_DISPLAY_LINES = 5;
-    private static readonly PACKET_DELAY = 10;
+    private static readonly PACKET_DELAY = 5;        // Reduced from 10ms to 5ms
+    private static readonly BMP_PACKET_DELAY = 3;    // Reduced from 8ms to 3ms  
+    private static readonly BMP_END_DELAY = 50;      // Reduced from 100ms to 50ms
     private static readonly HEARTBEAT_INTERVAL_MS = 5000;
     
     // Default packet parameters
@@ -42,6 +49,76 @@ class BluetoothService {
 
     private sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Computes standard CRC32 for BMP data verification
+     */
+    private computeCrc32(data: Uint8Array): number {
+        const CRC32_TABLE = new Uint32Array(256);
+        
+        // Initialize CRC32 table
+        for (let i = 0; i < 256; i++) {
+            let crc = i;
+            for (let j = 0; j < 8; j++) {
+                crc = (crc & 1) ? (0xEDB88320 ^ (crc >>> 1)) : (crc >>> 1);
+            }
+            CRC32_TABLE[i] = crc;
+        }
+
+        let crc = 0xFFFFFFFF;
+        for (let i = 0; i < data.length; i++) {
+            const byte = data[i];
+            crc = CRC32_TABLE[(crc ^ byte) & 0xFF] ^ (crc >>> 8);
+        }
+        return (crc ^ 0xFFFFFFFF) >>> 0; // Ensure unsigned 32-bit
+    }
+
+    /**
+     * Computes CRC32 for BMP data including storage address as per G1 protocol
+     * The CRC must include the 4-byte storage address that was added to the first packet
+     */
+    private computeBmpCrc32(bmpData: Uint8Array): number {
+        // Combine storage address + BMP data for CRC calculation
+        const combinedData = new Uint8Array(BluetoothService.BMP_STORAGE_ADDRESS.length + bmpData.length);
+        combinedData.set(BluetoothService.BMP_STORAGE_ADDRESS, 0);
+        combinedData.set(bmpData, BluetoothService.BMP_STORAGE_ADDRESS.length);
+        
+        return this.computeCrc32(combinedData);
+    }
+
+    /**
+     * Creates BMP packets using Java-style chunking (194-byte chunks)
+     */
+    private createBmpPackets(bmpData: Uint8Array): Uint8Array[] {
+        const packets: Uint8Array[] = [];
+        let syncId = 0;
+
+        for (let i = 0; i < bmpData.length; i += BluetoothService.BMP_CHUNK_SIZE) {
+            const end = Math.min(i + BluetoothService.BMP_CHUNK_SIZE, bmpData.length);
+            const chunk = bmpData.slice(i, end);
+            
+            if (i === 0) {
+                // First packet: [0x15, syncId, storageAddress(4 bytes), data]
+                const packet = new Uint8Array(2 + BluetoothService.BMP_STORAGE_ADDRESS.length + chunk.length);
+                packet[0] = BluetoothService.BMP_DATA_CMD; // 0x15
+                packet[1] = syncId & 0xFF;
+                packet.set(BluetoothService.BMP_STORAGE_ADDRESS, 2); // 0x00, 0x1c, 0x00, 0x00
+                packet.set(chunk, 6);
+                packets.push(packet);
+            } else {
+                // Other packets: [0x15, syncId, data]
+                const packet = new Uint8Array(2 + chunk.length);
+                packet[0] = BluetoothService.BMP_DATA_CMD; // 0x15
+                packet[1] = syncId & 0xFF;
+                packet.set(chunk, 2);
+                packets.push(packet);
+            }
+            
+            syncId++;
+        }
+
+        return packets;
     }
 
     private combineHeaderAndData(prefix: number[], data: Uint8Array): Uint8Array {
@@ -247,6 +324,88 @@ class BluetoothService {
         const displayText = lines.slice(0, BluetoothService.MAX_DISPLAY_LINES).join('\n');
         
         return await this.sendTextToGlasses(displayText);
+    }
+
+    async sendImage(base64ImageData: string): Promise<boolean> {
+        if (!this.leftDevice && !this.rightDevice) {
+            throw new Error('No devices connected');
+        }
+
+        try {
+            // Convert base64 to binary data
+            const bmpData = new Uint8Array(Buffer.from(base64ImageData, 'base64'));
+
+            // Create BMP packets using Java-style chunking
+            const packets = this.createBmpPackets(bmpData);
+
+            // Send to left device first (G1 protocol requirement)
+            if (this.leftDevice && !await this.sendBmpToDevice(bmpData, packets, "L")) {
+                console.error('Failed to send BMP to left device');
+                return false;
+            }
+
+            // Then send to right device (only if left succeeded or no left device)
+            if (this.rightDevice && !await this.sendBmpToDevice(bmpData, packets, "R")) {
+                console.error('Failed to send BMP to right device');
+                return false;
+            }
+
+            return true;
+            
+        } catch (error) {
+            console.error('Error sending BMP image:', error);
+            return false;
+        }
+    }
+
+    private async sendBmpToDevice(bmpData: Uint8Array, packets: Uint8Array[], side: "L" | "R"): Promise<boolean> {
+        try {
+            // STEP 1: Send all BMP packets sequentially
+            for (let i = 0; i < packets.length; i++) {
+                const packet = packets[i];
+                
+                if (!await this.writeToDevice(packet, side)) {
+                    console.error(`Failed to send packet ${i + 1} to ${side} device`);
+                    return false;
+                }
+
+                // Minimal delay between packets (3ms optimized)
+                if (i < packets.length - 1) {
+                    await this.sleep(BluetoothService.BMP_PACKET_DELAY);
+                }
+            }
+
+            // STEP 2: Send end command
+            const endCommand = new Uint8Array(BluetoothService.BMP_END_CMD);
+            if (!await this.writeToDevice(endCommand, side)) {
+                console.error(`Failed to send end command to ${side} device`);
+                return false;
+            }
+
+            // Give time to process (50ms optimized)
+            await this.sleep(BluetoothService.BMP_END_DELAY);
+
+            // STEP 3: Send CRC verification
+            const crcValue = this.computeBmpCrc32(bmpData);
+            const crcBytes = new Uint8Array([
+                BluetoothService.CRC_CMD,  // 0x16
+                (crcValue >> 24) & 0xFF,
+                (crcValue >> 16) & 0xFF,
+                (crcValue >> 8) & 0xFF,
+                crcValue & 0xFF,
+            ]);
+            
+            if (!await this.writeToDevice(crcBytes, side)) {
+                console.error(`Failed to send CRC to ${side} device`);
+                return false;
+            }
+
+            return true;
+            
+        } catch (error) {
+            console.error(`Error during BMP transfer to ${side} device:`, error);
+            return false;
+        }
     }
 
     private async sendCommand(commandByte: number): Promise<boolean> {

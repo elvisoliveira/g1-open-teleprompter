@@ -3,30 +3,39 @@ import { View } from 'react-native';
 import { teleprompterInterfaceStyles as styles } from '../styles/TeleprompterInterfaceStyles';
 import ActionButtons from './ActionButtons';
 import ConnectionStatus from './ConnectionStatus';
+import OutputModeSelector from './OutputModeSelector';
 import TextInputField from './TextInputField';
+
+export type OutputMode = 'text' | 'image';
 
 interface TeleprompterInterfaceProps {
     inputText: string;
     onTextChange: (text: string) => void;
+    outputMode: OutputMode;
+    onOutputModeChange: (mode: OutputMode) => void;
     onSend: () => void;
     onExitToDashboard: () => void;
     onViewMessages: () => void;
     leftConnected: boolean;
     rightConnected: boolean;
     messageCount: number;
+    isSending?: boolean;
 }
 
 const TeleprompterInterface: React.FC<TeleprompterInterfaceProps> = ({
     inputText,
     onTextChange,
+    outputMode,
+    onOutputModeChange,
     onSend,
     onExitToDashboard,
     onViewMessages,
     leftConnected,
     rightConnected,
-    messageCount
+    messageCount,
+    isSending = false
 }) => {
-    const canSend = inputText.trim().length > 0 && (leftConnected || rightConnected);
+    const canSend = inputText.trim().length > 0 && (leftConnected || rightConnected) && !isSending;
     const bothConnected = leftConnected && rightConnected;
 
     const loremIpsumTexts = [
@@ -61,6 +70,11 @@ const TeleprompterInterface: React.FC<TeleprompterInterfaceProps> = ({
                 rightConnected={rightConnected}
             />
 
+            <OutputModeSelector
+                selectedMode={outputMode}
+                onModeChange={onOutputModeChange}
+            />
+
             <TextInputField
                 label="Your Message"
                 value={inputText}
@@ -76,6 +90,7 @@ const TeleprompterInterface: React.FC<TeleprompterInterfaceProps> = ({
                 onInsertLoremIpsum={insertRandomLoremIpsum}
                 sendButtonText={getSendButtonText()}
                 messageCount={messageCount}
+                isSending={isSending}
             />
         </View>
     );

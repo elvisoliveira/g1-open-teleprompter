@@ -6,7 +6,7 @@ import DeviceConnection from './DeviceConnection';
 import ReconnectionScreen from './ReconnectionScreen';
 import SentMessagesScreen from './SentMessagesScreen';
 import SplashScreen from './SplashScreen';
-import TeleprompterInterface from './TeleprompterInterface';
+import TeleprompterInterface, { OutputMode } from './TeleprompterInterface';
 
 interface ViewManagerProps {
     currentView: AppView;
@@ -24,6 +24,8 @@ interface ViewManagerProps {
     
     // Message props
     inputText: string;
+    outputMode: OutputMode;
+    onOutputModeChange: (mode: OutputMode) => void;
     sentMessages: SentTextItem[];
     currentMessageId: string | null;
     onTextChange: (text: string) => void;
@@ -54,6 +56,8 @@ const ViewManager: React.FC<ViewManagerProps> = ({
     onDeviceSelect,
     onRefresh,
     inputText,
+    outputMode,
+    onOutputModeChange,
     sentMessages,
     currentMessageId,
     onTextChange,
@@ -88,6 +92,8 @@ const ViewManager: React.FC<ViewManagerProps> = ({
                 <TeleprompterInterface
                     inputText={inputText}
                     onTextChange={onTextChange}
+                    outputMode={outputMode}
+                    onOutputModeChange={onOutputModeChange}
                     onSend={onSend}
                     onExitToDashboard={onExitToDashboard}
                     onViewMessages={onViewMessages}

@@ -10,6 +10,7 @@ interface ActionButtonsProps {
     onInsertLoremIpsum: () => void;
     sendButtonText: string;
     messageCount: number;
+    isSending?: boolean;
 }
 
 const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -19,8 +20,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     onViewMessages,
     onInsertLoremIpsum,
     sendButtonText,
-    messageCount
+    messageCount,
+    isSending = false
 }) => {
+    const sendButtonDisplayText = isSending ? 'Sending...' : sendButtonText;
     return (
         <View style={styles.container}>
             {/* Send Button */}
@@ -32,7 +35,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
             >
                 <Text style={styles.sendButtonIcon}>↗</Text>
                 <Text style={[styles.sendButtonText, !canSend && styles.sendButtonTextDisabled]}>
-                    {sendButtonText}
+                    {sendButtonDisplayText}
                 </Text>
             </TouchableOpacity>
 

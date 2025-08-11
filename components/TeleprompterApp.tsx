@@ -1,13 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
+import { defaultBitmapGenerator } from '../services/BitmapGenerator';
 import BluetoothService from '../services/BluetoothService';
 import { teleprompterAppStyles } from '../styles/AppStyles';
 import DeviceConnection from './DeviceConnection';
 import ReconnectionScreen from './ReconnectionScreen';
 import SentMessagesScreen from './SentMessagesScreen';
 import SplashScreen from './SplashScreen';
-import TeleprompterInterface from './TeleprompterInterface';
+import TeleprompterInterface, { OutputMode } from './TeleprompterInterface';
 
 interface PairedDevice {
     id: string;
@@ -51,8 +52,10 @@ const TeleprompterApp: React.FC = () => {
     
     // Message state
     const [inputText, setInputText] = useState('');
+    const [outputMode, setOutputMode] = useState<OutputMode>('text');
     const [sentMessages, setSentMessages] = useState<SentTextItem[]>([]);
     const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
+    const [isSending, setIsSending] = useState(false);
 
     useEffect(() => {
         initializeApp();
@@ -207,8 +210,34 @@ const TeleprompterApp: React.FC = () => {
     const handleSendMessage = async () => {
         if (!inputText.trim()) return;
         
+        setIsSending(true);
         try {
-            const success = await BluetoothService.sendText(inputText);
+            let success = false;
+            
+            if (outputMode === 'text') {
+                // Send as text directly
+                success = await BluetoothService.sendText(inputText);
+            } else {
+                // Convert text to BMP bitmap and send as image
+                try {
+                    const bmpBuffer = await defaultBitmapGenerator.textToBitmap(inputText);
+                    
+                    // Validate the BMP format
+                    if (!defaultBitmapGenerator.validateBmpFormat(bmpBuffer)) {
+                        throw new Error('Generated BMP format is invalid');
+                    }
+                    
+                    const base64Image = defaultBitmapGenerator.bufferToBase64(bmpBuffer);
+                    
+                    // Send the BMP image using the BLE protocol
+                    success = await BluetoothService.sendImage(base64Image);
+                } catch (bitmapError) {
+                    console.error('Error generating bitmap:', bitmapError);
+                    Alert.alert('Error', 'Failed to generate image from text');
+                    return;
+                }
+            }
+            
             if (success) {
                 const newMessage: SentTextItem = {
                     id: Date.now().toString(),
@@ -218,12 +247,18 @@ const TeleprompterApp: React.FC = () => {
                 setSentMessages(prev => [newMessage, ...prev]);
                 setCurrentMessageId(newMessage.id);
                 setInputText('');
+                
+                // Show success message with mode info
+                const modeText = outputMode === 'text' ? 'text' : 'image (BMP)';
+                console.log(`Successfully sent ${modeText} to glasses`);
             } else {
-                Alert.alert('Error', 'Failed to send message');
+                Alert.alert('Error', `Failed to send ${outputMode === 'text' ? 'message' : 'image'}`);
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            Alert.alert('Error', 'Failed to send message');
+            Alert.alert('Error', `Failed to send ${outputMode === 'text' ? 'message' : 'image'}`);
+        } finally {
+            setIsSending(false);
         }
     };
 
@@ -301,12 +336,15 @@ const TeleprompterApp: React.FC = () => {
                     <TeleprompterInterface
                         inputText={inputText}
                         onTextChange={setInputText}
+                        outputMode={outputMode}
+                        onOutputModeChange={setOutputMode}
                         onSend={handleSendMessage}
                         onExitToDashboard={handleExitToDashboard}
                         onViewMessages={() => setCurrentView('messages')}
                         leftConnected={leftConnected}
                         rightConnected={rightConnected}
                         messageCount={sentMessages.length}
+                        isSending={isSending}
                     />
                 );
             
