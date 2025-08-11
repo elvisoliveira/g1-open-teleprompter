@@ -70,16 +70,16 @@ const TeleprompterInterface: React.FC<TeleprompterInterfaceProps> = ({
                 rightConnected={rightConnected}
             />
 
-            <OutputModeSelector
-                selectedMode={outputMode}
-                onModeChange={onOutputModeChange}
-            />
-
             <TextInputField
                 label="Your Message"
                 value={inputText}
                 onChangeText={onTextChange}
                 placeholder="Type your message here..."
+            />
+
+            <OutputModeSelector
+                selectedMode={outputMode}
+                onModeChange={onOutputModeChange}
             />
 
             <ActionButtons

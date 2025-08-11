@@ -1,13 +1,12 @@
 import { StyleSheet } from 'react-native';
-import { MaterialBorderRadius, MaterialColors, MaterialSpacing } from './MaterialTheme';
+import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const outputModeSelectorStyles = StyleSheet.create({
     container: {
         marginBottom: MaterialSpacing.lg,
     },
     title: {
-        fontSize: 16,
-        fontWeight: '600',
+        ...MaterialTypography.h3,
         color: MaterialColors.text,
         marginBottom: MaterialSpacing.sm,
     },
