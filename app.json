@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "G1 OpenTeleprompter",
+    "slug": "g1ot",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "g1ot",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "platforms": ["android"],
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.teleprompter"
+    },
+    "plugins": [],
+    "experiments": {}
+  }
+}

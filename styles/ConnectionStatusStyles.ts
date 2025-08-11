@@ -1,0 +1,162 @@
+import { StyleSheet } from 'react-native';
+import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
+
+export const connectionStatusStyles = StyleSheet.create({
+    // Status Card
+    statusCard: {
+        backgroundColor: MaterialColors.surface,
+        borderRadius: MaterialBorderRadius.md,
+        paddingVertical: MaterialSpacing.lg,
+        paddingHorizontal: MaterialSpacing.lg,
+        marginBottom: MaterialSpacing.xl,
+        borderWidth: 1,
+        borderColor: MaterialColors.border,
+    },
+    statusConnected: {
+        backgroundColor: MaterialColors.primaryLight,
+        borderColor: MaterialColors.primary,
+    },
+    statusPartial: {
+        backgroundColor: MaterialColors.surface,
+        borderColor: MaterialColors.warning,
+    },
+    statusTitle: {
+        ...MaterialTypography.h3,
+        color: MaterialColors.text,
+        fontWeight: '600' as const,
+    },
+    
+    // Status Header
+    statusHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: MaterialSpacing.md,
+    },
+    statusOverview: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.textSecondary,
+        fontWeight: '500' as const,
+    },
+    statusOverviewConnected: {
+        color: MaterialColors.primary,
+    },
+    statusOverviewContainer: {
+        alignItems: 'flex-end',
+        gap: MaterialSpacing.xs,
+    },
+    heartbeatStatus: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.textSecondary,
+        fontSize: 10,
+    },
+    heartbeatHealthy: {
+        color: MaterialColors.primary,
+    },
+    
+    // Device Container
+    deviceContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: MaterialSpacing.md,
+    },
+    deviceChip: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: MaterialColors.background,
+        borderWidth: 1,
+        borderColor: MaterialColors.border,
+        borderRadius: MaterialBorderRadius.md,
+        paddingVertical: MaterialSpacing.md,
+        paddingHorizontal: MaterialSpacing.md,
+        gap: MaterialSpacing.sm,
+    },
+    deviceChipConnected: {
+        backgroundColor: MaterialColors.primaryLight,
+        borderColor: MaterialColors.primary,
+    },
+    deviceChipWarning: {
+        backgroundColor: '#FFF3CD',
+        borderColor: '#F0AD4E',
+    },
+    deviceChipError: {
+        backgroundColor: '#F8D7DA',
+        borderColor: '#DC3545',
+    },
+    deviceIcon: {
+        fontSize: 14,
+        color: MaterialColors.textSecondary,
+    },
+    deviceIconConnected: {
+        color: MaterialColors.primary,
+    },
+    deviceIconWarning: {
+        color: '#F0AD4E',
+    },
+    deviceIconError: {
+        color: '#DC3545',
+    },
+    deviceText: {
+        ...MaterialTypography.body,
+        color: MaterialColors.text,
+        fontWeight: '500' as const,
+        flex: 1,
+    },
+    deviceTextConnected: {
+        color: MaterialColors.text,
+        fontWeight: '600' as const,
+    },
+    deviceTextWarning: {
+        color: '#856404',
+        fontWeight: '600' as const,
+    },
+    deviceTextError: {
+        color: '#721C24',
+        fontWeight: '600' as const,
+    },
+    
+    // Warning and Reconnection Styles
+    warningContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: '#FFF3CD',
+        borderWidth: 1,
+        borderColor: '#F0AD4E',
+        borderRadius: MaterialBorderRadius.md,
+        padding: MaterialSpacing.md,
+        marginTop: MaterialSpacing.md,
+        gap: MaterialSpacing.sm,
+    },
+    warningIcon: {
+        fontSize: 18,
+        marginTop: 2,
+    },
+    warningContent: {
+        flex: 1,
+    },
+    warningTitle: {
+        ...MaterialTypography.body,
+        fontWeight: '600' as const,
+        color: '#856404',
+        marginBottom: MaterialSpacing.xs,
+    },
+    warningText: {
+        ...MaterialTypography.caption,
+        color: '#856404',
+        marginBottom: MaterialSpacing.sm,
+        lineHeight: 16,
+    },
+    reconnectButton: {
+        backgroundColor: '#F0AD4E',
+        borderRadius: MaterialBorderRadius.sm,
+        paddingVertical: MaterialSpacing.sm,
+        paddingHorizontal: MaterialSpacing.md,
+        alignSelf: 'flex-start',
+    },
+    reconnectButtonText: {
+        ...MaterialTypography.caption,
+        color: '#FFFFFF',
+        fontWeight: '600' as const,
+    },
+});
