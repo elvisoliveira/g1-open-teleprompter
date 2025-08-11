@@ -30,9 +30,10 @@ class BluetoothService {
     private static readonly MAX_LINE_LENGTH = 60;
     private static readonly MAX_DISPLAY_LINES = 5;
     private static readonly PACKET_DELAY = 5;        // Reduced from 10ms to 5ms
-    private static readonly BMP_PACKET_DELAY = 3;    // Reduced from 8ms to 3ms  
+    private static readonly BMP_PACKET_DELAY = 1;    // Removed delay for maximum speed
     private static readonly BMP_END_DELAY = 50;      // Reduced from 100ms to 50ms
     private static readonly HEARTBEAT_INTERVAL_MS = 5000;
+    private static readonly ENABLE_TRANSFER_LOGGING = false; // Set to false to reduce logging overhead
     
     // Default packet parameters
     private static readonly DEFAULT_POS = 0;
@@ -41,10 +42,6 @@ class BluetoothService {
 
     constructor() {
         this.manager = new BleManager();
-    }
-
-    private convertToBase64(bytes: Uint8Array): string {
-        return Buffer.from(bytes).toString('base64');
     }
 
     private sleep(ms: number): Promise<void> {
@@ -88,11 +85,13 @@ class BluetoothService {
     }
 
     /**
-     * Creates BMP packets using Java-style chunking (194-byte chunks)
+     * Creates BMP packets using G1-compatible 194-byte chunks
      */
     private createBmpPackets(bmpData: Uint8Array): Uint8Array[] {
         const packets: Uint8Array[] = [];
         let syncId = 0;
+        
+        console.log(`Creating BMP packets with chunk size: ${BluetoothService.BMP_CHUNK_SIZE} bytes`);
 
         for (let i = 0; i < bmpData.length; i += BluetoothService.BMP_CHUNK_SIZE) {
             const end = Math.min(i + BluetoothService.BMP_CHUNK_SIZE, bmpData.length);
@@ -121,13 +120,6 @@ class BluetoothService {
         return packets;
     }
 
-    private combineHeaderAndData(prefix: number[], data: Uint8Array): Uint8Array {
-        const combined = new Uint8Array(prefix.length + data.length);
-        combined.set(prefix, 0);
-        combined.set(data, prefix.length);
-        return combined;
-    }
-
     // Heartbeat Management
     private constructHeartbeat(): Uint8Array {
         const seq = this.heartbeatSeq++ & 0xFF;
@@ -146,12 +138,22 @@ class BluetoothService {
         if (!device) return false;
 
         try {
-            const base64 = this.convertToBase64(data);
-            await device.writeCharacteristicWithResponseForService(
-                BluetoothService.SERVICE_UUID,
-                BluetoothService.CHARACTERISTIC_UUID,
-                base64
-            );
+            const base64 = Buffer.from(data).toString('base64');
+            // Try without response first (faster), fallback to with response if needed
+            try {
+                await device.writeCharacteristicWithoutResponseForService(
+                    BluetoothService.SERVICE_UUID,
+                    BluetoothService.CHARACTERISTIC_UUID,
+                    base64
+                );
+            } catch (writeError) {
+                console.warn(`Write without response failed, trying with response:`, writeError);
+                await device.writeCharacteristicWithResponseForService(
+                    BluetoothService.SERVICE_UUID,
+                    BluetoothService.CHARACTERISTIC_UUID,
+                    base64
+                );
+            }
             return true;
         } catch (error) {
             console.error(`Write to ${side} device failed:`, error);
@@ -159,15 +161,10 @@ class BluetoothService {
         }
     }
 
-    private async sendHeartbeatToDevice(side: "L" | "R"): Promise<boolean> {
-        const heartbeatData = this.constructHeartbeat();
-        return this.writeToDevice(heartbeatData, side);
-    }
-
     private async performHeartbeat(): Promise<void> {
         // Always send to left first, then right (G1 protocol requirement)
-        const leftSuccess = this.leftDevice ? await this.sendHeartbeatToDevice("L") : true;
-        const rightSuccess = leftSuccess && this.rightDevice ? await this.sendHeartbeatToDevice("R") : true;
+        const leftSuccess = this.leftDevice ? await this.writeToDevice(this.constructHeartbeat(), "L") : true;
+        const rightSuccess = leftSuccess && this.rightDevice ? await this.writeToDevice(this.constructHeartbeat(), "R") : true;
 
         // Notify listeners
         const status = {
@@ -177,35 +174,25 @@ class BluetoothService {
         };
 
         this.heartbeatListeners.forEach(listener => {
-            try {
-                listener(status);
-            } catch (error) {
-                console.error('Heartbeat listener error:', error);
-            }
+            try { listener(status); } catch { /* ignore */ }
         });
 
         // Stop heartbeat if both devices failed
         if (!leftSuccess && !rightSuccess && (this.leftDevice || this.rightDevice)) {
-            console.warn('All devices failed heartbeat, stopping manager');
             this.stopHeartbeat();
         }
     }
 
     private startHeartbeat(): void {
-        this.stopHeartbeat(); // Clear any existing interval
-        
-        console.log('Starting heartbeat manager');
+        this.stopHeartbeat();
         this.heartbeatInterval = setInterval(() => {
             this.performHeartbeat();
         }, BluetoothService.HEARTBEAT_INTERVAL_MS);
-
-        // Send initial heartbeat immediately
         this.performHeartbeat();
     }
 
     private stopHeartbeat(): void {
         if (this.heartbeatInterval) {
-            console.log('Stopping heartbeat manager');
             clearInterval(this.heartbeatInterval);
             this.heartbeatInterval = null;
         }
@@ -252,13 +239,16 @@ class BluetoothService {
                 totalPackets,
                 i,
                 BluetoothService.NEW_SCREEN_FLAG,
-                (BluetoothService.DEFAULT_POS >> 8) & 0xFF,  // Position high byte
-                BluetoothService.DEFAULT_POS & 0xFF,         // Position low byte
+                (BluetoothService.DEFAULT_POS >> 8) & 0xFF,
+                BluetoothService.DEFAULT_POS & 0xFF,
                 BluetoothService.DEFAULT_PAGE_NUM,
                 BluetoothService.DEFAULT_MAX_PAGES
             ];
 
-            packets.push(this.combineHeaderAndData(header, chunk));
+            const packet = new Uint8Array(header.length + chunk.length);
+            packet.set(header, 0);
+            packet.set(chunk, header.length);
+            packets.push(packet);
         }
         
         return packets;
@@ -335,18 +325,26 @@ class BluetoothService {
             // Convert base64 to binary data
             const bmpData = new Uint8Array(Buffer.from(base64ImageData, 'base64'));
 
-            // Create BMP packets using Java-style chunking
+            // Create BMP packets using G1-compatible chunking
             const packets = this.createBmpPackets(bmpData);
 
-            // Send to left device first (G1 protocol requirement)
-            if (this.leftDevice && !await this.sendBmpToDevice(bmpData, packets, "L")) {
-                console.error('Failed to send BMP to left device');
-                return false;
+            // Send to both devices in parallel for maximum speed
+            const promises: Promise<boolean>[] = [];
+            
+            if (this.leftDevice) {
+                promises.push(this.sendBmpToDevice(bmpData, packets, "L"));
+            }
+            
+            if (this.rightDevice) {
+                promises.push(this.sendBmpToDevice(bmpData, packets, "R"));
             }
 
-            // Then send to right device (only if left succeeded or no left device)
-            if (this.rightDevice && !await this.sendBmpToDevice(bmpData, packets, "R")) {
-                console.error('Failed to send BMP to right device');
+            // Wait for all transfers to complete
+            const results = await Promise.all(promises);
+            
+            // Check if any failed
+            if (results.some(result => !result)) {
+                console.error('One or more BMP transfers failed');
                 return false;
             }
 
@@ -360,33 +358,61 @@ class BluetoothService {
 
     private async sendBmpToDevice(bmpData: Uint8Array, packets: Uint8Array[], side: "L" | "R"): Promise<boolean> {
         try {
+            const startTime = Date.now();
+            console.log(`Starting BMP transfer to ${side} device: ${packets.length} packets, ${bmpData.length} bytes`);
+            
             // STEP 1: Send all BMP packets sequentially
+            const packetStartTime = Date.now();
             for (let i = 0; i < packets.length; i++) {
                 const packet = packets[i];
+                const packetWriteStart = Date.now();
+                
+                if (BluetoothService.ENABLE_TRANSFER_LOGGING) {
+                    console.log(`Sending packet ${i + 1}/${packets.length} to ${side} device (${packet.length} bytes)`);
+                }
                 
                 if (!await this.writeToDevice(packet, side)) {
                     console.error(`Failed to send packet ${i + 1} to ${side} device`);
                     return false;
                 }
+                
+                if (BluetoothService.ENABLE_TRANSFER_LOGGING) {
+                    const packetWriteTime = Date.now() - packetWriteStart;
+                    console.log(`Packet ${i + 1} write took ${packetWriteTime}ms`);
+                }
 
-                // Minimal delay between packets (3ms optimized)
-                if (i < packets.length - 1) {
+                // Minimal delay between packets (optimized to 0ms)
+                if (i < packets.length - 1 && BluetoothService.BMP_PACKET_DELAY > 0) {
                     await this.sleep(BluetoothService.BMP_PACKET_DELAY);
                 }
             }
-
+            
+            const totalPacketTime = Date.now() - packetStartTime;
+            console.log(`All packets sent to ${side} device in ${totalPacketTime}ms, sending end command`);
+            
             // STEP 2: Send end command
+            const endCommandStart = Date.now();
             const endCommand = new Uint8Array(BluetoothService.BMP_END_CMD);
             if (!await this.writeToDevice(endCommand, side)) {
                 console.error(`Failed to send end command to ${side} device`);
                 return false;
             }
+            const endCommandTime = Date.now() - endCommandStart;
+            console.log(`End command sent in ${endCommandTime}ms`);
 
             // Give time to process (50ms optimized)
+            const delayStart = Date.now();
             await this.sleep(BluetoothService.BMP_END_DELAY);
+            const delayTime = Date.now() - delayStart;
+            console.log(`End delay completed in ${delayTime}ms`);
 
             // STEP 3: Send CRC verification
+            const crcStart = Date.now();
             const crcValue = this.computeBmpCrc32(bmpData);
+            const crcComputeTime = Date.now() - crcStart;
+            console.log(`CRC computed in ${crcComputeTime}ms: 0x${crcValue.toString(16)}`);
+            
+            const crcSendStart = Date.now();
             const crcBytes = new Uint8Array([
                 BluetoothService.CRC_CMD,  // 0x16
                 (crcValue >> 24) & 0xFF,
@@ -399,7 +425,11 @@ class BluetoothService {
                 console.error(`Failed to send CRC to ${side} device`);
                 return false;
             }
+            const crcSendTime = Date.now() - crcSendStart;
+            console.log(`CRC sent in ${crcSendTime}ms`);
 
+            const totalTime = Date.now() - startTime;
+            console.log(`BMP transfer to ${side} device completed successfully in ${totalTime}ms`);
             return true;
             
         } catch (error) {
@@ -448,12 +478,13 @@ class BluetoothService {
         
         await device.discoverAllServicesAndCharacteristics();
 
-        // Request higher MTU for larger packets
+        // Request higher MTU for larger packets (G1 protocol requires 194-byte chunks regardless)
         try {
-            const mtu = await device.requestMTU(247);
-            console.log(`Device MTU negotiated: ${mtu}`);
+            const mtuResult = await device.requestMTU(247);
+            const mtu = typeof mtuResult === 'object' ? mtuResult.mtu || 23 : (mtuResult || 23);
+            console.log(`MTU negotiated: ${mtu} bytes for device ${address}`);
         } catch (error) {
-            console.warn('MTU negotiation failed, using default');
+            console.warn(`MTU request failed for device ${address}:`, error);
         }
 
         return device;

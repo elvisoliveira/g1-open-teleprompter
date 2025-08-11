@@ -208,9 +208,8 @@ export class BitmapGenerator {
     private createSimplifiedBitmap(text: string): Buffer {
         const { width, height } = this.dimensions;
         
-        // Pre-calculate all layout values once
-        const bytesPerRowUnpadded = Math.ceil(width / 8);
-        const bytesPerRowPadded = Math.ceil(bytesPerRowUnpadded / 4) * 4;
+        // Pre-calculate all layout values once (simplified)
+        const bytesPerRowPadded = Math.ceil(Math.ceil(width / 8) / 4) * 4;
         const totalBytes = bytesPerRowPadded * height;
         
         // Text rendering constants (pre-calculated)
@@ -332,8 +331,6 @@ export class BitmapGenerator {
             
             // Convert top-down Y to bottom-up Y (BMP standard) - calculated once per row
             const bmpY = imageHeight - 1 - (y + row);
-            if (bmpY < 0) continue;
-            
             const rowOffset = bmpY * bytesPerRow;
             
             // Process 8 bits efficiently with bit manipulation
@@ -344,49 +341,8 @@ export class BitmapGenerator {
                     const byteIndex = rowOffset + (pixelX >> 3); // Fast division by 8
                     const bitIndex = 7 - (pixelX & 7); // Fast modulo 8
                     
-                    // Clear bit for black text (bounds check included)
-                    if (byteIndex < buffer.length) {
-                        buffer[byteIndex] &= ~(1 << bitIndex);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Renders a character pattern into the bitmap buffer following BMP 1-bit specification
-     * BMP stores pixels bottom-up, so we need to flip the Y coordinate
-     * @deprecated Use renderCharacterPatternOptimized for better performance
-     */
-    private renderCharacterPattern(
-        buffer: Buffer, 
-        pattern: number[], 
-        x: number, 
-        y: number, 
-        bytesPerRow: number,
-        imageHeight?: number
-    ): void {
-        const height = imageHeight || this.dimensions.height;
-        
-        for (let row = 0; row < pattern.length && (y + row) < height; row++) {
-            const patternByte = pattern[row];
-            
-            // Convert top-down Y to bottom-up Y (BMP standard)
-            const bmpY = height - 1 - (y + row);
-            if (bmpY < 0) continue;
-            
-            for (let bit = 0; bit < 8 && (x + bit) < this.dimensions.width; bit++) {
-                const pixelX = x + bit;
-                const isPixelSet = (patternByte & (0x80 >> bit)) !== 0;
-                
-                if (isPixelSet) {
-                    // Clear bit to 0 for black text (second color in palette)
-                    const byteIndex = (bmpY * bytesPerRow) + Math.floor(pixelX / 8);
-                    const bitIndex = 7 - (pixelX % 8); // MSB first (BMP standard)
-                    
-                    if (byteIndex < buffer.length) {
-                        buffer[byteIndex] &= ~(1 << bitIndex);
-                    }
+                    // Clear bit for black text
+                    buffer[byteIndex] &= ~(1 << bitIndex);
                 }
             }
         }
