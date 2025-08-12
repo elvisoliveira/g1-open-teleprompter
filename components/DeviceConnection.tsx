@@ -14,6 +14,7 @@ interface DeviceConnectionProps {
     connectionStep: 'left' | 'right' | 'complete';
     onDeviceSelect: (deviceId: string, side: 'left' | 'right') => void;
     onRefresh: () => void;
+    onShowAllDevices: () => void;
     leftConnected: boolean;
 }
 
@@ -23,6 +24,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
     connectionStep,
     onDeviceSelect,
     onRefresh,
+    onShowAllDevices,
     leftConnected
 }) => {
     const getStepInfo = () => {
@@ -122,20 +124,42 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                 Please ensure your Even G1 glasses are paired and connected to the official Even Realities app first, 
                 then try scanning again.
             </Text>
-            <TouchableOpacity
-                onPress={onRefresh}
-                style={styles.refreshButtonContainer}
-                activeOpacity={0.8}
-            >
-                <Text style={styles.refreshText}>🔄 Scan Again</Text>
-            </TouchableOpacity>
+
+            <View style={styles.actionButtonGroup}>
+                <TouchableOpacity
+                    onPress={onRefresh}
+                    style={[styles.actionButton, styles.primaryActionButton]}
+                    activeOpacity={0.8}
+                >
+                    <Text style={styles.actionButtonIcon}>🔄</Text>
+                    <Text style={styles.primaryActionText}>Scan for G1 Glasses</Text>
+                </TouchableOpacity>
+                
+                <View style={styles.dividerContainer}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>or</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+                
+                <TouchableOpacity
+                    onPress={onShowAllDevices}
+                    style={[styles.actionButton, styles.secondaryActionButton]}
+                    activeOpacity={0.8}
+                >
+                    <Text style={styles.actionButtonIcon}>📱</Text>
+                    <Text style={styles.secondaryActionText}>Show All Bluetooth Devices</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 
     const renderLoadingState = () => (
         <View style={styles.loadingContainer}>
-            <Text style={styles.loadingIcon}>🔄</Text>
-            <Text style={styles.loadingText}>Scanning...</Text>
+            <View style={styles.loadingIconContainer}>
+                <Text style={styles.loadingIcon}>🔄</Text>
+            </View>
+            <Text style={styles.loadingTitle}>Scanning for Even G1 Glasses</Text>
+            <Text style={styles.loadingSubtitle}>This may take a few seconds...</Text>
         </View>
     );
 
@@ -188,7 +212,6 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                                 </Text>
                             </TouchableOpacity>
                         </View>
-                        <View style={styles.sectionDivider} />
                         <FlatList
                             data={devices}
                             renderItem={renderDeviceCard}

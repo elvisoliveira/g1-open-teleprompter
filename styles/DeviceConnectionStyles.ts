@@ -207,18 +207,146 @@ export const deviceConnectionStyles = StyleSheet.create({
         color: MaterialColors.background,
         fontWeight: '600',
     },
+    buttonGroup: {
+        gap: MaterialSpacing.sm,
+        width: '100%',
+    },
+    showAllButton: {
+        backgroundColor: MaterialColors.secondary,
+    },
+    
+    // Enhanced Empty State Styles
+    emptyIconContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: MaterialSpacing.lg,
+        gap: MaterialSpacing.xs,
+    },
+    emptyIconSecondary: {
+        fontSize: 16,
+        color: MaterialColors.textDisabled,
+        opacity: 0.6,
+    },
+    emptyMessageContainer: {
+        marginBottom: MaterialSpacing.xl,
+    },
+    checklistContainer: {
+        marginTop: MaterialSpacing.sm,
+        paddingLeft: MaterialSpacing.sm,
+    },
+    checklistItem: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.textSecondary,
+        marginBottom: MaterialSpacing.xs,
+        lineHeight: 18,
+    },
+    actionButtonGroup: {
+        width: '100%',
+        gap: MaterialSpacing.md,
+    },
+    actionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: MaterialSpacing.md,
+        paddingHorizontal: MaterialSpacing.lg,
+        borderRadius: MaterialBorderRadius.lg,
+        gap: MaterialSpacing.sm,
+    },
+    primaryActionButton: {
+        backgroundColor: MaterialColors.primary,
+        elevation: 2,
+        shadowColor: MaterialColors.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+    },
+    secondaryActionButton: {
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: MaterialColors.border,
+    },
+    actionButtonIcon: {
+        fontSize: 18,
+    },
+    primaryActionText: {
+        ...MaterialTypography.body,
+        color: MaterialColors.background,
+        fontWeight: '600',
+    },
+    secondaryActionText: {
+        ...MaterialTypography.body,
+        color: MaterialColors.textSecondary,
+        fontWeight: '500',
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: MaterialSpacing.sm,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: MaterialColors.borderLight,
+    },
+    dividerText: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.textDisabled,
+        marginHorizontal: MaterialSpacing.md,
+        fontStyle: 'italic',
+    },
+    helpTextContainer: {
+        marginTop: MaterialSpacing.lg,
+        paddingVertical: MaterialSpacing.sm,
+        paddingHorizontal: MaterialSpacing.md,
+        backgroundColor: MaterialColors.backgroundSecondary,
+        borderRadius: MaterialBorderRadius.sm,
+    },
+    helpText: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.textSecondary,
+        textAlign: 'center',
+        lineHeight: 16,
+        fontStyle: 'italic',
+    },
     
     // Loading State
     loadingContainer: {
-        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: MaterialSpacing.xl,
     },
+    loadingIconContainer: {
+        marginBottom: MaterialSpacing.md,
+    },
     loadingIcon: {
-        fontSize: 16,
+        fontSize: 24,
         color: MaterialColors.primary,
-        marginRight: MaterialSpacing.sm,
+    },
+    loadingTitle: {
+        ...MaterialTypography.body,
+        color: MaterialColors.text,
+        fontWeight: '600',
+        marginBottom: MaterialSpacing.xs,
+        textAlign: 'center',
+    },
+    loadingSubtitle: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.textSecondary,
+        textAlign: 'center',
+        marginBottom: MaterialSpacing.lg,
+    },
+    loadingProgressContainer: {
+        flexDirection: 'row',
+        gap: MaterialSpacing.xs,
+    },
+    loadingDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: MaterialColors.primary,
+        opacity: 0.6,
     },
     loadingText: {
         ...MaterialTypography.body,

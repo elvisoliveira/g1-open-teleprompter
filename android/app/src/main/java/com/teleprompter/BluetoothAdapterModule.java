@@ -62,12 +62,6 @@ public class BluetoothAdapterModule extends ReactContextBaseJavaModule {
                     boolean isBleCapable = (type == BluetoothDevice.DEVICE_TYPE_LE) || (type == BluetoothDevice.DEVICE_TYPE_DUAL);
                     if (!isBleCapable) continue;
 
-                    // Filter to show only "Even G1" smart glasses
-                    String deviceName = device.getName();
-                    if (deviceName == null || !deviceName.startsWith("Even G1")) {
-                        continue;
-                    }
-
                     WritableMap map = Arguments.createMap();
                     map.putString("name", device.getName());
                     map.putString("address", device.getAddress());

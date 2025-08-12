@@ -546,7 +546,7 @@ class BluetoothService {
         return this.rightDevice !== null;
     }
 
-    async getPairedDevices(): Promise<Array<{ id: string; name: string | null; isConnected: boolean }>> {
+    async getPairedDevices(showAllDevices: boolean = false): Promise<Array<{ id: string; name: string | null; isConnected: boolean }>> {
         if (Platform.OS !== 'android') return [];
 
         try {
@@ -563,11 +563,21 @@ class BluetoothService {
             if (!BluetoothAdapter?.getPairedDevices) return [];
 
             const pairedDevices = await BluetoothAdapter.getPairedDevices();
-            return pairedDevices.map((device: { name: string; address: string; connected?: boolean }) => ({
+            const bondedDevices = pairedDevices.map((device: { name: string; address: string; connected?: boolean }) => ({
                 id: device.address,
                 name: device.name || null,
                 isConnected: Boolean(device.connected)
             }));
+
+            // Filter devices based on showAllDevices flag
+            if (showAllDevices) {
+                return bondedDevices;
+            } else {
+                // Filter to show only "Even G1" smart glasses
+                return bondedDevices.filter((device: { id: string; name: string | null; isConnected: boolean }) => 
+                    device.name && device.name.startsWith("Even G")
+                );
+            }
         } catch (error) {
             console.warn('Failed to get paired devices:', error);
             return [];

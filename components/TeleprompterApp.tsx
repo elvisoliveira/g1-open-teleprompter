@@ -177,7 +177,21 @@ const TeleprompterApp: React.FC = () => {
     const loadPairedDevices = async () => {
         try {
             setIsScanning(true);
-            const devices = await BluetoothService.getPairedDevices();
+            const devices = await BluetoothService.getPairedDevices(false); // Default to filtered (Even G1 only)
+            setPairedDevices(devices);
+        } catch (error) {
+            console.error('Failed to load devices:', error);
+            Alert.alert('Error', 'Failed to load paired devices');
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
+    const handleShowAllDevices = async () => {
+        // Directly call getPairedDevices with true to show all devices
+        try {
+            setIsScanning(true);
+            const devices = await BluetoothService.getPairedDevices(true);
             setPairedDevices(devices);
         } catch (error) {
             console.error('Failed to load devices:', error);
@@ -327,6 +341,7 @@ const TeleprompterApp: React.FC = () => {
                         connectionStep={connectionStep}
                         onDeviceSelect={handleDeviceConnection}
                         onRefresh={loadPairedDevices}
+                        onShowAllDevices={handleShowAllDevices}
                         leftConnected={leftConnected}
                     />
                 );
