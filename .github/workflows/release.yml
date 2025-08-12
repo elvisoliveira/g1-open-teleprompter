@@ -35,48 +35,14 @@ jobs:
     - name: Setup Expo CLI
       run: npm install -g @expo/cli
 
-    - name: Prebuild Android (without clean)
-      run: npx expo prebuild --platform android
+    - name: Grant execute permission to gradlew
+      run: chmod +x android/gradlew
 
-    - name: Initialize Gradle Wrapper
+    - name: Clean and Build APK
       working-directory: android
       run: |
-        echo "Current directory: $(pwd)"
-        echo "Listing android directory contents:"
-        ls -la
-        
-        echo "Checking gradle wrapper files:"
-        ls -la gradle/wrapper/ || echo "gradle/wrapper directory not found"
-        
-        # Ensure gradle wrapper is executable
-        if [ -f "gradlew" ]; then
-          chmod +x gradlew
-          echo "✅ gradlew made executable"
-        else
-          echo "❌ gradlew file not found"
-        fi
-        
-        # Check if gradle-wrapper.jar exists
-        if [ -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-          echo "✅ gradle-wrapper.jar found"
-        else
-          echo "❌ gradle-wrapper.jar missing - regenerating wrapper"
-          gradle wrapper --gradle-version=8.10.2
-        fi
-        
-        # Test gradle wrapper
-        echo "Testing gradle wrapper:"
-        ./gradlew --version || {
-          echo "❌ Gradle wrapper failed, regenerating..."
-          gradle wrapper --gradle-version=8.10.2
-          chmod +x gradlew
-          ./gradlew --version
-        }
-
-    - name: Build APK
-      working-directory: android
-      run: |
-        ./gradlew clean assembleRelease --no-daemon --stacktrace
+        ./gradlew clean
+        ./gradlew assembleRelease --no-daemon --stacktrace
 
     - name: Get release info
       id: release_info
