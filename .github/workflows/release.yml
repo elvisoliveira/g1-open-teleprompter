@@ -34,7 +34,7 @@ jobs:
       run: |
         keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
-    - name: Build APK (debug-signed)
+    - name: Build APK (release)
       run: |
         chmod +x android/gradlew
         cd android
@@ -64,7 +64,7 @@ jobs:
     - name: Find APK file
       id: find_apk
       run: |
-        APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -1)
+        APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
         echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
         echo "apk_name=teleprompter-${{ steps.release_info.outputs.tag_name }}.apk" >> $GITHUB_OUTPUT
 
