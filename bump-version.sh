@@ -150,10 +150,10 @@ echo -e "${GREEN}Updating version files...${NC}"
 echo -e "  • Updating package.json..."
 sed -i.bak "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION\"/" package.json && rm package.json.bak
 
-# Update package-lock.json if it exists
+# Update package-lock.json using npm
 if [ -f "package-lock.json" ]; then
-    echo -e "  • Updating package-lock.json..."
-    sed -i.bak "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION\"/" package-lock.json && rm package-lock.json.bak
+    echo -e "  • Updating package-lock.json using npm..."
+    npm i --package-lock-only
 else
     echo -e "  • package-lock.json not found, skipping..."
 fi
