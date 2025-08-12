@@ -38,7 +38,7 @@ jobs:
       run: |
         chmod +x android/gradlew
         cd android
-        ./gradlew clean assembleDebug --no-daemon
+        ./gradlew clean assembleRelease --no-daemon
 
     - name: Get release info
       id: release_info
