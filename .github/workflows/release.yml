@@ -35,8 +35,8 @@ jobs:
     - name: Setup Expo CLI
       run: npm install -g @expo/cli
 
-    - name: Prebuild Android (Clean)
-      run: npx expo prebuild --platform android --clean
+    - name: Prebuild Android
+      run: npx expo prebuild --platform android
 
     - name: Grant execute permission to gradlew
       run: chmod +x android/gradlew
