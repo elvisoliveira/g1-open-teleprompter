@@ -573,8 +573,15 @@ class BluetoothService {
             }
 
             const { BluetoothAdapter } = NativeModules as any;
-            if (!BluetoothAdapter?.getPairedDevices) {
-                console.error('BluetoothAdapter native module not available');
+            if (!BluetoothAdapter) {
+                console.error('BluetoothAdapter native module not available - this indicates a build/linking issue');
+                console.error('Available NativeModules:', Object.keys(NativeModules));
+                return [];
+            }
+            
+            if (!BluetoothAdapter.getPairedDevices) {
+                console.error('BluetoothAdapter.getPairedDevices method not available');
+                console.error('Available BluetoothAdapter methods:', Object.keys(BluetoothAdapter));
                 return [];
             }
 

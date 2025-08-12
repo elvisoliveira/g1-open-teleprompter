@@ -11,4 +11,20 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
+# Keep custom Bluetooth native module - CRITICAL for APK builds
+-keep class com.teleprompter.BluetoothAdapterModule { *; }
+-keep class com.teleprompter.BluetoothAdapterPackage { *; }
+-keep class com.teleprompter.BluetoothAdapterModule$* { *; }
+
+# Keep React Native bridge classes and annotations
+-keep class com.facebook.react.bridge.** { *; }
+-keep class com.facebook.react.modules.core.** { *; }
+-keepclassmembers class * {
+    @com.facebook.react.bridge.ReactMethod <methods>;
+}
+-keep @com.facebook.react.bridge.ReactModule class * { *; }
+
+# Keep Expo modules
+-keep class expo.modules.** { *; }
+
 # Add any project specific keep options here:
