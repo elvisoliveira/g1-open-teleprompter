@@ -44,8 +44,7 @@ jobs:
     - name: Clean and Build APK
       working-directory: android
       run: |
-        ./gradlew clean
-        ./gradlew assembleRelease --no-daemon --stacktrace
+        ./gradlew assembleRelease
 
     - name: Get release info
       id: release_info
