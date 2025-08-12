@@ -32,20 +32,20 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Fix Gradle Wrapper
+    - name: Build Release APK (Direct Gradle)
       working-directory: android
       run: |
         # Install Gradle if not available
         if ! command -v gradle &> /dev/null; then
           echo "Installing Gradle..."
-          wget https://services.gradle.org/distributions/gradle-8.13-bin.zip
-          unzip -q gradle-8.13-bin.zip
-          export PATH=$PATH:$(pwd)/gradle-8.13/bin
+          wget https://services.gradle.org/distributions/gradle-8.5-bin.zip
+          unzip -q gradle-8.5-bin.zip
+          export PATH=$PATH:$(pwd)/gradle-8.5/bin
         fi
         
         # Regenerate gradle wrapper
         echo "Regenerating Gradle wrapper..."
-        gradle wrapper --gradle-version=8.13
+        gradle wrapper --gradle-version=8.5
         
         # Make gradlew executable
         chmod +x gradlew
