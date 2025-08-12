@@ -1,10 +1,7 @@
 name: Build and Release APK
 
 on:
-  push:
-    tags:
-      - 'v*' # Triggers on version tags like v1.0.0
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch: # Manual triggering only
 
 jobs:
   build-and-release:
@@ -17,10 +14,11 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '21'
+        node-version: '20'
         cache: 'npm'
 
     - name: Setup Java JDK
+      id: setup-java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
@@ -32,43 +30,17 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Build Release APK (Direct Gradle)
-      working-directory: android
+    - name: Build APK
       run: |
-        # Install Gradle if not available
-        if ! command -v gradle &> /dev/null; then
-          echo "Installing Gradle..."
-          wget https://services.gradle.org/distributions/gradle-8.5-bin.zip
-          unzip -q gradle-8.5-bin.zip
-          export PATH=$PATH:$(pwd)/gradle-8.5/bin
-        fi
-        
-        # Regenerate gradle wrapper
-        echo "Regenerating Gradle wrapper..."
-        gradle wrapper --gradle-version=8.5
-        
-        # Make gradlew executable
-        chmod +x gradlew
-        
-        # Test the wrapper
-        ./gradlew --version
-
-    - name: Clean and Build APK
-      working-directory: android
-      run: |
-        ./gradlew clean
-        ./gradlew assembleRelease --no-daemon --stacktrace
+        chmod +x android/gradlew
+        cd android
+        ./gradlew clean assembleRelease --no-daemon
 
     - name: Get release info
       id: release_info
       run: |
-        if [ "${{ github.event_name }}" = "push" ] && [ "${{ startsWith(github.ref, 'refs/tags/') }}" = "true" ]; then
-          echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          echo "release_name=Release ${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        else
-          echo "tag_name=v$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-          echo "release_name=Development Build $(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
-        fi
+        echo "tag_name=v$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+        echo "release_name=Manual Build $(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
 
     - name: Create Release
       id: create_release
@@ -83,7 +55,7 @@ jobs:
           
           Download the APK below and install on your Android device.
         draft: false
-        prerelease: ${{ github.event_name == 'workflow_dispatch' }}
+        prerelease: true
 
     - name: Find APK file
       id: find_apk
