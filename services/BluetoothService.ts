@@ -550,33 +550,55 @@ class BluetoothService {
         if (Platform.OS !== 'android') return [];
 
         try {
-            // Request required permissions
-            const locationGranted = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
-            if (locationGranted !== 'granted') return [];
-
+            // Request required permissions based on Android version
             if (Platform.Version >= 31) {
-                const bluetoothGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_CONNECT);
-                if (bluetoothGranted !== 'granted') return [];
+                // Android 12+ (API 31+) - Request new Bluetooth permissions
+                const bluetoothScanGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_SCAN);
+                const bluetoothConnectGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_CONNECT);
+                
+                if (bluetoothScanGranted !== 'granted' || bluetoothConnectGranted !== 'granted') {
+                    console.error('Bluetooth permissions not granted:', {
+                        bluetoothScan: bluetoothScanGranted,
+                        bluetoothConnect: bluetoothConnectGranted
+                    });
+                    return [];
+                }
+            } else {
+                // Android < 12 - Request location permission (required for BLE scanning)
+                const locationGranted = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+                if (locationGranted !== 'granted') {
+                    console.error('Location permission not granted:', locationGranted);
+                    return [];
+                }
             }
 
             const { BluetoothAdapter } = NativeModules as any;
-            if (!BluetoothAdapter?.getPairedDevices) return [];
+            if (!BluetoothAdapter?.getPairedDevices) {
+                console.error('BluetoothAdapter native module not available');
+                return [];
+            }
 
             const pairedDevices = await BluetoothAdapter.getPairedDevices();
+            console.log('Raw paired devices from native module:', pairedDevices);
+            
             const bondedDevices = pairedDevices.map((device: { name: string; address: string; connected?: boolean }) => ({
                 id: device.address,
                 name: device.name || null,
                 isConnected: Boolean(device.connected)
             }));
 
+            console.log('Processed bonded devices:', bondedDevices);
+
             // Filter devices based on showAllDevices flag
             if (showAllDevices) {
                 return bondedDevices;
             } else {
                 // Filter to show only "Even G1" smart glasses
-                return bondedDevices.filter((device: { id: string; name: string | null; isConnected: boolean }) => 
+                const filteredDevices = bondedDevices.filter((device: { id: string; name: string | null; isConnected: boolean }) => 
                     device.name && device.name.startsWith("Even G1")
                 );
+                console.log('Filtered Even G1 devices:', filteredDevices);
+                return filteredDevices;
             }
         } catch (error) {
             console.warn('Failed to get paired devices:', error);

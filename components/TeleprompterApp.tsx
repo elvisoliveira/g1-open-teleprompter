@@ -177,8 +177,17 @@ const TeleprompterApp: React.FC = () => {
     const loadPairedDevices = async () => {
         try {
             setIsScanning(true);
+            console.log('Loading paired devices...');
             const devices = await BluetoothService.getPairedDevices(false); // Default to filtered (Even G1 only)
+            console.log('Loaded devices:', devices);
             setPairedDevices(devices);
+            
+            if (devices.length === 0) {
+                console.warn('No devices found. This could be due to:');
+                console.warn('1. Missing permissions');
+                console.warn('2. No paired Bluetooth devices');
+                console.warn('3. Native module not properly linked');
+            }
         } catch (error) {
             console.error('Failed to load devices:', error);
             Alert.alert('Error', 'Failed to load paired devices');
