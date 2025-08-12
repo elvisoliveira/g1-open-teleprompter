@@ -575,7 +575,7 @@ class BluetoothService {
             } else {
                 // Filter to show only "Even G1" smart glasses
                 return bondedDevices.filter((device: { id: string; name: string | null; isConnected: boolean }) => 
-                    device.name && device.name.startsWith("Even G")
+                    device.name && device.name.startsWith("Even G1")
                 );
             }
         } catch (error) {
