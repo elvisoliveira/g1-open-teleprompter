@@ -24,7 +24,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '21'
+        java-version: '17'
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -32,11 +32,26 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Setup Expo CLI
-      run: npm install -g @expo/cli
-
-    - name: Grant execute permission to gradlew
-      run: chmod +x android/gradlew
+    - name: Fix Gradle Wrapper
+      working-directory: android
+      run: |
+        # Install Gradle if not available
+        if ! command -v gradle &> /dev/null; then
+          echo "Installing Gradle..."
+          wget https://services.gradle.org/distributions/gradle-8.13-bin.zip
+          unzip -q gradle-8.13-bin.zip
+          export PATH=$PATH:$(pwd)/gradle-8.13/bin
+        fi
+        
+        # Regenerate gradle wrapper
+        echo "Regenerating Gradle wrapper..."
+        gradle wrapper --gradle-version=8.13
+        
+        # Make gradlew executable
+        chmod +x gradlew
+        
+        # Test the wrapper
+        ./gradlew --version
 
     - name: Clean and Build APK
       working-directory: android
