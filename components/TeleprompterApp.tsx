@@ -4,11 +4,14 @@ import { Alert, View } from 'react-native';
 import { defaultBitmapGenerator } from '../services/BitmapGenerator';
 import BluetoothService from '../services/BluetoothService';
 import { teleprompterAppStyles } from '../styles/AppStyles';
+import { OutputMode } from '../types/OutputMode';
+import AppBottomNavigation from './AppBottomNavigation';
 import DeviceConnection from './DeviceConnection';
+import DeviceScreen from './DeviceScreen';
+import HomeScreen from './HomeScreen';
 import ReconnectionScreen from './ReconnectionScreen';
 import SentMessagesScreen from './SentMessagesScreen';
 import SplashScreen from './SplashScreen';
-import TeleprompterInterface, { OutputMode } from './TeleprompterInterface';
 
 interface PairedDevice {
     id: string;
@@ -28,7 +31,7 @@ const STORAGE_KEYS = {
     RIGHT_DEVICE_MAC: 'right_device_mac',
 };
 
-type AppView = 'splash' | 'connection' | 'composer' | 'messages' | 'reconnection';
+type AppView = 'splash' | 'connection' | 'home' | 'device' | 'messages' | 'reconnection';
 type ConnectionStep = 'left' | 'right' | 'complete';
 
 const TeleprompterApp: React.FC = () => {
@@ -64,11 +67,11 @@ const TeleprompterApp: React.FC = () => {
         };
     }, []);
 
-    // Auto-advance to composer when both devices connected
+    // Auto-advance to home when both devices connected
     useEffect(() => {
         if (leftConnected && rightConnected && connectionStep !== 'complete') {
             setConnectionStep('complete');
-            setCurrentView('composer');
+            setCurrentView('home');
         }
     }, [leftConnected, rightConnected, connectionStep]);
 
@@ -129,7 +132,7 @@ const TeleprompterApp: React.FC = () => {
             setLeftConnected(true);
             setRightConnected(true);
             setConnectionStep('complete');
-            setCurrentView('composer');
+            setCurrentView('home');
             setIsAutoConnecting(false);
             return true;
         } catch (error) {
@@ -151,7 +154,7 @@ const TeleprompterApp: React.FC = () => {
                 const reconnected = await attemptAutoReconnection(leftMac, rightMac);
                 
                 if (reconnected) {
-                    // Success! Auto-reconnection worked, we're already in composer view
+                    // Success! Auto-reconnection worked, we're already in home view
                     return;
                 } else {
                     // Auto-reconnection failed, show reconnection screen
@@ -338,64 +341,91 @@ const TeleprompterApp: React.FC = () => {
     };
 
     const renderCurrentView = () => {
-        switch (currentView) {
-            case 'splash':
-                return <SplashScreen message={splashMessage} />;
-            
-            case 'connection':
-                return (
-                    <DeviceConnection
-                        devices={pairedDevices}
-                        isScanning={isScanning}
-                        connectionStep={connectionStep}
-                        onDeviceSelect={handleDeviceConnection}
-                        onRefresh={loadPairedDevices}
-                        onShowAllDevices={handleShowAllDevices}
-                        leftConnected={leftConnected}
+        const view = (() => {
+            switch (currentView) {
+                case 'splash':
+                    return <SplashScreen message={splashMessage} />;
+                
+                case 'connection':
+                    return (
+                        <DeviceConnection
+                            devices={pairedDevices}
+                            isScanning={isScanning}
+                            connectionStep={connectionStep}
+                            onDeviceSelect={handleDeviceConnection}
+                            onRefresh={loadPairedDevices}
+                            onShowAllDevices={handleShowAllDevices}
+                            leftConnected={leftConnected}
+                        />
+                    );
+                
+                case 'home':
+                    return (
+                        <HomeScreen
+                            inputText={inputText}
+                            onTextChange={setInputText}
+                            outputMode={outputMode}
+                            onOutputModeChange={setOutputMode}
+                            onSend={handleSendMessage}
+                            onExitToDashboard={handleExitToDashboard}
+                            onViewMessages={() => setCurrentView('messages')}
+                            leftConnected={leftConnected}
+                            rightConnected={rightConnected}
+                            messageCount={sentMessages.length}
+                            isSending={isSending}
+                        />
+                    );
+                
+                case 'device':
+                    return (
+                        <DeviceScreen
+                            leftConnected={leftConnected}
+                            rightConnected={rightConnected}
+                        />
+                    );
+                
+                case 'messages':
+                    return (
+                        <SentMessagesScreen
+                            sentTexts={sentMessages}
+                            onGoBack={() => setCurrentView('home')}
+                            onResendText={handleResendMessage}
+                            onDeleteText={handleDeleteMessage}
+                            currentlyDisplayedMessageId={currentMessageId}
+                            onSetCurrentMessage={setCurrentMessageId}
+                        />
+                    );
+                
+                case 'reconnection':
+                    return (
+                        <ReconnectionScreen
+                            isRetrying={isAutoConnecting}
+                            onRetry={handleRetryConnection}
+                            onConnectAgain={handleConnectAgain}
+                        />
+                    );
+                
+                default:
+                    return null;
+            }
+        })();
+
+        // Show bottom navigation for home and device views
+        const showBottomNav = currentView === 'home' || currentView === 'device';
+        
+        return (
+            <>
+                <View style={{ flex: 1 }}>
+                    {view}
+                </View>
+                {showBottomNav && (
+                    <AppBottomNavigation
+                        currentView={currentView}
+                        onNavigate={(newView) => setCurrentView(newView)}
                     />
-                );
-            
-            case 'composer':
-                return (
-                    <TeleprompterInterface
-                        inputText={inputText}
-                        onTextChange={setInputText}
-                        outputMode={outputMode}
-                        onOutputModeChange={setOutputMode}
-                        onSend={handleSendMessage}
-                        onExitToDashboard={handleExitToDashboard}
-                        onViewMessages={() => setCurrentView('messages')}
-                        leftConnected={leftConnected}
-                        rightConnected={rightConnected}
-                        messageCount={sentMessages.length}
-                        isSending={isSending}
-                    />
-                );
-            
-            case 'messages':
-                return (
-                    <SentMessagesScreen
-                        sentTexts={sentMessages}
-                        onGoBack={() => setCurrentView('composer')}
-                        onResendText={handleResendMessage}
-                        onDeleteText={handleDeleteMessage}
-                        currentlyDisplayedMessageId={currentMessageId}
-                        onSetCurrentMessage={setCurrentMessageId}
-                    />
-                );
-            
-            case 'reconnection':
-                return (
-                    <ReconnectionScreen
-                        isRetrying={isAutoConnecting}
-                        onRetry={handleRetryConnection}
-                        onConnectAgain={handleConnectAgain}
-                    />
-                );
-            
-            default:
-                return null;
-        }
+                )}
+            </>
+        );
     };
 
     return (

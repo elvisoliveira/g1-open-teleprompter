@@ -1,3 +1,4 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { deviceConnectionStyles as styles } from '../styles/DeviceConnectionStyles';
@@ -30,11 +31,11 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
     const getStepInfo = () => {
         switch (connectionStep) {
             case 'left':
-                return { emoji: '👈', title: 'Connect Left Glass', subtitle: 'Select your left smart glass' };
+                return { icon: 'arrow-back', title: 'Connect Left Glass', subtitle: 'Select your left smart glass' };
             case 'right':
-                return { emoji: '👉', title: 'Connect Right Glass', subtitle: 'Select your right smart glass' };
+                return { icon: 'arrow-forward', title: 'Connect Right Glass', subtitle: 'Select your right smart glass' };
             case 'complete':
-                return { emoji: '✅', title: 'Connected!', subtitle: 'Both glasses connected successfully' };
+                return { icon: 'check-circle', title: 'Connected!', subtitle: 'Both glasses connected successfully' };
         }
     };
 
@@ -96,7 +97,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
         >
             <View style={styles.deviceCardContent}>
                 <View style={styles.deviceInfo}>
-                    <Text style={styles.deviceIcon}>📱</Text>
+                    <MaterialIcons name="bluetooth" size={24} color="#2196f3" />
                     <View style={styles.deviceTextContainer}>
                         <Text style={styles.deviceName}>{item.name || 'Unknown Device'}</Text>
                         <Text style={styles.deviceId}>{item.id.substring(0, 18)}...</Text>
@@ -117,7 +118,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
 
     const renderEmptyState = () => (
         <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>�</Text>
+            <MaterialIcons name="search-off" size={48} color="#bdbdbd" />
             <Text style={styles.emptyTitle}>No Even G1 Glasses Found</Text>
             <Text style={styles.emptySubtitle}>
                 This app is a companion for the official Even Realities app. 
@@ -131,7 +132,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                     style={[styles.actionButton, styles.primaryActionButton]}
                     activeOpacity={0.8}
                 >
-                    <Text style={styles.actionButtonIcon}>🔄</Text>
+                    <MaterialIcons name="refresh" size={20} color="#ffffff" />
                     <Text style={styles.primaryActionText}>Scan for G1 Glasses</Text>
                 </TouchableOpacity>
                 
@@ -146,7 +147,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                     style={[styles.actionButton, styles.secondaryActionButton]}
                     activeOpacity={0.8}
                 >
-                    <Text style={styles.actionButtonIcon}>📱</Text>
+                    <MaterialIcons name="bluetooth-searching" size={20} color="#757575" />
                     <Text style={styles.secondaryActionText}>Show All Bluetooth Devices</Text>
                 </TouchableOpacity>
             </View>
@@ -156,7 +157,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
     const renderLoadingState = () => (
         <View style={styles.loadingContainer}>
             <View style={styles.loadingIconContainer}>
-                <Text style={styles.loadingIcon}>🔄</Text>
+                <MaterialIcons name="bluetooth-searching" size={32} color="#2196f3" />
             </View>
             <Text style={styles.loadingTitle}>Scanning for Even G1 Glasses</Text>
             <Text style={styles.loadingSubtitle}>This may take a few seconds...</Text>
@@ -167,14 +168,14 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
         return (
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <Text style={styles.emoji}>{stepInfo.emoji}</Text>
+                    <MaterialIcons name={stepInfo.icon as any} size={48} color="#4caf50" />
                     <Text style={styles.title}>{stepInfo.title}</Text>
                     <Text style={styles.subtitle}>{stepInfo.subtitle}</Text>
                 </View>
                 {renderStepIndicator()}
                 <View style={styles.successCard}>
                     <View style={{ alignItems: 'center' }}>
-                        <Text style={styles.successIcon}>🎉</Text>
+                        <MaterialIcons name="celebration" size={32} color="#4caf50" />
                         <Text style={styles.successText}>Ready to send messages!</Text>
                     </View>
                 </View>
@@ -185,7 +186,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.emoji}>{stepInfo.emoji}</Text>
+                <MaterialIcons name={stepInfo.icon as any} size={48} color="#2196f3" />
                 <Text style={styles.title}>{stepInfo.title}</Text>
                 <Text style={styles.subtitle}>{stepInfo.subtitle}</Text>
             </View>
@@ -207,9 +208,11 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                                 style={styles.refreshButton}
                                 activeOpacity={0.8}
                             >
-                                <Text style={styles.refreshButtonText}>
-                                    {isScanning ? '🔄' : '↻'}
-                                </Text>
+                                <MaterialIcons 
+                                    name="refresh" 
+                                    size={18} 
+                                    color={isScanning ? "#9e9e9e" : "#2196f3"} 
+                                />
                             </TouchableOpacity>
                         </View>
                         <FlatList

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { outputModeSelectorStyles as styles } from '../styles/OutputModeSelectorStyles';
-import { OutputMode } from './TeleprompterInterface';
+import { OutputMode } from '../types/OutputMode';
 
 interface OutputModeSelectorProps {
     selectedMode: OutputMode;

@@ -1,3 +1,4 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import BluetoothService from '../services/BluetoothService';
@@ -122,11 +123,17 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     };
 
     const getBatteryIcon = (batteryLevel: number) => {
-        if (batteryLevel < 0) return '';
-        if (batteryLevel > 75) return '🔋';
-        if (batteryLevel > 50) return '🔋';
-        if (batteryLevel > 25) return '🪫';
-        return '🪫';
+        if (batteryLevel < 0) return 'battery-unknown';
+        if (batteryLevel > 75) return 'battery-full';
+        if (batteryLevel > 50) return 'battery-5-bar';
+        if (batteryLevel > 25) return 'battery-3-bar';
+        return 'battery-1-bar';
+    };
+
+    const getBatteryIconColor = (batteryLevel: number) => {
+        if (batteryLevel < 0) return '#757575';
+        if (batteryLevel > 25) return '#4caf50'; // Green
+        return '#f44336'; // Red for low battery
     };
 
     const extractFirmwareVersion = (firmwareText: string | null) => {
@@ -171,7 +178,11 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     };
 
     const getUptimeIcon = (uptime: number) => {
-        return uptime >= 0 ? '⏱️' : '❌';
+        return uptime >= 0 ? 'schedule' : 'error';
+    };
+
+    const getUptimeIconColor = (uptime: number) => {
+        return uptime >= 0 ? '#4caf50' : '#f44336';
     };
 
     const getDeviceStatus = () => {
@@ -208,9 +219,12 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                         Left Glass{getBatteryDisplay(batteryInfo.left)}{getFirmwareDisplay(deviceStatus?.left?.firmware || null)}{getUptimeDisplay(deviceStatus?.left?.uptime || -1)}
                     </Text>
                     {leftConnected && batteryInfo.left >= 0 && (
-                        <Text style={styles.batteryIcon}>
-                            {getBatteryIcon(batteryInfo.left)}
-                        </Text>
+                        <MaterialIcons 
+                            name={getBatteryIcon(batteryInfo.left) as any} 
+                            size={16} 
+                            color={getBatteryIconColor(batteryInfo.left)}
+                            style={{ marginLeft: 4 }}
+                        />
                     )}
                 </View>
                 
@@ -231,9 +245,12 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                         Right Glass{getBatteryDisplay(batteryInfo.right)}{getFirmwareDisplay(deviceStatus?.right?.firmware || null)}{getUptimeDisplay(deviceStatus?.right?.uptime || -1)}
                     </Text>
                     {rightConnected && batteryInfo.right >= 0 && (
-                        <Text style={styles.batteryIcon}>
-                            {getBatteryIcon(batteryInfo.right)}
-                        </Text>
+                        <MaterialIcons 
+                            name={getBatteryIcon(batteryInfo.right) as any} 
+                            size={16} 
+                            color={getBatteryIconColor(batteryInfo.right)}
+                            style={{ marginLeft: 4 }}
+                        />
                     )}
                 </View>
             </View>
@@ -268,23 +285,37 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                     {leftConnected && (
                         <View style={styles.firmwareItem}>
                             <Text style={styles.firmwareLabel}>Left:</Text>
-                            <Text style={styles.firmwareText}>
-                                {getUptimeIcon(deviceStatus?.left?.uptime || -1)} 
-                                {deviceStatus?.left?.uptime && deviceStatus.left.uptime >= 0 
-                                    ? `${Math.floor(deviceStatus.left.uptime / 3600)}h ${Math.floor((deviceStatus.left.uptime % 3600) / 60)}m ${deviceStatus.left.uptime % 60}s` 
-                                    : 'Unknown'}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <MaterialIcons 
+                                    name={getUptimeIcon(deviceStatus?.left?.uptime || -1) as any} 
+                                    size={14} 
+                                    color={getUptimeIconColor(deviceStatus?.left?.uptime || -1)}
+                                    style={{ marginRight: 4 }}
+                                />
+                                <Text style={styles.firmwareText}>
+                                    {deviceStatus?.left?.uptime && deviceStatus.left.uptime >= 0 
+                                        ? `${Math.floor(deviceStatus.left.uptime / 3600)}h ${Math.floor((deviceStatus.left.uptime % 3600) / 60)}m ${deviceStatus.left.uptime % 60}s` 
+                                        : 'Unknown'}
+                                </Text>
+                            </View>
                         </View>
                     )}
                     {rightConnected && (
                         <View style={styles.firmwareItem}>
                             <Text style={styles.firmwareLabel}>Right:</Text>
-                            <Text style={styles.firmwareText}>
-                                {getUptimeIcon(deviceStatus?.right?.uptime || -1)} 
-                                {deviceStatus?.right?.uptime && deviceStatus.right.uptime >= 0 
-                                    ? `${Math.floor(deviceStatus.right.uptime / 3600)}h ${Math.floor((deviceStatus.right.uptime % 3600) / 60)}m ${deviceStatus.right.uptime % 60}s` 
-                                    : 'Unknown'}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <MaterialIcons 
+                                    name={getUptimeIcon(deviceStatus?.right?.uptime || -1) as any} 
+                                    size={14} 
+                                    color={getUptimeIconColor(deviceStatus?.right?.uptime || -1)}
+                                    style={{ marginRight: 4 }}
+                                />
+                                <Text style={styles.firmwareText}>
+                                    {deviceStatus?.right?.uptime && deviceStatus.right.uptime >= 0 
+                                        ? `${Math.floor(deviceStatus.right.uptime / 3600)}h ${Math.floor((deviceStatus.right.uptime % 3600) / 60)}m ${deviceStatus.right.uptime % 60}s` 
+                                        : 'Unknown'}
+                                </Text>
+                            </View>
                         </View>
                     )}
                 </View>
