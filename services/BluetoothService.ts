@@ -26,14 +26,14 @@ class BluetoothService {
     }
 
     // Device Connection Methods
-    async connectLeft(address: string): Promise<void> {
+    private async connectDevice(address: string, side: 'L' | 'R'): Promise<void> {
         try {
-            console.log('[BluetoothService] Connecting to left device:', address);
+            console.log(`[BluetoothService] Connecting to ${side === 'L' ? 'left' : 'right'} device:`, address);
             
             const device = await this.deviceManager.connectDevice(address);
-            this.deviceManager.setDevice('L', device);
+            this.deviceManager.setDevice(side, device);
             
-            console.log('[BluetoothService] Left device connected successfully');
+            console.log(`[BluetoothService] ${side === 'L' ? 'Left' : 'Right'} device connected successfully`);
             
             // Initialize devices after connection
             const initResult = await this.statusManager.initializeDevices(this.deviceManager.getDeviceInfo());
@@ -42,36 +42,20 @@ class BluetoothService {
             }
             
             // Start heartbeat if this is the first device connected
-            if (!this.deviceManager.isRightConnected()) {
+            if (!this.deviceManager.isConnected() || (side === 'L' && !this.deviceManager.isRightConnected()) || (side === 'R' && !this.deviceManager.isLeftConnected())) {
                 this.heartbeatManager.start(this.deviceManager.getDeviceInfo());
             }
         } catch (error: any) {
-            throw new Error(`Failed to connect left device: ${error?.message || 'Unknown error'}`);
+            throw new Error(`Failed to connect ${side === 'L' ? 'left' : 'right'} device: ${error?.message || 'Unknown error'}`);
         }
     }
 
+    async connectLeft(address: string): Promise<void> {
+        await this.connectDevice(address, 'L');
+    }
+
     async connectRight(address: string): Promise<void> {
-        try {
-            console.log('[BluetoothService] Connecting to right device:', address);
-            
-            const device = await this.deviceManager.connectDevice(address);
-            this.deviceManager.setDevice('R', device);
-            
-            console.log('[BluetoothService] Right device connected successfully');
-            
-            // Initialize devices after connection
-            const initResult = await this.statusManager.initializeDevices(this.deviceManager.getDeviceInfo());
-            if (!initResult) {
-                console.warn('[BluetoothService] Device initialization failed, but connection established');
-            }
-            
-            // Start heartbeat if this is the first device connected
-            if (!this.deviceManager.isLeftConnected()) {
-                this.heartbeatManager.start(this.deviceManager.getDeviceInfo());
-            }
-        } catch (error: any) {
-            throw new Error(`Failed to connect right device: ${error?.message || 'Unknown error'}`);
-        }
+        await this.connectDevice(address, 'R');
     }
 
     async connect(address: string): Promise<void> {
@@ -101,43 +85,36 @@ class BluetoothService {
 
     // Battery and Status Methods
     async getBatteryInfo(side: DeviceSide = DeviceSide.BOTH): Promise<number> {
-        const devices = this.deviceManager.getDeviceInfo();
-        const targetDevice = side === DeviceSide.LEFT ? devices.left : 
-                           side === DeviceSide.RIGHT ? devices.right : 
-                           devices.left || devices.right;
-        
+        const targetDevice = this.getTargetDevice(side);
         if (!targetDevice) {
             console.warn('[BluetoothService] No device available for battery query');
             return -1;
         }
-
         return await this.statusManager.getBatteryInfo(targetDevice, side);
     }
 
     async getFirmwareInfo(side: DeviceSide = DeviceSide.LEFT): Promise<string | null> {
-        const devices = this.deviceManager.getDeviceInfo();
-        const targetDevice = side === DeviceSide.LEFT ? devices.left : 
-                           side === DeviceSide.RIGHT ? devices.right : 
-                           devices.left || devices.right;
-        
+        const targetDevice = this.getTargetDevice(side);
         if (!targetDevice) {
             console.warn('[BluetoothService] No device available for firmware query');
             return null;
         }
-
         return await this.statusManager.getFirmwareInfo(targetDevice, side);
     }
 
     async getDeviceUptime(): Promise<number> {
-        const devices = this.deviceManager.getDeviceInfo();
-        const targetDevice = devices.left || devices.right;
-        
+        const targetDevice = this.deviceManager.getDevice('L') || this.deviceManager.getDevice('R');
         if (!targetDevice) {
             console.warn('[BluetoothService] No device available for uptime query');
             return -1;
         }
-
         return await this.statusManager.getDeviceUptime(targetDevice);
+    }
+
+    private getTargetDevice(side: DeviceSide) {
+        return side === DeviceSide.LEFT ? this.deviceManager.getDevice('L') :
+               side === DeviceSide.RIGHT ? this.deviceManager.getDevice('R') :
+               this.deviceManager.getDevice('L') || this.deviceManager.getDevice('R');
     }
 
     getCurrentBatteryInfo(): BatteryInfo {
@@ -153,20 +130,19 @@ class BluetoothService {
     }
 
     getDeviceStatus(): { left: DeviceStatus; right: DeviceStatus; } {
-        const devices = this.deviceManager.getDeviceInfo();
         const batteryInfo = this.statusManager.getCurrentBatteryInfo();
         const firmwareInfo = this.statusManager.getCurrentFirmwareInfo();
         const uptime = this.statusManager.getCurrentUptimeStatus();
 
         return {
             left: {
-                connected: devices.left !== null,
+                connected: this.deviceManager.isLeftConnected(),
                 battery: batteryInfo.left,
                 uptime: uptime,
                 firmware: firmwareInfo.left
             },
             right: {
-                connected: devices.right !== null,
+                connected: this.deviceManager.isRightConnected(),
                 battery: batteryInfo.right,
                 uptime: uptime,
                 firmware: firmwareInfo.right

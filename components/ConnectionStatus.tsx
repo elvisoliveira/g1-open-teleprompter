@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
-import BluetoothService, { BatteryInfo, DeviceStatus } from '../services/BluetoothService';
+import BluetoothService from '../services/BluetoothService';
+import { BatteryInfo, DeviceStatus } from '../services/types';
 import { connectionStatusStyles as styles } from '../styles/ConnectionStatusStyles';
 
 interface ConnectionStatusProps {
@@ -61,7 +62,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         
         setIsUpdatingBattery(true);
         try {
-            await BluetoothService.updateBatteryInfo();
+            await BluetoothService.refreshBatteryInfo();
         } catch (error) {
             console.warn('Failed to update battery status:', error);
         } finally {
@@ -74,7 +75,8 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         
         setIsUpdatingFirmware(true);
         try {
-            await BluetoothService.updateFirmwareInfo();
+            // Get firmware info for both sides
+            await BluetoothService.getFirmwareInfo();
         } catch (error) {
             console.warn('Failed to update firmware info:', error);
         } finally {

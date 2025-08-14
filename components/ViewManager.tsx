@@ -21,6 +21,7 @@ interface ViewManagerProps {
     isAutoConnecting: boolean;
     onDeviceSelect: (deviceId: string, side: 'left' | 'right') => void;
     onRefresh: () => void;
+    onShowAllDevices: () => void;
     
     // Message props
     inputText: string;
@@ -55,6 +56,7 @@ const ViewManager: React.FC<ViewManagerProps> = ({
     isAutoConnecting,
     onDeviceSelect,
     onRefresh,
+    onShowAllDevices,
     inputText,
     outputMode,
     onOutputModeChange,
@@ -83,6 +85,7 @@ const ViewManager: React.FC<ViewManagerProps> = ({
                     connectionStep={connectionStep}
                     onDeviceSelect={onDeviceSelect}
                     onRefresh={onRefresh}
+                    onShowAllDevices={onShowAllDevices}
                     leftConnected={leftConnected}
                 />
             );

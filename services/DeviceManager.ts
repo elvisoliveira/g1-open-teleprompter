@@ -64,10 +64,10 @@ export class DeviceManager {
     }
 
     /**
-     * Get current device info
+     * Get current device info (returns reference, not copy for performance)
      */
     getDeviceInfo(): DeviceInfo {
-        return { ...this.devices };
+        return this.devices;
     }
 
     /**
