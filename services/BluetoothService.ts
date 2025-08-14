@@ -22,6 +22,31 @@ export interface DeviceStatus {
     firmware: string | null; // Firmware information
 }
 
+// Generic listener manager to reduce code duplication
+class ListenerManager<T> {
+    private listeners: Array<(data: T) => void> = [];
+
+    add(callback: (data: T) => void): () => void {
+        this.listeners.push(callback);
+        return () => {
+            const index = this.listeners.indexOf(callback);
+            if (index > -1) {
+                this.listeners.splice(index, 1);
+            }
+        };
+    }
+
+    notify(data: T): void {
+        this.listeners.forEach(listener => {
+            try { listener(data); } catch (e) { /* ignore */ }
+        });
+    }
+
+    clear(): void {
+        this.listeners.length = 0;
+    }
+}
+
 class BluetoothService {
     private manager: BleManager;
     private leftDevice: Device | null = null;
@@ -29,13 +54,15 @@ class BluetoothService {
     private static evenaiSeq: number = 0;
     private heartbeatSeq: number = 0;
     private heartbeatInterval: NodeJS.Timeout | null = null;
-    private heartbeatListeners: Array<(status: { left: boolean; right: boolean; timestamp: Date }) => void> = [];
+    
+    // Use generic listener managers
+    private heartbeatListeners = new ListenerManager<{ left: boolean; right: boolean; timestamp: Date }>();
+    private batteryListeners = new ListenerManager<BatteryInfo>();
     
     // Battery and device status tracking
     private batteryInfo: BatteryInfo = { left: -1, right: -1, lastUpdated: null };
     private deviceUptime: number = -1; // uptime in seconds, -1 if not available
     private firmwareInfo: { left: string | null; right: string | null } = { left: null, right: null };
-    private batteryListeners: Array<(battery: BatteryInfo) => void> = [];
     private batteryMonitoringInterval: NodeJS.Timeout | null = null;
 
     // Static UUIDs for all devices
@@ -73,6 +100,34 @@ class BluetoothService {
 
     constructor() {
         this.manager = new BleManager();
+    }
+
+    // Utility methods
+    private log(method: string, message: string, ...args: any[]): void {
+        console.log(`[${method}] ${message}`, ...args);
+    }
+
+    private warn(method: string, message: string, ...args: any[]): void {
+        console.warn(`[${method}] ${message}`, ...args);
+    }
+
+    private error(method: string, message: string, ...args: any[]): void {
+        console.error(`[${method}] ${message}`, ...args);
+    }
+
+    private arrayToHex(data: Uint8Array): string {
+        return Array.from(data).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
+    }
+
+    private getDevicesForSide(side: DeviceSide): Array<{ device: Device | null; side: "L" | "R" }> {
+        const devices: Array<{ device: Device | null; side: "L" | "R" }> = [];
+        if (side === DeviceSide.BOTH || side === DeviceSide.LEFT) {
+            devices.push({ device: this.leftDevice, side: "L" });
+        }
+        if (side === DeviceSide.BOTH || side === DeviceSide.RIGHT) {
+            devices.push({ device: this.rightDevice, side: "R" });
+        }
+        return devices;
     }
 
     private sleep(ms: number): Promise<void> {
@@ -122,7 +177,7 @@ class BluetoothService {
         const packets: Uint8Array[] = [];
         let syncId = 0;
         
-        console.log(`Creating BMP packets with chunk size: ${BluetoothService.BMP_CHUNK_SIZE} bytes`);
+        this.log('createBmpPackets', `Creating BMP packets with chunk size: ${BluetoothService.BMP_CHUNK_SIZE} bytes`);
 
         for (let i = 0; i < bmpData.length; i += BluetoothService.BMP_CHUNK_SIZE) {
             const end = Math.min(i + BluetoothService.BMP_CHUNK_SIZE, bmpData.length);
@@ -165,89 +220,68 @@ class BluetoothService {
     }
 
     private async writeToDevice(data: Uint8Array, side: "L" | "R", requireResponse: boolean = false): Promise<boolean> {
-        const device = side === "L" ? this.leftDevice : this.rightDevice;
+        const device = this.getDevice(side);
         if (!device) return false;
 
         try {
             const base64 = Buffer.from(data).toString('base64');
-            const dataHex = Array.from(data).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
+            this.log('writeToDevice', `Writing ${requireResponse ? 'with' : 'without'} response to ${side} device: ${this.arrayToHex(data)}`);
             
             if (requireResponse) {
-                console.log(`[writeToDevice] Writing with response to ${side} device: ${dataHex}`);
                 await device.writeCharacteristicWithResponseForService(
                     BluetoothService.SERVICE_UUID,
                     BluetoothService.WRITE_CHARACTERISTIC_UUID,
                     base64
                 );
-                console.log(`[writeToDevice] Write with response completed successfully for ${side} device`);
             } else {
-                console.log(`[writeToDevice] Writing without response to ${side} device: ${dataHex}`);
-                // Try without response first (faster), fallback to with response if needed
                 try {
                     await device.writeCharacteristicWithoutResponseForService(
                         BluetoothService.SERVICE_UUID,
                         BluetoothService.WRITE_CHARACTERISTIC_UUID,
                         base64
                     );
-                    console.log(`[writeToDevice] Write without response completed successfully for ${side} device`);
                 } catch (writeError) {
-                    console.warn(`[writeToDevice] Write without response failed for ${side} device, trying with response:`, writeError);
+                    this.warn('writeToDevice', `Write without response failed for ${side} device, fallback to with response`);
                     await device.writeCharacteristicWithResponseForService(
                         BluetoothService.SERVICE_UUID,
                         BluetoothService.WRITE_CHARACTERISTIC_UUID,
                         base64
                     );
-                    console.log(`[writeToDevice] Fallback write with response completed successfully for ${side} device`);
                 }
             }
             return true;
         } catch (error) {
-            console.error(`[writeToDevice] Write to ${side} device failed:`, error);
+            this.error('writeToDevice', `Write to ${side} device failed:`, error);
             return false;
         }
     }
 
     private async sendCommandWithResponse(requestBytes: Uint8Array, expectedHeader: Uint8Array, side: DeviceSide, waitTimeMs: number = 250): Promise<Uint8Array | null> {
-        const requestHex = Array.from(requestBytes).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
-        const expectedHex = Array.from(expectedHeader).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
-        console.log(`[sendCommandWithResponse] Starting command: ${requestHex}, expecting response header: ${expectedHex}, side: ${side}, waitTime: ${waitTimeMs}ms`);
+        this.log('sendCommandWithResponse', `Command: ${this.arrayToHex(requestBytes)}, expecting header: ${this.arrayToHex(expectedHeader)}, side: ${side}`);
         
         try {
-            const devices: Array<{ device: Device | null; side: "L" | "R" }> = [];
-            
-            if (side === DeviceSide.BOTH || side === DeviceSide.LEFT) {
-                devices.push({ device: this.leftDevice, side: "L" });
-            }
-            if (side === DeviceSide.BOTH || side === DeviceSide.RIGHT) {
-                devices.push({ device: this.rightDevice, side: "R" });
-            }
-
-            console.log(`[sendCommandWithResponse] Target devices: ${devices.map(d => `${d.side}(${d.device ? 'connected' : 'null'})`).join(', ')}`);
+            const devices = this.getDevicesForSide(side);
 
             for (const { device, side: deviceSide } of devices) {
                 if (!device) {
-                    console.log(`[sendCommandWithResponse] Skipping ${deviceSide} device - not connected`);
+                    this.log('sendCommandWithResponse', `Skipping ${deviceSide} device - not connected`);
                     continue;
                 }
 
-                console.log(`[sendCommandWithResponse] Processing ${deviceSide} device: ${device.id}`);
-
                 try {
-                    // First, try to set up notification listener for responses (try both characteristics)
-                    let notificationSet = false;
+                    // First, try to set up notification listener for responses
                     let responseReceived: Uint8Array | null = null;
-                    let responsePromise: Promise<Uint8Array | null> = Promise.resolve(null);
-
-                    // Try to monitor the notify characteristic first, then fall back to main characteristic
+                    
+                    // Try to monitor both characteristics for notifications
                     for (const charUUID of [BluetoothService.READ_CHARACTERISTIC_UUID, BluetoothService.WRITE_CHARACTERISTIC_UUID]) {
                         try {
-                            console.log(`[sendCommandWithResponse] Attempting to set up notifications on ${charUUID} for ${deviceSide} device`);
+                            this.log('sendCommandWithResponse', `Setting up notifications on ${charUUID === BluetoothService.READ_CHARACTERISTIC_UUID ? 'READ' : 'WRITE'} characteristic for ${deviceSide} device`);
                             
-                            responsePromise = new Promise<Uint8Array | null>((resolve) => {
+                            const responsePromise = new Promise<Uint8Array | null>((resolve) => {
                                 const timeout = setTimeout(() => {
-                                    console.log(`[sendCommandWithResponse] Notification timeout for ${deviceSide} device`);
+                                    this.log('sendCommandWithResponse', `Notification timeout for ${deviceSide} device`);
                                     resolve(null);
-                                }, waitTimeMs + 1000); // Extra time buffer
+                                }, waitTimeMs + 1000);
                                 
                                 device.monitorCharacteristicForService(
                                     BluetoothService.SERVICE_UUID,
@@ -255,15 +289,14 @@ class BluetoothService {
                                     (error, characteristic) => {
                                         clearTimeout(timeout);
                                         if (error) {
-                                            console.log(`[sendCommandWithResponse] Notification error for ${deviceSide} device:`, error);
+                                            this.log('sendCommandWithResponse', `Notification error for ${deviceSide} device:`, error);
                                             resolve(null);
                                             return;
                                         }
                                         
                                         if (characteristic?.value) {
                                             const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
-                                            const dataHex = Array.from(data).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
-                                            console.log(`[sendCommandWithResponse] Received notification from ${deviceSide} device: ${dataHex}`);
+                                            this.log('sendCommandWithResponse', `Received notification from ${deviceSide}: ${this.arrayToHex(data)}`);
                                             resolve(data);
                                         } else {
                                             resolve(null);
@@ -271,143 +304,93 @@ class BluetoothService {
                                     }
                                 );
                             });
+
+                            // Send the command
+                            const success = await this.writeToDevice(requestBytes, deviceSide, true);
+                            if (!success) {
+                                this.error('sendCommandWithResponse', `Failed to write command to ${deviceSide} device`);
+                                continue;
+                            }
+
+                            // Wait for notification response
+                            responseReceived = await responsePromise;
                             
-                            notificationSet = true;
-                            console.log(`[sendCommandWithResponse] Notifications set up successfully on ${charUUID} for ${deviceSide} device`);
-                            break;
+                            if (responseReceived && (expectedHeader.length === 0 || this.headerMatches(responseReceived, expectedHeader))) {
+                                this.log('sendCommandWithResponse', `Valid notification response received from ${deviceSide} device`);
+                                return responseReceived;
+                            }
+                            
+                            break; // Exit characteristic loop if we got some response
                         } catch (notifyError) {
-                            console.log(`[sendCommandWithResponse] Failed to set up notifications on ${charUUID} for ${deviceSide} device:`, notifyError);
+                            this.log('sendCommandWithResponse', `Failed to set up notifications on ${charUUID === BluetoothService.READ_CHARACTERISTIC_UUID ? 'READ' : 'WRITE'} characteristic for ${deviceSide} device`);
                             continue;
                         }
                     }
 
-                    // Send the command
-                    console.log(`[sendCommandWithResponse] Sending command to ${deviceSide} device: ${requestHex}`);
-                    const writeStartTime = Date.now();
-                    const success = await this.writeToDevice(requestBytes, deviceSide, true); // Use requireResponse=true for commands
-                    const writeTime = Date.now() - writeStartTime;
-                    
-                    if (!success) {
-                        console.error(`[sendCommandWithResponse] Failed to write command to ${deviceSide} device (took ${writeTime}ms)`);
-                        continue;
-                    }
-                    
-                    console.log(`[sendCommandWithResponse] Command written successfully to ${deviceSide} device (took ${writeTime}ms)`);
-
-                    // If we set up notifications, wait for response
-                    if (notificationSet) {
-                        console.log(`[sendCommandWithResponse] Waiting for notification response from ${deviceSide} device...`);
-                        responseReceived = await responsePromise;
+                    // Fallback: Direct read approach if notifications failed
+                    if (!responseReceived) {
+                        this.log('sendCommandWithResponse', `Falling back to direct read approach for ${deviceSide} device`);
                         
-                        if (responseReceived && (expectedHeader.length === 0 || responseReceived.length >= expectedHeader.length)) {
-                            if (expectedHeader.length === 0) {
-                                console.log(`[sendCommandWithResponse] Empty header expected - returning notification response from ${deviceSide} device`);
-                                return responseReceived;
-                            } else {
-                                let headerMatch = true;
-                                for (let i = 0; i < expectedHeader.length; i++) {
-                                    if (responseReceived[i] !== expectedHeader[i]) {
-                                        headerMatch = false;
-                                        break;
+                        // Send command if not sent yet
+                        const success = await this.writeToDevice(requestBytes, deviceSide, true);
+                        if (!success) {
+                            this.error('sendCommandWithResponse', `Failed to write command to ${deviceSide} device`);
+                            continue;
+                        }
+
+                        // Wait for device to process
+                        if (waitTimeMs > 0) {
+                            await this.sleep(waitTimeMs);
+                        }
+
+                        // Try reading from both characteristics
+                        for (const charUUID of [BluetoothService.READ_CHARACTERISTIC_UUID, BluetoothService.WRITE_CHARACTERISTIC_UUID]) {
+                            try {
+                                this.log('sendCommandWithResponse', `Attempting to read from ${charUUID === BluetoothService.READ_CHARACTERISTIC_UUID ? 'READ' : 'write'} characteristic`);
+                                
+                                const characteristic = await device.readCharacteristicForService(
+                                    BluetoothService.SERVICE_UUID,
+                                    charUUID
+                                );
+                                
+                                if (characteristic?.value) {
+                                    const responseData = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
+                                    this.log('sendCommandWithResponse', `Response from ${deviceSide}: ${this.arrayToHex(responseData)}`);
+                                    
+                                    // Check header match
+                                    if (expectedHeader.length === 0 || this.headerMatches(responseData, expectedHeader)) {
+                                        return responseData;
                                     }
                                 }
-                                if (headerMatch) {
-                                    console.log(`[sendCommandWithResponse] Valid notification response received from ${deviceSide} device`);
-                                    return responseReceived;
-                                }
+                            } catch (readError) {
+                                this.log('sendCommandWithResponse', `Failed to read from ${charUUID === BluetoothService.READ_CHARACTERISTIC_UUID ? 'READ' : 'write'} characteristic`);
                             }
                         }
-                    }
-
-                    // Fall back to the previous direct read approach
-                    console.log(`[sendCommandWithResponse] Falling back to direct read approach for ${deviceSide} device`);
-                    
-                    // Wait the specified time to allow device to process command (like the Java example)
-                    if (waitTimeMs > 0) {
-                        await this.sleep(waitTimeMs);
-                        console.log(`[sendCommandWithResponse] Wait time completed for ${deviceSide} device, now attempting to read response...`);
-                    }
-
-                    // For G1 glasses, many commands don't provide readable responses
-                    // The write operation success itself indicates the command was processed
-                    console.log(`[sendCommandWithResponse] Command write successful for ${deviceSide} device, checking for response capability...`);
-                    
-                    try {
-                        console.log(`[sendCommandWithResponse] Attempting to read response from ${deviceSide} device`);
-                        const responseStartTime = Date.now();
                         
-                        const characteristic = await device.readCharacteristicForService(
-                            BluetoothService.SERVICE_UUID,
-                            BluetoothService.WRITE_CHARACTERISTIC_UUID
-                        );
-                        
-                        const responseTime = Date.now() - responseStartTime;
-                        
-                        if (characteristic?.value) {
-                            const responseData = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
-                            const responseHex = Array.from(responseData).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
-                            console.log(`[sendCommandWithResponse] Read response from ${deviceSide} device (${responseData.length} bytes, took ${responseTime}ms): ${responseHex}`);
-                            
-                            // Check if response matches expected header (skip if empty header for firmware commands)
-                            if (expectedHeader.length === 0) {
-                                console.log(`[sendCommandWithResponse] Empty header expected - returning raw response from ${deviceSide} device`);
-                                return responseData;
-                            } else if (responseData.length >= expectedHeader.length) {
-                                let headerMatch = true;
-                                for (let i = 0; i < expectedHeader.length; i++) {
-                                    if (responseData[i] !== expectedHeader[i]) {
-                                        headerMatch = false;
-                                        console.log(`[sendCommandWithResponse] Header mismatch at byte ${i}: expected 0x${expectedHeader[i].toString(16).padStart(2, '0')}, got 0x${responseData[i].toString(16).padStart(2, '0')}`);
-                                        break;
-                                    }
-                                }
-                                if (headerMatch) {
-                                    console.log(`[sendCommandWithResponse] Header match confirmed for ${deviceSide} device - returning response`);
-                                    return responseData;
-                                } else {
-                                    console.log(`[sendCommandWithResponse] Header does not match expected pattern for ${deviceSide} device`);
-                                }
-                            } else {
-                                console.log(`[sendCommandWithResponse] Response too short for ${deviceSide} device: ${responseData.length} < ${expectedHeader.length}`);
-                            }
-                        } else {
-                            console.log(`[sendCommandWithResponse] No characteristic value received from ${deviceSide} device`);
-                        }
-                    } catch (readError) {
-                        console.log(`[sendCommandWithResponse] Characteristic read not supported for ${deviceSide} device:`, readError);
-                        
-                        // For G1 glasses, if write succeeded but read fails, the command may still be processed
-                        // Some commands like battery may require a different approach or timing
-                        console.log(`[sendCommandWithResponse] Command write was successful for ${deviceSide} device, assuming command processed even without readable response`);
-                        
-                        // Return a minimal success response for battery command to indicate write success
+                        // For some commands like battery, return synthetic response if write succeeded
                         if (expectedHeader[0] === BluetoothService.BATTERY_CMD) {
-                            console.log(`[sendCommandWithResponse] Battery command write succeeded for ${deviceSide} device, returning synthetic response`);
-                            // Return a synthetic response that will be handled gracefully
-                            return new Uint8Array([BluetoothService.BATTERY_CMD, 0x00, 50]); // Default 50% battery
+                            this.log('sendCommandWithResponse', `Battery command write succeeded, returning synthetic response`);
+                            return new Uint8Array([BluetoothService.BATTERY_CMD, 0x00, 50]);
                         }
-                        
-                        console.log(`[sendCommandWithResponse] No readable response available for ${deviceSide} device, but write was successful`);
                     }
                 } catch (error) {
-                    console.error(`[sendCommandWithResponse] Command failed for ${deviceSide} device:`, error);
-                    if (error instanceof Error) {
-                        console.error(`[sendCommandWithResponse] Error details: ${error.message}`);
-                        console.error(`[sendCommandWithResponse] Error stack:`, error.stack);
-                    }
+                    this.error('sendCommandWithResponse', `Command failed for ${deviceSide} device:`, error);
                 }
             }
 
-            console.log(`[sendCommandWithResponse] All devices processed, no successful response received`);
             return null;
         } catch (error) {
-            console.error('[sendCommandWithResponse] Top-level error:', error);
-            if (error instanceof Error) {
-                console.error(`[sendCommandWithResponse] Top-level error details: ${error.message}`);
-                console.error(`[sendCommandWithResponse] Top-level error stack:`, error.stack);
-            }
+            this.error('sendCommandWithResponse', 'Top-level error:', error);
             return null;
         }
+    }
+
+    private headerMatches(responseData: Uint8Array, expectedHeader: Uint8Array): boolean {
+        if (responseData.length < expectedHeader.length) return false;
+        for (let i = 0; i < expectedHeader.length; i++) {
+            if (responseData[i] !== expectedHeader[i]) return false;
+        }
+        return true;
     }
 
     private async performHeartbeat(): Promise<void> {
@@ -422,9 +405,7 @@ class BluetoothService {
             timestamp: new Date()
         };
 
-        this.heartbeatListeners.forEach(listener => {
-            try { listener(status); } catch { /* ignore */ }
-        });
+        this.heartbeatListeners.notify(status);
 
         // Stop heartbeat if both devices failed
         if (!leftSuccess && !rightSuccess && (this.leftDevice || this.rightDevice)) {
@@ -449,15 +430,7 @@ class BluetoothService {
 
     // Public method to subscribe to heartbeat status updates
     onHeartbeatStatus(callback: (status: { left: boolean; right: boolean; timestamp: Date }) => void): () => void {
-        this.heartbeatListeners.push(callback);
-        
-        // Return unsubscribe function
-        return () => {
-            const index = this.heartbeatListeners.indexOf(callback);
-            if (index > -1) {
-                this.heartbeatListeners.splice(index, 1);
-            }
-        };
+        return this.heartbeatListeners.add(callback);
     }
 
     // Public method to manually trigger a heartbeat (useful for testing)
@@ -472,86 +445,67 @@ class BluetoothService {
 
     /**
      * Send firmware request command to connected devices
-     * Based on corrected command: [0x23, 0x74] - Get Firmware Information
      */
     private async sendFirmwareRequest(): Promise<boolean> {
-        console.log('[sendFirmwareRequest] Sending firmware request command: [0x23, 0x74]');
+        this.log('sendFirmwareRequest', 'Sending firmware request command: [0x23, 0x74]');
         
         const firmwareCmd = new Uint8Array(BluetoothService.FIRMWARE_REQUEST_CMD);
+        const success = await this.sendToBothDevices(firmwareCmd, false);
         
-        // Send to both devices
-        let success = true;
-        if (this.leftDevice) {
-            const leftResult = await this.writeToDevice(firmwareCmd, "L", false);
-            console.log(`[sendFirmwareRequest] Left device result: ${leftResult}`);
-            success = success && leftResult;
-        }
-        if (this.rightDevice) {
-            const rightResult = await this.writeToDevice(firmwareCmd, "R", false);
-            console.log(`[sendFirmwareRequest] Right device result: ${rightResult}`);
-            success = success && rightResult;
-        }
-        
-        console.log(`[sendFirmwareRequest] Firmware request completed: ${success}`);
+        this.log('sendFirmwareRequest', `Firmware request completed: ${success}`);
         return success;
     }
 
     /**
      * Send init command to left device only
-     * Based on Java: sendDataSequentially(new byte[]{(byte) 0x4D, (byte) 0xFB}); //told this is only left
      */
     private async sendInitLeft(): Promise<boolean> {
-        console.log('[sendInitLeft] Sending init command to left device: [0x4D, 0xFB]');
+        this.log('sendInitLeft', 'Sending init command to left device: [0x4D, 0xFB]');
         
         if (!this.leftDevice) {
-            console.log('[sendInitLeft] No left device connected, skipping init command');
-            return true; // Not an error if no left device
+            this.log('sendInitLeft', 'No left device connected, skipping init command');
+            return true;
         }
         
         const initCmd = new Uint8Array(BluetoothService.INIT_LEFT_CMD);
         const result = await this.writeToDevice(initCmd, "L", false);
         
-        console.log(`[sendInitLeft] Init left command result: ${result}`);
+        this.log('sendInitLeft', `Init left command result: ${result}`);
         return result;
     }
 
     /**
      * Perform full device initialization sequence
-     * Should be called after device connection is established
      */
     private async initializeDevices(): Promise<boolean> {
-        console.log('[initializeDevices] Starting device initialization sequence');
+        this.log('initializeDevices', 'Starting device initialization sequence');
         
         try {
-            // Step 1: Send firmware request to both devices
             const firmwareResult = await this.sendFirmwareRequest();
             if (!firmwareResult) {
-                console.error('[initializeDevices] Firmware request failed');
+                this.error('initializeDevices', 'Firmware request failed');
                 return false;
             }
             
-            // Small delay between commands
             await this.sleep(100);
             
-            // Step 2: Send init command to left device only
             const initResult = await this.sendInitLeft();
             if (!initResult) {
-                console.error('[initializeDevices] Init left command failed');
+                this.error('initializeDevices', 'Init left command failed');
                 return false;
             }
             
-            // Step 3: Get firmware information for connected devices
             try {
                 await this.updateFirmwareInfo();
-                console.log('[initializeDevices] Firmware info updated successfully');
+                this.log('initializeDevices', 'Firmware info updated successfully');
             } catch (error) {
-                console.warn('[initializeDevices] Failed to get firmware info, but continuing:', error);
+                this.warn('initializeDevices', 'Failed to get firmware info, but continuing:', error);
             }
             
-            console.log('[initializeDevices] Device initialization completed successfully');
+            this.log('initializeDevices', 'Device initialization completed successfully');
             return true;
         } catch (error) {
-            console.error('[initializeDevices] Device initialization failed:', error);
+            this.error('initializeDevices', 'Device initialization failed:', error);
             return false;
         }
     }
@@ -564,59 +518,48 @@ class BluetoothService {
         return await this.initializeDevices();
     }
 
-    /**
-     * Get battery info for specified side
-     * @param side - LEFT, RIGHT, or BOTH (default: BOTH like Java implementation)
-     * @returns Battery percentage (0-100) or -1 if not available
-     */
+    private updateBatteryInfoInternal(side: DeviceSide, batteryLevel: number): void {
+        if (side === DeviceSide.LEFT || side === DeviceSide.BOTH) {
+            this.batteryInfo.left = batteryLevel;
+        }
+        if (side === DeviceSide.RIGHT || side === DeviceSide.BOTH) {
+            this.batteryInfo.right = batteryLevel;
+        }
+    }
+
     async getBatteryInfo(side: DeviceSide = DeviceSide.BOTH): Promise<number> {
-        console.log(`[getBatteryInfo] Starting battery request for side: ${side}`);
+        this.log('getBatteryInfo', `Starting battery request for side: ${side}`);
         
-        const requestBytes = new Uint8Array([
-            BluetoothService.BATTERY_CMD, // 0x2C
-            0x01 // Use 0x02 for iOS, 0x01 for Android
-        ]);
+        const requestBytes = new Uint8Array([BluetoothService.BATTERY_CMD, 0x01]);
         const responseHeader = new Uint8Array([BluetoothService.BATTERY_CMD]);
         
-        console.log(`[getBatteryInfo] Request: [0x${BluetoothService.BATTERY_CMD.toString(16)}, 0x01]`);
-        console.log(`[getBatteryInfo] Expected response header: [0x${BluetoothService.BATTERY_CMD.toString(16)}]`);
-        
-        // Use 250ms wait time like the Java example
         const responseData = await this.sendCommandWithResponse(requestBytes, responseHeader, side, 250);
         
         if (responseData && responseData.length > 2) {
             const batteryLevel = responseData[2] & 0xFF;
-            console.log(`[getBatteryInfo] Battery level extracted from response[2]: ${batteryLevel}%`);
+            this.log('getBatteryInfo', `Battery level: ${batteryLevel}%`);
             
             // Update internal battery tracking
             const now = new Date();
-            if (side === DeviceSide.LEFT || side === DeviceSide.BOTH) {
-                console.log(`[getBatteryInfo] Updating left battery: ${this.batteryInfo.left} -> ${batteryLevel}`);
-                this.batteryInfo.left = batteryLevel;
-            }
-            if (side === DeviceSide.RIGHT || side === DeviceSide.BOTH) {
-                console.log(`[getBatteryInfo] Updating right battery: ${this.batteryInfo.right} -> ${batteryLevel}`);
-                this.batteryInfo.right = batteryLevel;
-            }
+            this.updateBatteryInfoInternal(side, batteryLevel);
             this.batteryInfo.lastUpdated = now;
             
             // Notify listeners
-            console.log(`[getBatteryInfo] Notifying ${this.batteryListeners.length} battery listeners`);
-            this.batteryListeners.forEach(listener => {
-                try { listener(this.batteryInfo); } catch (e) { 
-                    console.warn('[getBatteryInfo] Battery listener error:', e);
-                }
-            });
+            this.batteryListeners.notify(this.batteryInfo);
             
-            console.log(`[getBatteryInfo] Successfully returning battery level: ${batteryLevel}%`);
             return batteryLevel;
         } else {
-            console.warn(`[getBatteryInfo] Invalid or missing response data:`, responseData ? `${responseData.length} bytes` : 'null');
-            if (responseData) {
-                const responseHex = Array.from(responseData).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
-                console.warn(`[getBatteryInfo] Response content: ${responseHex}`);
-            }
+            this.warn('getBatteryInfo', 'Invalid or missing response data');
             return -1;
+        }
+    }
+
+    private updateFirmwareInfoInternal(side: DeviceSide, firmwareText: string): void {
+        if (side === DeviceSide.LEFT || side === DeviceSide.BOTH) {
+            this.firmwareInfo.left = firmwareText;
+        }
+        if (side === DeviceSide.RIGHT || side === DeviceSide.BOTH) {
+            this.firmwareInfo.right = firmwareText;
         }
     }
 
@@ -628,58 +571,37 @@ class BluetoothService {
      * @returns Firmware information string or null if not available
      */
     async getFirmwareInfo(side: DeviceSide = DeviceSide.LEFT): Promise<string | null> {
-        console.log(`[getFirmwareInfo] Starting firmware info request for side: ${side}`);
+        this.log('getFirmwareInfo', `Starting firmware info request for side: ${side}`);
         
-        const requestBytes = new Uint8Array([0x23, 0x74]); // Get Firmware Information command
+        const requestBytes = new Uint8Array([0x23, 0x74]);
+        this.log('getFirmwareInfo', 'Request: [0x23, 0x74]');
         
-        console.log(`[getFirmwareInfo] Request: [0x23, 0x74]`);
-        
-        // For firmware command, we don't expect a specific header since response is raw ASCII
-        // We'll use an empty header and handle the raw response
         const emptyHeader = new Uint8Array([]);
-        
-        // Use longer wait time for firmware command as it may take time to gather info
         const responseData = await this.sendCommandWithResponse(requestBytes, emptyHeader, side, 500);
         
         if (responseData && responseData.length > 0) {
             try {
-                // Convert response to string - firmware response is raw ASCII
-                const firmwareText = new TextDecoder('utf-8').decode(responseData);
-                
-                // Clean up the firmware text (remove null bytes and control characters)
-                const cleanedText = firmwareText.trim();
-                
-                console.log(`[getFirmwareInfo] Raw firmware response (${responseData.length} bytes)`);
-                console.log(`[getFirmwareInfo] Firmware info: ${cleanedText}`);
+                const firmwareText = new TextDecoder('utf-8').decode(responseData).trim();
+                this.log('getFirmwareInfo', `Firmware info (${responseData.length} bytes): ${firmwareText}`);
                 
                 // Update internal firmware tracking
-                if (side === DeviceSide.LEFT || side === DeviceSide.BOTH) {
-                    this.firmwareInfo.left = cleanedText;
-                    console.log(`[getFirmwareInfo] Updated left firmware info`);
-                }
-                if (side === DeviceSide.RIGHT || side === DeviceSide.BOTH) {
-                    this.firmwareInfo.right = cleanedText;
-                    console.log(`[getFirmwareInfo] Updated right firmware info`);
-                }
+                this.updateFirmwareInfoInternal(side, firmwareText);
                 
-                // Validate that response starts with "net" as mentioned in documentation
-                if (cleanedText.startsWith('net')) {
-                    console.log(`[getFirmwareInfo] Valid firmware response received`);
-                    return cleanedText;
+                if (firmwareText.startsWith('net')) {
+                    this.log('getFirmwareInfo', 'Valid firmware response received');
+                    return firmwareText;
                 } else {
-                    console.warn(`[getFirmwareInfo] Unexpected firmware response format: ${cleanedText.substring(0, 50)}...`);
-                    return cleanedText; // Return anyway, might still be useful
+                    this.warn('getFirmwareInfo', `Unexpected firmware response format: ${firmwareText.substring(0, 50)}...`);
+                    return firmwareText;
                 }
             } catch (decodeError) {
-                console.error(`[getFirmwareInfo] Failed to decode firmware response:`, decodeError);
-                
-                // Fall back to hex representation if UTF-8 decode fails
-                const hexResponse = Array.from(responseData).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
-                console.log(`[getFirmwareInfo] Raw hex response: ${hexResponse}`);
+                this.error('getFirmwareInfo', 'Failed to decode firmware response:', decodeError);
+                const hexResponse = this.arrayToHex(responseData);
+                this.log('getFirmwareInfo', `Raw hex response: ${hexResponse}`);
                 return `Raw response: ${hexResponse}`;
             }
         } else {
-            console.warn(`[getFirmwareInfo] No firmware response received`);
+            this.warn('getFirmwareInfo', 'No firmware response received');
             return null;
         }
     }
@@ -689,38 +611,30 @@ class BluetoothService {
      * @returns uptime in seconds, or -1 if not available
      */
     async getDeviceUptime(): Promise<number> {
-        console.log(`[getDeviceUptime] Starting uptime request`);
+        this.log('getDeviceUptime', 'Starting uptime request');
         
-        const requestBytes = new Uint8Array([BluetoothService.UPTIME_CMD]); // 0x37
+        const requestBytes = new Uint8Array([BluetoothService.UPTIME_CMD]);
         const responseHeader = new Uint8Array([BluetoothService.UPTIME_CMD]);
         
-        console.log(`[getDeviceUptime] Request: [0x${BluetoothService.UPTIME_CMD.toString(16)}]`);
-        console.log(`[getDeviceUptime] Expected response header: [0x${BluetoothService.UPTIME_CMD.toString(16)}]`);
-        
-        // Use 250ms wait time like the battery command for consistency
         const responseData = await this.sendCommandWithResponse(requestBytes, responseHeader, DeviceSide.BOTH, 250);
         
         if (responseData && responseData.length >= 4) {
-            const responseHex = Array.from(responseData).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
-            console.log(`[getDeviceUptime] Received response (${responseData.length} bytes): ${responseHex}`);
+            this.log('getDeviceUptime', `Received response: ${this.arrayToHex(responseData)}`);
             
-            // Parse uptime from bytes 1-3 (assuming little-endian format)
-            // Response format: [0x37, seconds_low, seconds_mid, seconds_high, flag_byte]
+            // Parse uptime from bytes 1-3 (little-endian format)
             const uptimeSeconds = (responseData[1] | (responseData[2] << 8) | (responseData[3] << 16));
             const flagByte = responseData.length > 4 ? responseData[4] : null;
             
-            console.log(`[getDeviceUptime] Parsed uptime: ${uptimeSeconds} seconds (${Math.floor(uptimeSeconds / 3600)}h ${Math.floor((uptimeSeconds % 3600) / 60)}m ${uptimeSeconds % 60}s)`);
-            console.log(`[getDeviceUptime] Flag byte (4th): ${flagByte !== null ? `0x${flagByte.toString(16).padStart(2, '0')}` : 'not present'}`);
+            const hours = Math.floor(uptimeSeconds / 3600);
+            const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+            const seconds = uptimeSeconds % 60;
+            
+            this.log('getDeviceUptime', `Parsed uptime: ${uptimeSeconds}s (${hours}h ${minutes}m ${seconds}s), flag: ${flagByte ? `0x${flagByte.toString(16)}` : 'none'}`);
             
             this.deviceUptime = uptimeSeconds;
-            console.log(`[getDeviceUptime] Device uptime updated: ${uptimeSeconds} seconds`);
             return uptimeSeconds;
         } else {
-            console.warn(`[getDeviceUptime] Invalid response received: ${responseData ? `${responseData.length} bytes` : 'null'}`);
-            if (responseData) {
-                const responseHex = Array.from(responseData).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
-                console.warn(`[getDeviceUptime] Response content: ${responseHex}`);
-            }
+            this.warn('getDeviceUptime', `Invalid response: ${responseData ? `${responseData.length} bytes` : 'null'}`);
             this.deviceUptime = -1;
             return -1;
         }
@@ -744,27 +658,21 @@ class BluetoothService {
      * Update firmware info for connected devices
      */
     async updateFirmwareInfo(): Promise<void> {
-        console.log(`[updateFirmwareInfo] Starting firmware update for connected devices`);
+        this.log('updateFirmwareInfo', 'Starting firmware update for connected devices');
         
         try {
-            // Query firmware for left device if connected
+            const updates = [];
             if (this.leftDevice) {
-                console.log(`[updateFirmwareInfo] Requesting firmware info for left device`);
-                await this.getFirmwareInfo(DeviceSide.LEFT);
+                updates.push(this.getFirmwareInfo(DeviceSide.LEFT));
             }
-            
-            // Query firmware for right device if connected
             if (this.rightDevice) {
-                console.log(`[updateFirmwareInfo] Requesting firmware info for right device`);
-                await this.getFirmwareInfo(DeviceSide.RIGHT);
+                updates.push(this.getFirmwareInfo(DeviceSide.RIGHT));
             }
             
-            console.log(`[updateFirmwareInfo] Firmware update completed successfully`);
+            await Promise.all(updates);
+            this.log('updateFirmwareInfo', 'Firmware update completed successfully');
         } catch (error) {
-            console.warn('[updateFirmwareInfo] Failed to update firmware info:', error);
-            if (error instanceof Error) {
-                console.warn(`[updateFirmwareInfo] Error details: ${error.message}`);
-            }
+            this.warn('updateFirmwareInfo', 'Failed to update firmware info:', error);
         }
     }
 
@@ -779,40 +687,24 @@ class BluetoothService {
      * Subscribe to battery updates
      */
     onBatteryUpdate(callback: (battery: BatteryInfo) => void): () => void {
-        this.batteryListeners.push(callback);
-        
-        // Return unsubscribe function
-        return () => {
-            const index = this.batteryListeners.indexOf(callback);
-            if (index > -1) {
-                this.batteryListeners.splice(index, 1);
-            }
-        };
+        return this.batteryListeners.add(callback);
     }
 
     /**
      * Update battery info for both devices
      */
     async updateBatteryInfo(): Promise<void> {
-        console.log(`[updateBatteryInfo] Starting battery update for connected devices`);
-        console.log(`[updateBatteryInfo] Left device: ${this.leftDevice ? 'connected' : 'null'}`);
-        console.log(`[updateBatteryInfo] Right device: ${this.rightDevice ? 'connected' : 'null'}`);
+        this.log('updateBatteryInfo', 'Starting battery update for connected devices');
         
         try {
-            // Query battery for both devices at once (like Java implementation)
             if (this.leftDevice || this.rightDevice) {
-                console.log(`[updateBatteryInfo] Requesting battery info for both devices simultaneously`);
                 const batteryResult = await this.getBatteryInfo(DeviceSide.BOTH);
-                console.log(`[updateBatteryInfo] Battery query result: ${batteryResult}%`);
+                this.log('updateBatteryInfo', `Battery query result: ${batteryResult}%`);
             } else {
-                console.log(`[updateBatteryInfo] No devices connected, skipping battery update`);
+                this.log('updateBatteryInfo', 'No devices connected, skipping battery update');
             }
-            console.log(`[updateBatteryInfo] Battery update completed successfully`);
         } catch (error) {
-            console.warn('[updateBatteryInfo] Failed to update battery info:', error);
-            if (error instanceof Error) {
-                console.warn(`[updateBatteryInfo] Error details: ${error.message}`);
-            }
+            this.warn('updateBatteryInfo', 'Failed to update battery info:', error);
         }
     }
 
@@ -890,22 +782,25 @@ class BluetoothService {
         return packets;
     }
 
-    async sendTextToGlasses(text: string): Promise<boolean> {
-        const packets = this.createTextPackets(text);
-
+    private async sendPacketsToBothDevices(packets: Uint8Array[]): Promise<boolean> {
         // Send to left first (G1 protocol requirement)
         if (this.leftDevice && !await this.sendPacketsToDevice(packets, "L")) {
-            console.error('Failed to send to left device');
+            this.error('sendPacketsToBothDevices', 'Failed to send to left device');
             return false;
         }
 
         // Then send to right (only if left succeeded or no left device)
         if (this.rightDevice && !await this.sendPacketsToDevice(packets, "R")) {
-            console.error('Failed to send to right device');
+            this.error('sendPacketsToBothDevices', 'Failed to send to right device');
             return false;
         }
 
         return true;
+    }
+
+    async sendTextToGlasses(text: string): Promise<boolean> {
+        const packets = this.createTextPackets(text);
+        return await this.sendPacketsToBothDevices(packets);
     }
 
     private async sendPacketsToDevice(packets: Uint8Array[], side: "L" | "R"): Promise<boolean> {
@@ -958,36 +853,22 @@ class BluetoothService {
         }
 
         try {
-            // Convert base64 to binary data
             const bmpData = new Uint8Array(Buffer.from(base64ImageData, 'base64'));
-
-            // Create BMP packets using G1-compatible chunking
             const packets = this.createBmpPackets(bmpData);
 
-            // Send to both devices in parallel for maximum speed
-            const promises: Promise<boolean>[] = [];
+            const results = await this.executeForDevices(DeviceSide.BOTH, async (device, deviceSide) => {
+                return await this.sendBmpToDevice(bmpData, packets, deviceSide);
+            });
             
-            if (this.leftDevice) {
-                promises.push(this.sendBmpToDevice(bmpData, packets, "L"));
-            }
-            
-            if (this.rightDevice) {
-                promises.push(this.sendBmpToDevice(bmpData, packets, "R"));
-            }
-
-            // Wait for all transfers to complete
-            const results = await Promise.all(promises);
-            
-            // Check if any failed
             if (results.some(result => !result)) {
-                console.error('One or more BMP transfers failed');
+                this.error('sendImage', 'One or more BMP transfers failed');
                 return false;
             }
 
             return true;
             
         } catch (error) {
-            console.error('Error sending BMP image:', error);
+            this.error('sendImage', 'Error sending BMP image:', error);
             return false;
         }
     }
@@ -995,60 +876,41 @@ class BluetoothService {
     private async sendBmpToDevice(bmpData: Uint8Array, packets: Uint8Array[], side: "L" | "R"): Promise<boolean> {
         try {
             const startTime = Date.now();
-            console.log(`Starting BMP transfer to ${side} device: ${packets.length} packets, ${bmpData.length} bytes`);
+            this.log('sendBmpToDevice', `Starting BMP transfer to ${side} device: ${packets.length} packets, ${bmpData.length} bytes`);
             
-            // STEP 1: Send all BMP packets sequentially
-            const packetStartTime = Date.now();
+            // Send all BMP packets sequentially
             for (let i = 0; i < packets.length; i++) {
                 const packet = packets[i];
-                const packetWriteStart = Date.now();
                 
                 if (BluetoothService.ENABLE_TRANSFER_LOGGING) {
-                    console.log(`Sending packet ${i + 1}/${packets.length} to ${side} device (${packet.length} bytes)`);
+                    this.log('sendBmpToDevice', `Sending packet ${i + 1}/${packets.length} to ${side} device (${packet.length} bytes)`);
                 }
                 
                 if (!await this.writeToDevice(packet, side, false)) {
-                    console.error(`Failed to send packet ${i + 1} to ${side} device`);
+                    this.error('sendBmpToDevice', `Failed to send packet ${i + 1} to ${side} device`);
                     return false;
                 }
-                
-                if (BluetoothService.ENABLE_TRANSFER_LOGGING) {
-                    const packetWriteTime = Date.now() - packetWriteStart;
-                    console.log(`Packet ${i + 1} write took ${packetWriteTime}ms`);
-                }
 
-                // Minimal delay between packets (optimized to 0ms)
                 if (i < packets.length - 1 && BluetoothService.BMP_PACKET_DELAY > 0) {
                     await this.sleep(BluetoothService.BMP_PACKET_DELAY);
                 }
             }
             
-            const totalPacketTime = Date.now() - packetStartTime;
-            console.log(`All packets sent to ${side} device in ${totalPacketTime}ms, sending end command`);
+            this.log('sendBmpToDevice', `All packets sent to ${side} device, sending end command`);
             
-            // STEP 2: Send end command
-            const endCommandStart = Date.now();
+            // Send end command
             const endCommand = new Uint8Array(BluetoothService.BMP_END_CMD);
             if (!await this.writeToDevice(endCommand, side, false)) {
-                console.error(`Failed to send end command to ${side} device`);
+                this.error('sendBmpToDevice', `Failed to send end command to ${side} device`);
                 return false;
             }
-            const endCommandTime = Date.now() - endCommandStart;
-            console.log(`End command sent in ${endCommandTime}ms`);
 
-            // Give time to process (50ms optimized)
-            const delayStart = Date.now();
             await this.sleep(BluetoothService.BMP_END_DELAY);
-            const delayTime = Date.now() - delayStart;
-            console.log(`End delay completed in ${delayTime}ms`);
 
-            // STEP 3: Send CRC verification
-            const crcStart = Date.now();
+            // Send CRC verification
             const crcValue = this.computeBmpCrc32(bmpData);
-            const crcComputeTime = Date.now() - crcStart;
-            console.log(`CRC computed in ${crcComputeTime}ms: 0x${crcValue.toString(16)}`);
+            this.log('sendBmpToDevice', `CRC computed: 0x${crcValue.toString(16)}`);
             
-            const crcSendStart = Date.now();
             const crcBytes = new Uint8Array([
                 BluetoothService.CRC_CMD,  // 0x16
                 (crcValue >> 24) & 0xFF,
@@ -1058,36 +920,23 @@ class BluetoothService {
             ]);
             
             if (!await this.writeToDevice(crcBytes, side, false)) {
-                console.error(`Failed to send CRC to ${side} device`);
+                this.error('sendBmpToDevice', `Failed to send CRC to ${side} device`);
                 return false;
             }
-            const crcSendTime = Date.now() - crcSendStart;
-            console.log(`CRC sent in ${crcSendTime}ms`);
 
             const totalTime = Date.now() - startTime;
-            console.log(`BMP transfer to ${side} device completed successfully in ${totalTime}ms`);
+            this.log('sendBmpToDevice', `BMP transfer to ${side} device completed successfully in ${totalTime}ms`);
             return true;
             
         } catch (error) {
-            console.error(`Error during BMP transfer to ${side} device:`, error);
+            this.error('sendBmpToDevice', `Error during BMP transfer to ${side} device:`, error);
             return false;
         }
     }
 
     private async sendCommand(commandByte: number): Promise<boolean> {
         const command = new Uint8Array([commandByte]);
-
-        // Send to left first (G1 protocol requirement)
-        if (this.leftDevice && !await this.writeToDevice(command, "L", false)) {
-            return false;
-        }
-
-        // Then send to right (only if left succeeded or no left device)
-        if (this.rightDevice && !await this.writeToDevice(command, "R", false)) {
-            return false;
-        }
-
-        return true;
+        return await this.sendToBothDevices(command, false);
     }
 
     async exitToDashboard(): Promise<boolean> {
@@ -1101,8 +950,7 @@ class BluetoothService {
     private async connectDevice(address: string): Promise<Device> {
         // Request permissions on Android
         if (Platform.OS === 'android' && Platform.Version >= 31) {
-            const bluetoothGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_CONNECT);
-            if (bluetoothGranted !== 'granted') {
+            if (!await this.requestBluetoothPermissions()) {
                 throw new Error('Bluetooth permission not granted');
             }
         }
@@ -1114,34 +962,43 @@ class BluetoothService {
         
         await device.discoverAllServicesAndCharacteristics();
 
-        // Request higher MTU for larger packets (G1 protocol requires 194-byte chunks regardless)
+        // Request higher MTU for larger packets
         try {
             const mtuResult = await device.requestMTU(247);
             const mtu = typeof mtuResult === 'object' ? mtuResult.mtu || 23 : (mtuResult || 23);
-            console.log(`MTU negotiated: ${mtu} bytes for device ${address}`);
+            this.log('connectDevice', `MTU negotiated: ${mtu} bytes for device ${address}`);
         } catch (error) {
-            console.warn(`MTU request failed for device ${address}:`, error);
+            this.warn('connectDevice', `MTU request failed for device ${address}:`, error);
         }
 
         return device;
     }
 
+    private async connectAndInitialize(address: string, side: 'left' | 'right'): Promise<void> {
+        const sideUpper = side.charAt(0).toUpperCase() + side.slice(1);
+        this.log(`connect${sideUpper}`, `Connecting to ${side} device: ${address}`);
+        
+        const device = await this.connectDevice(address);
+        this.setDevice(side === 'left' ? 'L' : 'R', device);
+        
+        this.log(`connect${sideUpper}`, `${side} device connected successfully`);
+        
+        // Initialize devices after connection
+        const initResult = await this.initializeDevices();
+        if (!initResult) {
+            this.warn(`connect${sideUpper}`, 'Device initialization failed, but connection established');
+        }
+        
+        // Start heartbeat if this is the first device connected
+        const otherDevice = side === 'left' ? this.rightDevice : this.leftDevice;
+        if (!otherDevice) {
+            this.startHeartbeat();
+        }
+    }
+
     async connectLeft(address: string): Promise<void> {
         try {
-            console.log(`[connectLeft] Connecting to left device: ${address}`);
-            this.leftDevice = await this.connectDevice(address);
-            console.log(`[connectLeft] Left device connected successfully`);
-            
-            // Initialize devices after connection
-            const initResult = await this.initializeDevices();
-            if (!initResult) {
-                console.warn('[connectLeft] Device initialization failed, but connection established');
-            }
-            
-            // Start heartbeat if this is the first device connected
-            if (!this.rightDevice) {
-                this.startHeartbeat();
-            }
+            await this.connectAndInitialize(address, 'left');
         } catch (error: any) {
             throw new Error(`Failed to connect left device: ${error?.message || 'Unknown error'}`);
         }
@@ -1149,20 +1006,7 @@ class BluetoothService {
 
     async connectRight(address: string): Promise<void> {
         try {
-            console.log(`[connectRight] Connecting to right device: ${address}`);
-            this.rightDevice = await this.connectDevice(address);
-            console.log(`[connectRight] Right device connected successfully`);
-            
-            // Initialize devices after connection (this will handle both left and right if both are connected)
-            const initResult = await this.initializeDevices();
-            if (!initResult) {
-                console.warn('[connectRight] Device initialization failed, but connection established');
-            }
-            
-            // Start heartbeat if this is the first device connected
-            if (!this.leftDevice) {
-                this.startHeartbeat();
-            }
+            await this.connectAndInitialize(address, 'right');
         } catch (error: any) {
             throw new Error(`Failed to connect right device: ${error?.message || 'Unknown error'}`);
         }
@@ -1177,15 +1021,23 @@ class BluetoothService {
         this.stopHeartbeat(); // Stop heartbeat when disconnecting
         this.stopBatteryMonitoring(); // Stop battery monitoring when disconnecting
         
+        // Disconnect both devices
+        const disconnectPromises: Promise<Device>[] = [];
+        
         if (this.leftDevice) {
-            await this.leftDevice.cancelConnection();
-            this.leftDevice = null;
+            disconnectPromises.push(this.leftDevice.cancelConnection());
+            this.setDevice('L', null);
             this.firmwareInfo.left = null; // Reset firmware info
         }
         if (this.rightDevice) {
-            await this.rightDevice.cancelConnection();
-            this.rightDevice = null;
+            disconnectPromises.push(this.rightDevice.cancelConnection());
+            this.setDevice('R', null);
             this.firmwareInfo.right = null; // Reset firmware info
+        }
+        
+        // Wait for all disconnections to complete
+        if (disconnectPromises.length > 0) {
+            await Promise.all(disconnectPromises);
         }
         
         // Reset battery info
@@ -1204,47 +1056,56 @@ class BluetoothService {
         return this.rightDevice !== null;
     }
 
-    async getPairedDevices(showAllDevices: boolean = false): Promise<Array<{ id: string; name: string | null; isConnected: boolean }>> {
-        if (Platform.OS !== 'android') return [];
-
+    private async requestBluetoothPermissions(): Promise<boolean> {
+        if (Platform.OS !== 'android') return true;
+        
         try {
-            // Request required permissions based on Android version
             if (Platform.Version >= 31) {
-                // Android 12+ (API 31+) - Request new Bluetooth permissions
                 const bluetoothScanGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_SCAN);
                 const bluetoothConnectGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_CONNECT);
                 
                 if (bluetoothScanGranted !== 'granted' || bluetoothConnectGranted !== 'granted') {
-                    console.error('Bluetooth permissions not granted:', {
+                    this.error('requestBluetoothPermissions', 'Bluetooth permissions not granted:', {
                         bluetoothScan: bluetoothScanGranted,
                         bluetoothConnect: bluetoothConnectGranted
                     });
-                    return [];
+                    return false;
                 }
             } else {
-                // Android < 12 - Request location permission (required for BLE scanning)
                 const locationGranted = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
                 if (locationGranted !== 'granted') {
-                    console.error('Location permission not granted:', locationGranted);
-                    return [];
+                    this.error('requestBluetoothPermissions', 'Location permission not granted:', locationGranted);
+                    return false;
                 }
+            }
+            return true;
+        } catch (error) {
+            this.error('requestBluetoothPermissions', 'Failed to request permissions:', error);
+            return false;
+        }
+    }
+
+    async getPairedDevices(showAllDevices: boolean = false): Promise<Array<{ id: string; name: string | null; isConnected: boolean }>> {
+        if (Platform.OS !== 'android') return [];
+
+        try {
+            if (!await this.requestBluetoothPermissions()) {
+                return [];
             }
 
             const { BluetoothAdapter } = NativeModules as any;
             if (!BluetoothAdapter) {
-                console.error('BluetoothAdapter native module not available - this indicates a build/linking issue');
-                console.error('Available NativeModules:', Object.keys(NativeModules));
+                this.error('getPairedDevices', 'BluetoothAdapter native module not available');
                 return [];
             }
             
             if (!BluetoothAdapter.getPairedDevices) {
-                console.error('BluetoothAdapter.getPairedDevices method not available');
-                console.error('Available BluetoothAdapter methods:', Object.keys(BluetoothAdapter));
+                this.error('getPairedDevices', 'BluetoothAdapter.getPairedDevices method not available');
                 return [];
             }
 
             const pairedDevices = await BluetoothAdapter.getPairedDevices();
-            console.log('Raw paired devices from native module:', pairedDevices);
+            this.log('getPairedDevices', 'Raw paired devices from native module:', pairedDevices);
             
             const bondedDevices = pairedDevices.map((device: { name: string; address: string; connected?: boolean }) => ({
                 id: device.address,
@@ -1252,23 +1113,67 @@ class BluetoothService {
                 isConnected: Boolean(device.connected)
             }));
 
-            console.log('Processed bonded devices:', bondedDevices);
-
-            // Filter devices based on showAllDevices flag
             if (showAllDevices) {
                 return bondedDevices;
             } else {
-                // Filter to show only "Even G1" smart glasses
                 const filteredDevices = bondedDevices.filter((device: { id: string; name: string | null; isConnected: boolean }) => 
                     device.name && device.name.startsWith("Even G1")
                 );
-                console.log('Filtered Even G1 devices:', filteredDevices);
+                this.log('getPairedDevices', 'Filtered Even G1 devices:', filteredDevices);
                 return filteredDevices;
             }
         } catch (error) {
-            console.warn('Failed to get paired devices:', error);
+            this.warn('getPairedDevices', 'Failed to get paired devices:', error);
             return [];
         }
+    }
+
+    // Helper methods to reduce duplication
+    private getDevice(side: "L" | "R"): Device | null {
+        return side === "L" ? this.leftDevice : this.rightDevice;
+    }
+
+    private setDevice(side: "L" | "R", device: Device | null): void {
+        if (side === "L") {
+            this.leftDevice = device;
+        } else {
+            this.rightDevice = device;
+        }
+    }
+
+    private async executeForDevices<T>(
+        side: DeviceSide, 
+        operation: (device: Device, deviceSide: "L" | "R") => Promise<T>
+    ): Promise<T[]> {
+        const devices = this.getDevicesForSide(side);
+        const results: T[] = [];
+        
+        for (const { device, side: deviceSide } of devices) {
+            if (device) {
+                try {
+                    const result = await operation(device, deviceSide);
+                    results.push(result);
+                } catch (error) {
+                    this.error('executeForDevices', `Operation failed for ${deviceSide} device:`, error);
+                }
+            }
+        }
+        
+        return results;
+    }
+
+    private async sendToBothDevices(data: Uint8Array, requireResponse: boolean = false): Promise<boolean> {
+        // Send to left first (G1 protocol requirement)
+        if (this.leftDevice && !await this.writeToDevice(data, "L", requireResponse)) {
+            return false;
+        }
+        
+        // Then send to right (only if left succeeded or no left device)
+        if (this.rightDevice && !await this.writeToDevice(data, "R", requireResponse)) {
+            return false;
+        }
+        
+        return true;
     }
 }
 
