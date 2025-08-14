@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { teleprompterInterfaceStyles as styles } from '../styles/TeleprompterInterfaceStyles';
+import { homeScreenStyles as styles } from '../styles/HomeScreenStyles';
 import { OutputMode } from '../types/OutputMode';
 import ActionButtons from './ActionButtons';
 import OutputModeSelector from './OutputModeSelector';

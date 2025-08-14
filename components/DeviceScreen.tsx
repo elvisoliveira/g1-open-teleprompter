@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { teleprompterInterfaceStyles as styles } from '../styles/TeleprompterInterfaceStyles';
+import { deviceScreenStyles as styles } from '../styles/DeviceScreenStyles';
 import ConnectionStatus from './ConnectionStatus';
 
 interface DeviceScreenProps {
