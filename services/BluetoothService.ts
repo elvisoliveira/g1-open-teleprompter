@@ -40,7 +40,8 @@ class BluetoothService {
 
     // Static UUIDs for all devices
     private static readonly SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-    private static readonly CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+    private static readonly WRITE_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+    private static readonly READ_CHARACTERISTIC_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
     
     // Protocol constants
     private static readonly EVENAI_CMD = 0x4E;
@@ -175,7 +176,7 @@ class BluetoothService {
                 console.log(`[writeToDevice] Writing with response to ${side} device: ${dataHex}`);
                 await device.writeCharacteristicWithResponseForService(
                     BluetoothService.SERVICE_UUID,
-                    BluetoothService.CHARACTERISTIC_UUID,
+                    BluetoothService.WRITE_CHARACTERISTIC_UUID,
                     base64
                 );
                 console.log(`[writeToDevice] Write with response completed successfully for ${side} device`);
@@ -185,7 +186,7 @@ class BluetoothService {
                 try {
                     await device.writeCharacteristicWithoutResponseForService(
                         BluetoothService.SERVICE_UUID,
-                        BluetoothService.CHARACTERISTIC_UUID,
+                        BluetoothService.WRITE_CHARACTERISTIC_UUID,
                         base64
                     );
                     console.log(`[writeToDevice] Write without response completed successfully for ${side} device`);
@@ -193,7 +194,7 @@ class BluetoothService {
                     console.warn(`[writeToDevice] Write without response failed for ${side} device, trying with response:`, writeError);
                     await device.writeCharacteristicWithResponseForService(
                         BluetoothService.SERVICE_UUID,
-                        BluetoothService.CHARACTERISTIC_UUID,
+                        BluetoothService.WRITE_CHARACTERISTIC_UUID,
                         base64
                     );
                     console.log(`[writeToDevice] Fallback write with response completed successfully for ${side} device`);
@@ -238,7 +239,7 @@ class BluetoothService {
                     let responsePromise: Promise<Uint8Array | null> = Promise.resolve(null);
 
                     // Try to monitor the notify characteristic first, then fall back to main characteristic
-                    for (const charUUID of [BluetoothService.CHARACTERISTIC_UUID]) {
+                    for (const charUUID of [BluetoothService.READ_CHARACTERISTIC_UUID, BluetoothService.WRITE_CHARACTERISTIC_UUID]) {
                         try {
                             console.log(`[sendCommandWithResponse] Attempting to set up notifications on ${charUUID} for ${deviceSide} device`);
                             
@@ -337,7 +338,7 @@ class BluetoothService {
                         
                         const characteristic = await device.readCharacteristicForService(
                             BluetoothService.SERVICE_UUID,
-                            BluetoothService.CHARACTERISTIC_UUID
+                            BluetoothService.WRITE_CHARACTERISTIC_UUID
                         );
                         
                         const responseTime = Date.now() - responseStartTime;
