@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import BluetoothService, { BatteryInfo, DeviceStatus } from '../services/BluetoothService';
 import { connectionStatusStyles as styles } from '../styles/ConnectionStatusStyles';
 
 interface ConnectionStatusProps {
@@ -11,10 +12,164 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     leftConnected,
     rightConnected
 }) => {
+    const [batteryInfo, setBatteryInfo] = useState<BatteryInfo>({ left: -1, right: -1, lastUpdated: null });
+    const [deviceStatus, setDeviceStatus] = useState<{ left: DeviceStatus; right: DeviceStatus }>();
+    const [isUpdatingBattery, setIsUpdatingBattery] = useState(false);
+    const [isUpdatingFirmware, setIsUpdatingFirmware] = useState(false);
+    const [isUpdatingUptime, setIsUpdatingUptime] = useState(false);
     const bothConnected = leftConnected && rightConnected;
+
+    useEffect(() => {
+        let unsubscribe: (() => void) | null = null;
+        let statusInterval: NodeJS.Timeout | null = null;
+        
+        // Subscribe to battery updates and get device status
+        if (leftConnected || rightConnected) {
+            unsubscribe = BluetoothService.onBatteryUpdate((battery) => {
+                setBatteryInfo(battery);
+                // Update device status when battery changes
+                updateDeviceStatus();
+            });
+            
+            // Get initial battery status and firmware info
+            updateBatteryStatus();
+            updateFirmwareInfo();
+            updateUptimeInfo();
+            updateDeviceStatus();
+            
+            // Periodically update device status (every 30 seconds)
+            statusInterval = setInterval(() => {
+                updateDeviceStatus();
+            }, 30000);
+        } else {
+            // Clear device status when disconnected
+            setDeviceStatus(undefined);
+        }
+        
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+            if (statusInterval) {
+                clearInterval(statusInterval);
+            }
+        };
+    }, [leftConnected, rightConnected]);
+
+    const updateBatteryStatus = async () => {
+        if (isUpdatingBattery) return;
+        
+        setIsUpdatingBattery(true);
+        try {
+            await BluetoothService.updateBatteryInfo();
+        } catch (error) {
+            console.warn('Failed to update battery status:', error);
+        } finally {
+            setIsUpdatingBattery(false);
+        }
+    };
+
+    const updateFirmwareInfo = async () => {
+        if (isUpdatingFirmware) return;
+        
+        setIsUpdatingFirmware(true);
+        try {
+            await BluetoothService.updateFirmwareInfo();
+        } catch (error) {
+            console.warn('Failed to update firmware info:', error);
+        } finally {
+            setIsUpdatingFirmware(false);
+        }
+    };
+
+    const updateUptimeInfo = async () => {
+        if (isUpdatingUptime) return;
+        
+        setIsUpdatingUptime(true);
+        try {
+            // Get uptime for both devices
+            if (leftConnected) {
+                await BluetoothService.getDeviceUptime();
+            }
+            if (rightConnected) {
+                await BluetoothService.getDeviceUptime();
+            }
+        } catch (error) {
+            console.warn('Failed to update uptime info:', error);
+        } finally {
+            setIsUpdatingUptime(false);
+        }
+    };
+
+    const updateDeviceStatus = () => {
+        try {
+            const status = BluetoothService.getDeviceStatus();
+            setDeviceStatus(status);
+        } catch (error) {
+            console.warn('Failed to get device status:', error);
+        }
+    };
 
     const getDeviceIcon = (connected: boolean) => {
         return connected ? '✓' : '✗';
+    };
+
+    const getBatteryDisplay = (batteryLevel: number) => {
+        if (batteryLevel < 0) return '';
+        return ` (${batteryLevel}%)`;
+    };
+
+    const getBatteryIcon = (batteryLevel: number) => {
+        if (batteryLevel < 0) return '';
+        if (batteryLevel > 75) return '🔋';
+        if (batteryLevel > 50) return '🔋';
+        if (batteryLevel > 25) return '🪫';
+        return '🪫';
+    };
+
+    const extractFirmwareVersion = (firmwareText: string | null) => {
+        if (!firmwareText) return null;
+        
+        // Extract version from firmware text
+        // Example: "net build time: 2024-12-28 20:21:57, app build time 2024-12-28 20:20:45, ver 1.4.5, JBD DeviceID 4010"
+        const versionMatch = firmwareText.match(/ver\s+([\d\.]+)/);
+        if (versionMatch) {
+            return versionMatch[1];
+        }
+        
+        // Fallback: look for version patterns
+        const fallbackMatch = firmwareText.match(/v?(\d+\.\d+\.\d+)/);
+        if (fallbackMatch) {
+            return fallbackMatch[1];
+        }
+        
+        return 'Unknown';
+    };
+
+    const getFirmwareDisplay = (firmwareText: string | null) => {
+        if (!firmwareText) return '';
+        const version = extractFirmwareVersion(firmwareText);
+        return version ? ` (fw: ${version})` : '';
+    };
+
+    const getUptimeDisplay = (uptime: number) => {
+        if (uptime < 0) return '';
+        
+        const hours = Math.floor(uptime / 3600);
+        const minutes = Math.floor((uptime % 3600) / 60);
+        const seconds = uptime % 60;
+        
+        if (hours > 0) {
+            return ` (up: ${hours}h ${minutes}m)`;
+        } else if (minutes > 0) {
+            return ` (up: ${minutes}m ${seconds}s)`;
+        } else {
+            return ` (up: ${seconds}s)`;
+        }
+    };
+
+    const getUptimeIcon = (uptime: number) => {
+        return uptime >= 0 ? '⏱️' : '❌';
     };
 
     const getDeviceStatus = () => {
@@ -48,8 +203,13 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                         styles.deviceText, 
                         leftConnected && styles.deviceTextConnected
                     ]}>
-                        Left Glass
+                        Left Glass{getBatteryDisplay(batteryInfo.left)}{getFirmwareDisplay(deviceStatus?.left?.firmware || null)}{getUptimeDisplay(deviceStatus?.left?.uptime || -1)}
                     </Text>
+                    {leftConnected && batteryInfo.left >= 0 && (
+                        <Text style={styles.batteryIcon}>
+                            {getBatteryIcon(batteryInfo.left)}
+                        </Text>
+                    )}
                 </View>
                 
                 <View style={[
@@ -66,10 +226,67 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                         styles.deviceText, 
                         rightConnected && styles.deviceTextConnected
                     ]}>
-                        Right Glass
+                        Right Glass{getBatteryDisplay(batteryInfo.right)}{getFirmwareDisplay(deviceStatus?.right?.firmware || null)}{getUptimeDisplay(deviceStatus?.right?.uptime || -1)}
                     </Text>
+                    {rightConnected && batteryInfo.right >= 0 && (
+                        <Text style={styles.batteryIcon}>
+                            {getBatteryIcon(batteryInfo.right)}
+                        </Text>
+                    )}
                 </View>
             </View>
+            
+            {/* Firmware Information Section */}
+            {(deviceStatus?.left?.firmware || deviceStatus?.right?.firmware) && (
+                <View style={styles.firmwareContainer}>
+                    <Text style={styles.firmwareTitle}>Firmware Information</Text>
+                    {deviceStatus?.left?.firmware && leftConnected && (
+                        <View style={styles.firmwareItem}>
+                            <Text style={styles.firmwareLabel}>Left:</Text>
+                            <Text style={styles.firmwareText} numberOfLines={2}>
+                                {deviceStatus.left.firmware}
+                            </Text>
+                        </View>
+                    )}
+                    {deviceStatus?.right?.firmware && rightConnected && (
+                        <View style={styles.firmwareItem}>
+                            <Text style={styles.firmwareLabel}>Right:</Text>
+                            <Text style={styles.firmwareText} numberOfLines={2}>
+                                {deviceStatus.right.firmware}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+            )}
+
+            {/* Device Uptime Information */}
+            {(leftConnected || rightConnected) && (
+                <View style={styles.firmwareContainer}>
+                    <Text style={styles.firmwareTitle}>Device Uptime</Text>
+                    {leftConnected && (
+                        <View style={styles.firmwareItem}>
+                            <Text style={styles.firmwareLabel}>Left:</Text>
+                            <Text style={styles.firmwareText}>
+                                {getUptimeIcon(deviceStatus?.left?.uptime || -1)} 
+                                {deviceStatus?.left?.uptime && deviceStatus.left.uptime >= 0 
+                                    ? `${Math.floor(deviceStatus.left.uptime / 3600)}h ${Math.floor((deviceStatus.left.uptime % 3600) / 60)}m ${deviceStatus.left.uptime % 60}s` 
+                                    : 'Unknown'}
+                            </Text>
+                        </View>
+                    )}
+                    {rightConnected && (
+                        <View style={styles.firmwareItem}>
+                            <Text style={styles.firmwareLabel}>Right:</Text>
+                            <Text style={styles.firmwareText}>
+                                {getUptimeIcon(deviceStatus?.right?.uptime || -1)} 
+                                {deviceStatus?.right?.uptime && deviceStatus.right.uptime >= 0 
+                                    ? `${Math.floor(deviceStatus.right.uptime / 3600)}h ${Math.floor((deviceStatus.right.uptime % 3600) / 60)}m ${deviceStatus.right.uptime % 60}s` 
+                                    : 'Unknown'}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+            )}
         </View>
     );
 };

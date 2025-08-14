@@ -115,6 +115,10 @@ export const connectionStatusStyles = StyleSheet.create({
         color: '#721C24',
         fontWeight: '600' as const,
     },
+    batteryIcon: {
+        fontSize: 12,
+        marginLeft: MaterialSpacing.xs,
+    },
     
     // Warning and Reconnection Styles
     warningContainer: {
@@ -158,5 +162,38 @@ export const connectionStatusStyles = StyleSheet.create({
         ...MaterialTypography.caption,
         color: '#FFFFFF',
         fontWeight: '600' as const,
+    },
+
+    // Firmware Information
+    firmwareContainer: {
+        marginTop: MaterialSpacing.md,
+        paddingTop: MaterialSpacing.md,
+        borderTopWidth: 1,
+        borderTopColor: MaterialColors.border,
+    },
+    firmwareTitle: {
+        ...MaterialTypography.body,
+        color: MaterialColors.text,
+        fontWeight: '600' as const,
+        marginBottom: MaterialSpacing.sm,
+    },
+    firmwareItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginBottom: MaterialSpacing.xs,
+        gap: MaterialSpacing.sm,
+    },
+    firmwareLabel: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.textSecondary,
+        fontWeight: '500' as const,
+        minWidth: 40,
+    },
+    firmwareText: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.textSecondary,
+        flex: 1,
+        fontSize: 10,
+        lineHeight: 12,
     },
 });

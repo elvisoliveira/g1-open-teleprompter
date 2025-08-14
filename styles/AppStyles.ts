@@ -12,6 +12,6 @@ export const teleprompterAppStyles = StyleSheet.create({
 export const appIndexStyles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: MaterialColors.background,
+        backgroundColor: MaterialColors.surface,
     },
 });
