@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 import BluetoothService from '../services/BluetoothService';
 import { BatteryInfo, DeviceStatus } from '../services/types';
 import { connectionStatusStyles as styles } from '../styles/ConnectionStatusStyles';
+import { MaterialColors } from '../styles/MaterialTheme';
 
 interface ConnectionStatusProps {
     leftConnected: boolean;
@@ -131,9 +132,9 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     };
 
     const getBatteryIconColor = (batteryLevel: number) => {
-        if (batteryLevel < 0) return '#757575';
-        if (batteryLevel > 25) return '#4caf50'; // Green
-        return '#f44336'; // Red for low battery
+        if (batteryLevel < 0) return MaterialColors.onSurfaceVariant;
+        if (batteryLevel > 25) return MaterialColors.success;
+        return MaterialColors.error;
     };
 
     const extractFirmwareVersion = (firmwareText: string | null) => {
@@ -182,7 +183,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     };
 
     const getUptimeIconColor = (uptime: number) => {
-        return uptime >= 0 ? '#4caf50' : '#f44336';
+        return uptime >= 0 ? MaterialColors.success : MaterialColors.error;
     };
 
     const getDeviceStatus = () => {
@@ -223,7 +224,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                             name={getBatteryIcon(batteryInfo.left) as any} 
                             size={16} 
                             color={getBatteryIconColor(batteryInfo.left)}
-                            style={{ marginLeft: 4 }}
+                            style={styles.batteryIconSpacing}
                         />
                     )}
                 </View>
@@ -249,7 +250,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                             name={getBatteryIcon(batteryInfo.right) as any} 
                             size={16} 
                             color={getBatteryIconColor(batteryInfo.right)}
-                            style={{ marginLeft: 4 }}
+                            style={styles.batteryIconSpacing}
                         />
                     )}
                 </View>
@@ -285,12 +286,12 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                     {leftConnected && (
                         <View style={styles.firmwareItem}>
                             <Text style={styles.firmwareLabel}>Left:</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={styles.uptimeIconRow}>
                                 <MaterialIcons 
                                     name={getUptimeIcon(deviceStatus?.left?.uptime || -1) as any} 
                                     size={14} 
                                     color={getUptimeIconColor(deviceStatus?.left?.uptime || -1)}
-                                    style={{ marginRight: 4 }}
+                                    style={styles.uptimeIconSpacing}
                                 />
                                 <Text style={styles.firmwareText}>
                                     {deviceStatus?.left?.uptime && deviceStatus.left.uptime >= 0 
@@ -303,12 +304,12 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                     {rightConnected && (
                         <View style={styles.firmwareItem}>
                             <Text style={styles.firmwareLabel}>Right:</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={styles.uptimeIconRow}>
                                 <MaterialIcons 
                                     name={getUptimeIcon(deviceStatus?.right?.uptime || -1) as any} 
                                     size={14} 
                                     color={getUptimeIconColor(deviceStatus?.right?.uptime || -1)}
-                                    style={{ marginRight: 4 }}
+                                    style={styles.uptimeIconSpacing}
                                 />
                                 <Text style={styles.firmwareText}>
                                     {deviceStatus?.right?.uptime && deviceStatus.right.uptime >= 0 

@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { bottomNavigationStyles as styles } from '../styles/BottomNavigationStyles';
+import { MaterialColors } from '../styles/MaterialTheme';
 
 interface AppBottomNavigationProps {
     currentView: 'home' | 'device';
@@ -22,13 +23,8 @@ const AppBottomNavigation: React.FC<AppBottomNavigationProps> = ({
         currentView === tabName && styles.activeTabText
     ];
 
-    const getTabIconStyle = (tabName: 'home' | 'device') => [
-        styles.tabIcon,
-        currentView === tabName && styles.activeTabIcon
-    ];
-
     const getIconColor = (tabName: 'home' | 'device') => 
-        currentView === tabName ? '#6200ee' : '#757575';
+        currentView === tabName ? MaterialColors.primary : MaterialColors.onSurfaceVariant;
 
     return (
         <View style={styles.tabBar}>

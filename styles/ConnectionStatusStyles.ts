@@ -196,4 +196,15 @@ export const connectionStatusStyles = StyleSheet.create({
         fontSize: 10,
         lineHeight: 12,
     },
+    // Inline style replacements
+    batteryIconSpacing: {
+        marginLeft: 4,
+    },
+    uptimeIconRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    uptimeIconSpacing: {
+        marginRight: 4,
+    },
 });

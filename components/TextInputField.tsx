@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, TextInput, View } from 'react-native';
+import { MaterialColors } from '../styles/MaterialTheme';
 import { textInputStyles as styles } from '../styles/TextInputStyles';
 
 interface TextInputFieldProps {
@@ -29,7 +30,7 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
                 placeholder={placeholder}
                 multiline={multiline}
                 numberOfLines={numberOfLines}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={MaterialColors.onSurfaceVariant}
             />
         </View>
     );

@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { deviceConnectionStyles as styles } from '../styles/DeviceConnectionStyles';
+import { MaterialColors } from '../styles/MaterialTheme';
 
 interface PairedDevice {
     id: string;
@@ -97,7 +98,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
         >
             <View style={styles.deviceCardContent}>
                 <View style={styles.deviceInfo}>
-                    <MaterialIcons name="bluetooth" size={24} color="#2196f3" />
+                    <MaterialIcons name="bluetooth" size={24} color={MaterialColors.primary} />
                     <View style={styles.deviceTextContainer}>
                         <Text style={styles.deviceName}>{item.name || 'Unknown Device'}</Text>
                         <Text style={styles.deviceId}>{item.id.substring(0, 18)}...</Text>
@@ -118,7 +119,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
 
     const renderEmptyState = () => (
         <View style={styles.emptyState}>
-            <MaterialIcons name="search-off" size={48} color="#bdbdbd" />
+            <MaterialIcons name="search-off" size={48} color={MaterialColors.onSurfaceVariant} />
             <Text style={styles.emptyTitle}>No Even G1 Glasses Found</Text>
             <Text style={styles.emptySubtitle}>
                 This app is a companion for the official Even Realities app. 
@@ -132,7 +133,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                     style={[styles.actionButton, styles.primaryActionButton]}
                     activeOpacity={0.8}
                 >
-                    <MaterialIcons name="refresh" size={20} color="#ffffff" />
+                    <MaterialIcons name="refresh" size={20} color={MaterialColors.onPrimary} />
                     <Text style={styles.primaryActionText}>Scan for G1 Glasses</Text>
                 </TouchableOpacity>
                 
@@ -147,7 +148,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                     style={[styles.actionButton, styles.secondaryActionButton]}
                     activeOpacity={0.8}
                 >
-                    <MaterialIcons name="bluetooth-searching" size={20} color="#757575" />
+                    <MaterialIcons name="bluetooth-searching" size={20} color={MaterialColors.onSurfaceVariant} />
                     <Text style={styles.secondaryActionText}>Show All Bluetooth Devices</Text>
                 </TouchableOpacity>
             </View>
@@ -157,7 +158,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
     const renderLoadingState = () => (
         <View style={styles.loadingContainer}>
             <View style={styles.loadingIconContainer}>
-                <MaterialIcons name="bluetooth-searching" size={32} color="#2196f3" />
+                <MaterialIcons name="bluetooth-searching" size={32} color={MaterialColors.primary} />
             </View>
             <Text style={styles.loadingTitle}>Scanning for Even G1 Glasses</Text>
             <Text style={styles.loadingSubtitle}>This may take a few seconds...</Text>
@@ -168,14 +169,14 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
         return (
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <MaterialIcons name={stepInfo.icon as any} size={48} color="#4caf50" />
+                    <MaterialIcons name={stepInfo.icon as any} size={48} color={MaterialColors.success} />
                     <Text style={styles.title}>{stepInfo.title}</Text>
                     <Text style={styles.subtitle}>{stepInfo.subtitle}</Text>
                 </View>
                 {renderStepIndicator()}
                 <View style={styles.successCard}>
-                    <View style={{ alignItems: 'center' }}>
-                        <MaterialIcons name="celebration" size={32} color="#4caf50" />
+                    <View style={styles.successIconContainer}>
+                        <MaterialIcons name="celebration" size={32} color={MaterialColors.success} />
                         <Text style={styles.successText}>Ready to send messages!</Text>
                     </View>
                 </View>
@@ -186,7 +187,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <MaterialIcons name={stepInfo.icon as any} size={48} color="#2196f3" />
+                <MaterialIcons name={stepInfo.icon as any} size={48} color={MaterialColors.primary} />
                 <Text style={styles.title}>{stepInfo.title}</Text>
                 <Text style={styles.subtitle}>{stepInfo.subtitle}</Text>
             </View>
@@ -211,7 +212,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                                 <MaterialIcons 
                                     name="refresh" 
                                     size={18} 
-                                    color={isScanning ? "#9e9e9e" : "#2196f3"} 
+                                    color={isScanning ? MaterialColors.textDisabled : MaterialColors.primary} 
                                 />
                             </TouchableOpacity>
                         </View>
@@ -220,7 +221,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                             renderItem={renderDeviceCard}
                             keyExtractor={item => item.id}
                             showsVerticalScrollIndicator={false}
-                            contentContainerStyle={{ paddingBottom: 8 }}
+                            contentContainerStyle={styles.flatListContentContainer}
                         />
                     </>
                 )}

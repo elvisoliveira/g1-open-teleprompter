@@ -379,7 +379,14 @@ export const deviceConnectionStyles = StyleSheet.create({
     // Section Divider
     sectionDivider: {
         height: 1,
-        backgroundColor: MaterialColors.borderLight,
+        backgroundColor: MaterialColors.outlineVariant,
         marginVertical: MaterialSpacing.sm,
+    },
+    // Inline style replacements
+    successIconContainer: {
+        alignItems: 'center',
+    },
+    flatListContentContainer: {
+        paddingBottom: 8,
     },
 });

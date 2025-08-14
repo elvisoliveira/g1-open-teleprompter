@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useState } from 'react';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { MaterialColors } from '../styles/MaterialTheme';
 import { sentMessagesStyles as styles } from '../styles/SentMessagesStyles';
 
 interface SentTextItem {
@@ -84,7 +85,7 @@ const SentMessagesScreen: React.FC<SentMessagesScreenProps> = ({
                     onPress={onGoBack}
                     activeOpacity={0.8}
                 >
-                    <MaterialIcons name="arrow-back" size={20} color="#2196f3" />
+                    <MaterialIcons name="arrow-back" size={20} color={MaterialColors.primary} />
                     <Text style={styles.backButtonText}>Back</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>Sent Messages</Text>
@@ -97,7 +98,7 @@ const SentMessagesScreen: React.FC<SentMessagesScreenProps> = ({
             
             {sentTexts.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <MaterialIcons name="mail-outline" size={48} color="#bdbdbd" />
+                    <MaterialIcons name="mail-outline" size={48} color={MaterialColors.onSurfaceVariant} />
                     <Text style={styles.emptyText}>No messages sent yet</Text>
                     <Text style={styles.emptySubtext}>Messages you send will appear here</Text>
                 </View>
@@ -133,7 +134,7 @@ const SentMessagesScreen: React.FC<SentMessagesScreenProps> = ({
                                 onPress={() => onDeleteText(item.id)}
                                 activeOpacity={0.8}
                             >
-                                <MaterialIcons name="delete" size={20} color="#f44336" />
+                                <MaterialIcons name="delete" size={20} color={MaterialColors.error} />
                             </TouchableOpacity>
                         </View>
                     )}

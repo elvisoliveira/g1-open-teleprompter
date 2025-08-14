@@ -1,33 +1,63 @@
-// Simplified Material Theme for Pure React Native
-// Minimalistic design system with essential tokens
+// Material Design 3 Color Palette
+// Modern color system following Material Design 3 specifications
 
 export const MaterialColors = {
-    // Core Brand Colors
-    primary: '#007AFF',
-    primaryLight: '#E3F2FD',
-    secondary: '#5AC8FA',
-    accent: '#FF9500',
+    // Primary colors
+    primary: '#6750A4',
+    onPrimary: '#FFFFFF',
+    primaryContainer: '#EADDFF',
+    onPrimaryContainer: '#21005D',
     
-    // Text Colors
-    text: '#1C1C1E',
-    textSecondary: '#6C6C70',
-    textDisabled: '#C7C7CC',
+    // Secondary colors
+    secondary: '#625B71',
+    onSecondary: '#FFFFFF',
+    secondaryContainer: '#E8DEF8',
+    onSecondaryContainer: '#1D192B',
     
-    // Background Colors
-    background: '#FFFFFF',
-    surface: '#F2F2F7',
-    backgroundSecondary: '#F8F9FA',
+    // Tertiary colors
+    tertiary: '#7D5260',
+    onTertiary: '#FFFFFF',
+    tertiaryContainer: '#FFD8E4',
+    onTertiaryContainer: '#31111D',
     
-    // Status Colors
-    success: '#34C759',
-    warning: '#FF9500',
-    error: '#FF3B30',
-    info: '#007AFF',
+    // Error colors
+    error: '#BA1A1A',
+    onError: '#FFFFFF',
+    errorContainer: '#FFDAD6',
+    onErrorContainer: '#410002',
     
-    // Border & Divider Colors
-    border: '#E5E5EA',
-    borderLight: '#F2F2F7',
-    divider: '#D1D1D6',
+    // Background colors
+    background: '#FFFBFE',
+    onBackground: '#1C1B1F',
+    surface: '#FFFBFE',
+    onSurface: '#1C1B1F',
+    surfaceVariant: '#E7E0EC',
+    onSurfaceVariant: '#49454F',
+    
+    // Outline colors
+    outline: '#79747E',
+    outlineVariant: '#CAC4D0',
+    
+    // Success colors (custom addition)
+    success: '#146C2E',
+    onSuccess: '#FFFFFF',
+    successContainer: '#B7F397',
+    onSuccessContainer: '#002106',
+    
+    // Warning colors (custom addition)
+    warning: '#825500',
+    onWarning: '#FFFFFF',
+    warningContainer: '#FFDDB3',
+    onWarningContainer: '#291800',
+    
+    // Legacy colors for compatibility
+    text: '#1C1B1F', // Same as onBackground
+    textSecondary: '#49454F', // Same as onSurfaceVariant
+    textDisabled: '#79747E', // Same as outline
+    border: '#CAC4D0', // Same as outlineVariant
+    borderLight: '#E7E0EC', // Same as surfaceVariant
+    primaryLight: '#EADDFF', // Same as primaryContainer
+    backgroundSecondary: '#F7F2FA', // Light variant of surface
 };
 
 export const MaterialSpacing = {

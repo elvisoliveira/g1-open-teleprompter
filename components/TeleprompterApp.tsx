@@ -415,7 +415,7 @@ const TeleprompterApp: React.FC = () => {
         
         return (
             <>
-                <View style={{ flex: 1 }}>
+                <View style={teleprompterAppStyles.flexContainer}>
                     {view}
                 </View>
                 {showBottomNav && (
