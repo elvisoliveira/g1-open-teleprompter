@@ -238,11 +238,9 @@ export const messageComposerStyles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: MaterialSpacing.sm,
-        elevation: 2,
     },
     sendButtonDisabled: {
         backgroundColor: MaterialColors.textDisabled,
-        elevation: 0,
     },
     sendButtonIcon: {
         fontSize: 16,
@@ -276,7 +274,6 @@ export const messageComposerStyles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: MaterialSpacing.xs,
-        elevation: 3,
     },
     controlButtonIcon: {
         fontSize: 24,

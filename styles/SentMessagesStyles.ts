@@ -95,7 +95,6 @@ export const sentMessagesStyles = StyleSheet.create({
         marginBottom: MaterialSpacing.sm,
         borderWidth: 1,
         borderColor: MaterialColors.border,
-        elevation: 1,
     },
     currentMessage: {
         backgroundColor: MaterialColors.primaryLight,

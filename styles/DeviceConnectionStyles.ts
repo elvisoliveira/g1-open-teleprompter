@@ -120,6 +120,15 @@ export const deviceConnectionStyles = StyleSheet.create({
         borderColor: MaterialColors.primary,
         backgroundColor: MaterialColors.primaryLight,
     },
+    deviceCardConnecting: {
+        borderColor: MaterialColors.onSurfaceVariant,
+        backgroundColor: MaterialColors.surfaceVariant,
+        opacity: 0.7,
+    },
+    deviceCardDisabled: {
+        opacity: 0.5,
+        backgroundColor: MaterialColors.surfaceVariant,
+    },
     deviceCardContent: {
         paddingVertical: MaterialSpacing.md,
         paddingHorizontal: MaterialSpacing.lg,
@@ -146,6 +155,12 @@ export const deviceConnectionStyles = StyleSheet.create({
         ...MaterialTypography.caption,
         color: MaterialColors.textSecondary,
     },
+    deviceNameConnecting: {
+        color: MaterialColors.onSurfaceVariant,
+    },
+    deviceIdConnecting: {
+        color: MaterialColors.onSurfaceVariant,
+    },
     // Add base badge styles for non-connected state
     statusBadge: {
         backgroundColor: MaterialColors.background,
@@ -161,6 +176,15 @@ export const deviceConnectionStyles = StyleSheet.create({
         paddingVertical: MaterialSpacing.xs,
         borderRadius: MaterialBorderRadius.sm,
     },
+    statusBadgeConnecting: {
+        backgroundColor: MaterialColors.surfaceVariant,
+        paddingHorizontal: MaterialSpacing.sm,
+        paddingVertical: MaterialSpacing.xs,
+        borderRadius: MaterialBorderRadius.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: MaterialSpacing.xs,
+    },
     statusText: {
         ...MaterialTypography.caption,
         color: MaterialColors.textSecondary,
@@ -169,6 +193,11 @@ export const deviceConnectionStyles = StyleSheet.create({
     statusTextConnected: {
         ...MaterialTypography.caption,
         color: MaterialColors.background,
+        fontWeight: '600' as const,
+    },
+    statusTextConnecting: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.onSurfaceVariant,
         fontWeight: '600' as const,
     },
     
@@ -349,29 +378,6 @@ export const deviceConnectionStyles = StyleSheet.create({
         color: MaterialColors.textSecondary,
     },
     
-    // Success Card
-    successCard: {
-        backgroundColor: MaterialColors.primaryLight,
-        borderWidth: 1,
-        borderColor: MaterialColors.primary,
-        borderRadius: MaterialBorderRadius.md,
-        paddingVertical: MaterialSpacing.lg,
-        paddingHorizontal: MaterialSpacing.xl,
-        alignItems: 'center',
-        marginTop: MaterialSpacing.xl,
-    },
-    successIcon: {
-        fontSize: 20,
-        color: MaterialColors.primary,
-        marginBottom: MaterialSpacing.sm,
-    },
-    successText: {
-        ...MaterialTypography.body,
-        color: MaterialColors.text,
-        textAlign: 'center',
-        fontWeight: '500',
-    },
-    
     // Section Divider
     sectionDivider: {
         height: 1,
@@ -379,9 +385,6 @@ export const deviceConnectionStyles = StyleSheet.create({
         marginVertical: MaterialSpacing.sm,
     },
     // Inline style replacements
-    successIconContainer: {
-        alignItems: 'center',
-    },
     flatListContentContainer: {
         paddingBottom: 8,
     },

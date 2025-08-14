@@ -1,9 +1,7 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { DeviceStatus } from '../services/types';
 import { deviceStatusCardStyles as styles } from '../styles/DeviceStatusCardStyles';
-import { MaterialColors } from '../styles/MaterialTheme';
 
 interface DeviceStatusCardProps {
     side: 'left' | 'right';
@@ -20,28 +18,6 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
     deviceStatus,
     isCompact = false
 }) => {
-    const getBatteryIcon = (level: number) => {
-        if (level < 0) return 'battery-unknown';
-        if (level > 75) return 'battery-full';
-        if (level > 50) return 'battery-5-bar';
-        if (level > 25) return 'battery-3-bar';
-        return 'battery-1-bar';
-    };
-
-    const getBatteryIconColor = (level: number) => {
-        if (level < 0) return MaterialColors.onSurfaceVariant;
-        if (level > 25) return MaterialColors.success;
-        return MaterialColors.error;
-    };
-
-    const getConnectionIcon = () => {
-        return connected ? 'bluetooth-connected' : 'bluetooth-disabled';
-    };
-
-    const getConnectionIconColor = () => {
-        return connected ? MaterialColors.success : MaterialColors.error;
-    };
-
     const extractFirmwareVersion = (firmwareText: string | null) => {
         if (!firmwareText) return null;
         
@@ -77,18 +53,6 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
         }
     };
 
-    const getUptimeIconColor = (uptime: number) => {
-        return uptime >= 0 ? MaterialColors.success : MaterialColors.error;
-    };
-
-    const getHeartbeatIcon = () => {
-        return connected ? 'favorite' : 'heart-broken';
-    };
-
-    const getHeartbeatIconColor = () => {
-        return connected ? MaterialColors.success : MaterialColors.error;
-    };
-
     const firmwareVersion = extractFirmwareVersion(deviceStatus?.firmware || null);
 
     return (
@@ -100,12 +64,6 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.titleRow}>
-                    <MaterialIcons 
-                        name={getConnectionIcon() as any}
-                        size={20}
-                        color={getConnectionIconColor()}
-                        style={styles.headerIcon}
-                    />
                     <Text style={[
                         styles.title,
                         connected ? styles.titleConnected : styles.titleDisconnected
@@ -114,12 +72,6 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
                     </Text>
                 </View>
                 <View style={styles.statusIndicator}>
-                    <MaterialIcons 
-                        name={getHeartbeatIcon() as any}
-                        size={16}
-                        color={getHeartbeatIconColor()}
-                        style={styles.heartbeatIcon}
-                    />
                     <Text style={[
                         styles.statusText,
                         connected ? styles.statusTextConnected : styles.statusTextDisconnected
@@ -136,12 +88,6 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
                     {batteryLevel >= 0 && (
                         <View style={styles.infoRow}>
                             <View style={styles.infoLabel}>
-                                <MaterialIcons 
-                                    name={getBatteryIcon(batteryLevel) as any}
-                                    size={18}
-                                    color={getBatteryIconColor(batteryLevel)}
-                                    style={styles.infoIcon}
-                                />
                                 <Text style={styles.labelText}>Battery</Text>
                             </View>
                             <Text style={styles.valueText}>{batteryLevel}%</Text>
@@ -152,12 +98,6 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
                     {firmwareVersion && (
                         <View style={styles.infoRow}>
                             <View style={styles.infoLabel}>
-                                <MaterialIcons 
-                                    name="memory"
-                                    size={18}
-                                    color={MaterialColors.primary}
-                                    style={styles.infoIcon}
-                                />
                                 <Text style={styles.labelText}>Firmware</Text>
                             </View>
                             <Text style={styles.valueText}>{firmwareVersion}</Text>
@@ -168,12 +108,6 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
                     {deviceStatus?.uptime !== undefined && deviceStatus.uptime >= 0 && (
                         <View style={styles.infoRow}>
                             <View style={styles.infoLabel}>
-                                <MaterialIcons 
-                                    name="schedule"
-                                    size={18}
-                                    color={getUptimeIconColor(deviceStatus.uptime)}
-                                    style={styles.infoIcon}
-                                />
                                 <Text style={styles.labelText}>Uptime</Text>
                             </View>
                             <Text style={styles.valueText}>{formatUptime(deviceStatus.uptime)}</Text>
@@ -195,12 +129,6 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
             {/* Disconnected State */}
             {!connected && (
                 <View style={styles.disconnectedContent}>
-                    <MaterialIcons 
-                        name="bluetooth-disabled"
-                        size={32}
-                        color={MaterialColors.onSurfaceVariant}
-                        style={styles.disconnectedIcon}
-                    />
                     <Text style={styles.disconnectedText}>Device not connected</Text>
                 </View>
             )}

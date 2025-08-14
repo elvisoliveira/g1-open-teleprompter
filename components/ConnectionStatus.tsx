@@ -1,10 +1,8 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import BluetoothService from '../services/BluetoothService';
 import { BatteryInfo, DeviceStatus } from '../services/types';
 import { connectionStatusStyles as styles } from '../styles/ConnectionStatusStyles';
-import { MaterialColors } from '../styles/MaterialTheme';
 import DeviceStatusCard from './DeviceStatusCard';
 
 interface ConnectionStatusProps {
@@ -122,35 +120,14 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         return 'All Devices Offline';
     };
 
-    const getOverallStatusIcon = () => {
-        if (bothConnected) return 'check-circle';
-        if (leftConnected || rightConnected) return 'warning';
-        return 'error';
-    };
-
-    const getOverallStatusColor = () => {
-        if (bothConnected) return MaterialColors.success;
-        if (leftConnected || rightConnected) return MaterialColors.warning;
-        return MaterialColors.error;
-    };
-
     return (
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             {/* Overall Status Header */}
             <View style={styles.overallStatusCard}>
                 <View style={styles.overallStatusHeader}>
-                    <MaterialIcons 
-                        name={getOverallStatusIcon() as any}
-                        size={24}
-                        color={getOverallStatusColor()}
-                        style={styles.overallStatusIcon}
-                    />
                     <View style={styles.overallStatusTextContainer}>
                         <Text style={styles.overallStatusTitle}>System Status</Text>
-                        <Text style={[
-                            styles.overallStatusSubtitle,
-                            { color: getOverallStatusColor() }
-                        ]}>
+                        <Text style={styles.overallStatusSubtitle}>
                             {getDeviceStatus()}
                         </Text>
                     </View>
@@ -177,12 +154,6 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
             {/* Last Update Info */}
             {batteryInfo.lastUpdated && (
                 <View style={styles.lastUpdateContainer}>
-                    <MaterialIcons 
-                        name="update"
-                        size={16}
-                        color={MaterialColors.onSurfaceVariant}
-                        style={styles.lastUpdateIcon}
-                    />
                     <Text style={styles.lastUpdateText}>
                         Last updated: {new Date(batteryInfo.lastUpdated).toLocaleTimeString()}
                     </Text>

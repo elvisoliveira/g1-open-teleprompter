@@ -1,5 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { deviceConnectionStyles as styles } from '../styles/DeviceConnectionStyles';
 import { MaterialColors } from '../styles/MaterialTheme';
@@ -13,7 +13,7 @@ interface PairedDevice {
 interface DeviceConnectionProps {
     devices: PairedDevice[];
     isScanning: boolean;
-    connectionStep: 'left' | 'right' | 'complete';
+    connectionStep: 'left' | 'right';
     onDeviceSelect: (deviceId: string, side: 'left' | 'right') => void;
     onRefresh: () => void;
     onShowAllDevices: () => void;
@@ -29,14 +29,15 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
     onShowAllDevices,
     leftConnected
 }) => {
+    const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
     const getStepInfo = () => {
         switch (connectionStep) {
             case 'left':
-                return { icon: 'arrow-back', title: 'Connect Left Glass', subtitle: 'Select your left smart glass' };
+                return { title: 'Connect Left Glass', subtitle: 'Select your left smart glass' };
             case 'right':
-                return { icon: 'arrow-forward', title: 'Connect Right Glass', subtitle: 'Select your right smart glass' };
-            case 'complete':
-                return { icon: 'check-circle', title: 'Connected!', subtitle: 'Both glasses connected successfully' };
+                return { title: 'Connect Right Glass', subtitle: 'Select your right smart glass' };
+            default:
+                return { title: 'Connect Glass', subtitle: 'Select your smart glass' };
         }
     };
 
@@ -52,7 +53,13 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                     <Text style={[
                         styles.stepNumber,
                         !leftConnected && styles.stepNumberInactive
-                    ]}>1</Text>
+                    ]}>
+                        <MaterialIcons
+                            name="arrow-back"
+                            size={11}
+                            color='#49454F'
+                        />
+                    </Text>
                 </View>
                 <View style={[
                     styles.stepLine,
@@ -65,7 +72,13 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                     <Text style={[
                         styles.stepNumber,
                         (connectionStep === 'left' || !leftConnected) && styles.stepNumberInactive
-                    ]}>2</Text>
+                    ]}>
+                        <MaterialIcons
+                            name="arrow-forward"
+                            size={11}
+                            color='#49454F'
+                        />
+                    </Text>
                 </View>
             </View>
             <View style={styles.stepLabels}>
@@ -75,55 +88,94 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                 ]}>Left Glass</Text>
                 <Text style={[
                     styles.stepLabel,
-                    connectionStep === 'complete' && styles.stepLabelActive
+                    connectionStep === 'right' && leftConnected && styles.stepLabelActive
                 ]}>Right Glass</Text>
             </View>
         </View>
     );
 
-    const renderDeviceCard = ({ item }: { item: PairedDevice }) => (
-        <TouchableOpacity
-            style={[
-                styles.deviceCard,
-                item.isConnected && styles.deviceCardConnected
-            ]}
-            onPress={() => {
-                if (connectionStep === 'left') {
-                    onDeviceSelect(item.id, 'left');
-                } else if (connectionStep === 'right') {
-                    onDeviceSelect(item.id, 'right');
-                }
-            }}
-            disabled={connectionStep === 'complete'}
-        >
-            <View style={styles.deviceCardContent}>
-                <View style={styles.deviceInfo}>
-                    <MaterialIcons name="bluetooth" size={24} color={MaterialColors.primary} />
-                    <View style={styles.deviceTextContainer}>
-                        <Text style={styles.deviceName}>{item.name || 'Unknown Device'}</Text>
-                        <Text style={styles.deviceId}>{item.id.substring(0, 18)}...</Text>
+    const renderDeviceCard = ({ item }: { item: PairedDevice }) => {
+        const isConnecting = connectingDeviceId === item.id;
+        const isDisabled = isConnecting || connectingDeviceId !== null;
+
+        return (
+            <TouchableOpacity
+                style={[
+                    styles.deviceCard,
+                    item.isConnected && styles.deviceCardConnected,
+                    isConnecting && styles.deviceCardConnecting,
+                    isDisabled && styles.deviceCardDisabled
+                ]}
+                onPress={async () => {
+                    if (isDisabled) return;
+
+                    setConnectingDeviceId(item.id);
+                    try {
+                        if (connectionStep === 'left') {
+                            await onDeviceSelect(item.id, 'left');
+                        } else if (connectionStep === 'right') {
+                            await onDeviceSelect(item.id, 'right');
+                        }
+                    } finally {
+                        setConnectingDeviceId(null);
+                    }
+                }}
+                disabled={isDisabled}
+                activeOpacity={isDisabled ? 1 : 0.7}
+            >
+                <View style={styles.deviceCardContent}>
+                    <View style={styles.deviceInfo}>
+                        <MaterialIcons
+                            name="bluetooth"
+                            size={24}
+                            color={isConnecting ? MaterialColors.onSurfaceVariant : MaterialColors.primary}
+                        />
+                        <View style={styles.deviceTextContainer}>
+                            <Text style={[
+                                styles.deviceName,
+                                isConnecting && styles.deviceNameConnecting
+                            ]}>
+                                {item.name || 'Unknown Device'}
+                            </Text>
+                            <Text style={[
+                                styles.deviceId,
+                                isConnecting && styles.deviceIdConnecting
+                            ]}>
+                                {item.id.substring(0, 18)}...
+                            </Text>
+                        </View>
+
+                        {isConnecting ? (
+                            <View style={styles.statusBadgeConnecting}>
+                                <MaterialIcons
+                                    name="hourglass-empty"
+                                    size={16}
+                                    color={MaterialColors.onSurfaceVariant}
+                                />
+                                <Text style={styles.statusTextConnecting}>Connecting...</Text>
+                            </View>
+                        ) : item.isConnected ? (
+                            <View style={styles.statusBadgeConnected}>
+                                <Text style={styles.statusTextConnected}>● Connected</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.statusBadge}>
+                                <Text style={styles.statusText}>○ Available</Text>
+                            </View>
+                        )}
                     </View>
-                    {item.isConnected ? (
-                        <View style={styles.statusBadgeConnected}>
-                            <Text style={styles.statusTextConnected}>● Connected</Text>
-                        </View>
-                    ) : (
-                        <View style={styles.statusBadge}>
-                            <Text style={styles.statusText}>○ Available</Text>
-                        </View>
-                    )}
                 </View>
-            </View>
-        </TouchableOpacity>
-    );
+            </TouchableOpacity>
+        );
+    };
 
     const renderEmptyState = () => (
         <View style={styles.emptyState}>
             <MaterialIcons name="search-off" size={48} color={MaterialColors.onSurfaceVariant} />
             <Text style={styles.emptyTitle}>No Even G1 Glasses Found</Text>
             <Text style={styles.emptySubtitle}>
-                This app is a companion for the official Even Realities app. 
-                Please ensure your Even G1 glasses are paired and connected to the official Even Realities app first, 
+                This app is a companion for the official Even Realities app.
+                Please ensure your Even G1 glasses are paired and connected to the official Even Realities app first,
                 then try scanning again.
             </Text>
 
@@ -136,13 +188,13 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                     <MaterialIcons name="refresh" size={20} color={MaterialColors.onPrimary} />
                     <Text style={styles.primaryActionText}>Scan for G1 Glasses</Text>
                 </TouchableOpacity>
-                
+
                 <View style={styles.dividerContainer}>
                     <View style={styles.dividerLine} />
                     <Text style={styles.dividerText}>or</Text>
                     <View style={styles.dividerLine} />
                 </View>
-                
+
                 <TouchableOpacity
                     onPress={onShowAllDevices}
                     style={[styles.actionButton, styles.secondaryActionButton]}
@@ -165,35 +217,13 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
         </View>
     );
 
-    if (connectionStep === 'complete') {
-        return (
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    <MaterialIcons name={stepInfo.icon as any} size={48} color={MaterialColors.success} />
-                    <Text style={styles.title}>{stepInfo.title}</Text>
-                    <Text style={styles.subtitle}>{stepInfo.subtitle}</Text>
-                </View>
-                {renderStepIndicator()}
-                <View style={styles.successCard}>
-                    <View style={styles.successIconContainer}>
-                        <MaterialIcons name="celebration" size={32} color={MaterialColors.success} />
-                        <Text style={styles.successText}>Ready to send messages!</Text>
-                    </View>
-                </View>
-            </View>
-        );
-    }
-
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <MaterialIcons name={stepInfo.icon as any} size={48} color={MaterialColors.primary} />
                 <Text style={styles.title}>{stepInfo.title}</Text>
                 <Text style={styles.subtitle}>{stepInfo.subtitle}</Text>
             </View>
-
             {renderStepIndicator()}
-
             <View style={styles.deviceList}>
                 {isScanning ? (
                     renderLoadingState()
@@ -209,10 +239,10 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                                 style={styles.refreshButton}
                                 activeOpacity={0.8}
                             >
-                                <MaterialIcons 
-                                    name="refresh" 
-                                    size={18} 
-                                    color={isScanning ? MaterialColors.textDisabled : MaterialColors.primary} 
+                                <MaterialIcons
+                                    name="refresh"
+                                    size={18}
+                                    color={isScanning ? MaterialColors.textDisabled : MaterialColors.primary}
                                 />
                             </TouchableOpacity>
                         </View>

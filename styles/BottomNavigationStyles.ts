@@ -16,7 +16,6 @@ export const bottomNavigationStyles = StyleSheet.create({
         borderTopColor: MaterialColors.outlineVariant,
         paddingBottom: 16,
         paddingTop: 12,
-        elevation: 0,
         height: 64,
     },
     tab: {

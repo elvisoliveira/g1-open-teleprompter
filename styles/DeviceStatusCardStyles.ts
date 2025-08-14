@@ -4,12 +4,11 @@ import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypograp
 export const deviceStatusCardStyles = StyleSheet.create({
     container: {
         backgroundColor: MaterialColors.surface,
-        borderRadius: MaterialBorderRadius.lg,
-        borderWidth: 2,
+        borderRadius: MaterialBorderRadius.md,
+        borderWidth: 1,
         borderColor: MaterialColors.outline,
         padding: MaterialSpacing.md,
-        marginVertical: MaterialSpacing.xs,
-        elevation: 2
+        marginVertical: MaterialSpacing.xs
     },
     containerConnected: {
         borderColor: MaterialColors.primary,
@@ -26,18 +25,15 @@ export const deviceStatusCardStyles = StyleSheet.create({
 
     // Header Section
     header: {
-        marginBottom: MaterialSpacing.sm,
+        marginBottom: MaterialSpacing.xs,
     },
     titleRow: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: MaterialSpacing.xs,
     },
-    headerIcon: {
-        marginRight: MaterialSpacing.xs,
-    },
     title: {
-        ...MaterialTypography.h3,
+        ...MaterialTypography.body,
         fontWeight: '600' as const,
         flex: 1,
     },
@@ -52,12 +48,9 @@ export const deviceStatusCardStyles = StyleSheet.create({
         alignItems: 'center',
         flex: 1,
     },
-    heartbeatIcon: {
-        marginRight: MaterialSpacing.xs,
-    },
     statusText: {
         ...MaterialTypography.caption,
-        fontWeight: '500' as const,
+        fontWeight: '400' as const,
     },
     statusTextConnected: {
         color: MaterialColors.success,
@@ -80,13 +73,10 @@ export const deviceStatusCardStyles = StyleSheet.create({
         alignItems: 'center',
         flex: 1,
     },
-    infoIcon: {
-        marginRight: MaterialSpacing.sm,
-    },
     labelText: {
-        ...MaterialTypography.body,
-        color: MaterialColors.onSurface,
-        fontWeight: '500' as const,
+        ...MaterialTypography.caption,
+        color: MaterialColors.onSurfaceVariant,
+        fontWeight: '400' as const,
     },
     valueText: {
         ...MaterialTypography.body,
@@ -117,11 +107,7 @@ export const deviceStatusCardStyles = StyleSheet.create({
     // Disconnected State
     disconnectedContent: {
         alignItems: 'center',
-        paddingVertical: MaterialSpacing.lg,
-    },
-    disconnectedIcon: {
-        marginBottom: MaterialSpacing.sm,
-        opacity: 0.6,
+        paddingVertical: MaterialSpacing.md,
     },
     disconnectedText: {
         ...MaterialTypography.body,

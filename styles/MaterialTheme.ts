@@ -33,6 +33,9 @@ export const MaterialColors = {
     onSurface: '#1C1B1F',
     surfaceVariant: '#E7E0EC',
     onSurfaceVariant: '#49454F',
+    surfaceContainer: '#F3EDF7',
+    surfaceContainerHigh: '#ECE6F0',
+    surfaceContainerHighest: '#E6E0E9',
     
     // Outline colors
     outline: '#79747E',

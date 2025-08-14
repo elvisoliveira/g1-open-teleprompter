@@ -16,11 +16,9 @@ export const actionButtonsStyles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: MaterialSpacing.sm,
-        elevation: 2,
     },
     sendButtonDisabled: {
         backgroundColor: MaterialColors.textDisabled,
-        elevation: 0,
     },
     sendButtonIcon: {
         fontSize: 16,
@@ -45,7 +43,7 @@ export const actionButtonsStyles = StyleSheet.create({
     controlButton: {
         flex: 1,
         backgroundColor: MaterialColors.surface,
-        borderWidth: 2,
+        borderWidth: 1,
         borderColor: MaterialColors.primary,
         borderRadius: MaterialBorderRadius.lg,
         paddingVertical: MaterialSpacing.lg,
@@ -54,7 +52,6 @@ export const actionButtonsStyles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: MaterialSpacing.xs,
-        elevation: 3,
     },
     controlButtonIcon: {
         fontSize: 24,

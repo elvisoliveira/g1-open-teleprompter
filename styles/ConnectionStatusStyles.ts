@@ -12,20 +12,15 @@ export const connectionStatusStyles = StyleSheet.create({
     // Overall Status Card
     overallStatusCard: {
         backgroundColor: MaterialColors.surface,
-        borderRadius: MaterialBorderRadius.lg,
+        borderRadius: MaterialBorderRadius.md,
         padding: MaterialSpacing.lg,
         marginBottom: MaterialSpacing.lg,
-        elevation: 3,
         borderWidth: 1,
         borderColor: MaterialColors.outline,
     },
     overallStatusHeader: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: MaterialSpacing.lg,
-    },
-    overallStatusIcon: {
-        marginRight: MaterialSpacing.md,
+        alignItems: 'center'
     },
     overallStatusTextContainer: {
         flex: 1,
@@ -86,16 +81,13 @@ export const connectionStatusStyles = StyleSheet.create({
         justifyContent: 'center',
         padding: MaterialSpacing.md,
         backgroundColor: MaterialColors.surfaceVariant,
-        borderRadius: MaterialBorderRadius.md,
-        marginTop: MaterialSpacing.sm,
-    },
-    lastUpdateIcon: {
-        marginRight: MaterialSpacing.xs,
+        borderRadius: MaterialBorderRadius.sm,
+        marginTop: MaterialSpacing.xs,
     },
     lastUpdateText: {
         ...MaterialTypography.caption,
         color: MaterialColors.onSurfaceVariant,
-        fontWeight: '500' as const,
+        fontWeight: '400' as const,
     },
 
     // Legacy styles (kept for compatibility)

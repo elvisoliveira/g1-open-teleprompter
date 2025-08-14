@@ -16,7 +16,7 @@ export const outputModeSelectorStyles = StyleSheet.create({
     optionButton: {
         backgroundColor: MaterialColors.surface,
         borderRadius: MaterialBorderRadius.md,
-        borderWidth: 2,
+        borderWidth: 1,
         borderColor: MaterialColors.border,
         padding: MaterialSpacing.md,
         marginVertical: MaterialSpacing.xs / 2,

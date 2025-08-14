@@ -12,6 +12,7 @@ import HomeScreen from './HomeScreen';
 import ReconnectionScreen from './ReconnectionScreen';
 import SentMessagesScreen from './SentMessagesScreen';
 import SplashScreen from './SplashScreen';
+import TopAppBar from './TopAppBar';
 
 interface PairedDevice {
     id: string;
@@ -32,7 +33,7 @@ const STORAGE_KEYS = {
 };
 
 type AppView = 'splash' | 'connection' | 'home' | 'device' | 'messages' | 'reconnection';
-type ConnectionStep = 'left' | 'right' | 'complete';
+type ConnectionStep = 'left' | 'right';
 
 const TeleprompterApp: React.FC = () => {
     // Core state
@@ -102,11 +103,10 @@ const TeleprompterApp: React.FC = () => {
 
     // Auto-advance to home when both devices connected
     useEffect(() => {
-        if (leftConnected && rightConnected && connectionStep !== 'complete') {
-            setConnectionStep('complete');
+        if (leftConnected && rightConnected) {
             setCurrentView('home');
         }
-    }, [leftConnected, rightConnected, connectionStep]);
+    }, [leftConnected, rightConnected]);
 
     // Storage utility functions
     const saveMacAddress = async (side: 'left' | 'right', macAddress: string) => {
@@ -164,7 +164,6 @@ const TeleprompterApp: React.FC = () => {
             // If we reach here, both connections succeeded
             setLeftConnected(true);
             setRightConnected(true);
-            setConnectionStep('complete');
             setCurrentView('home');
             setIsAutoConnecting(false);
             return true;
@@ -410,8 +409,12 @@ const TeleprompterApp: React.FC = () => {
         // Show bottom navigation for home and device views
         const showBottomNav = currentView === 'home' || currentView === 'device';
         
+        // Show top app bar for main app views (not splash, connection, or reconnection)
+        const showTopAppBar = currentView === 'home' || currentView === 'device' || currentView === 'messages';
+        
         return (
             <>
+                {showTopAppBar && <TopAppBar />}
                 <View style={teleprompterAppStyles.flexContainer}>
                     {view}
                 </View>
