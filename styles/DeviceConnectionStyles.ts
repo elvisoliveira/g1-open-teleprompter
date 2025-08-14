@@ -257,10 +257,6 @@ export const deviceConnectionStyles = StyleSheet.create({
     primaryActionButton: {
         backgroundColor: MaterialColors.primary,
         elevation: 2,
-        shadowColor: MaterialColors.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
     },
     secondaryActionButton: {
         backgroundColor: 'transparent',

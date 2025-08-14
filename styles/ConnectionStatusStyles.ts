@@ -2,7 +2,103 @@ import { StyleSheet } from 'react-native';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const connectionStatusStyles = StyleSheet.create({
-    // Status Card
+    // Main Container
+    container: {
+        flex: 1,
+        backgroundColor: MaterialColors.background,
+        padding: MaterialSpacing.md,
+    },
+
+    // Overall Status Card
+    overallStatusCard: {
+        backgroundColor: MaterialColors.surface,
+        borderRadius: MaterialBorderRadius.lg,
+        padding: MaterialSpacing.lg,
+        marginBottom: MaterialSpacing.lg,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: MaterialColors.outline,
+    },
+    overallStatusHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: MaterialSpacing.lg,
+    },
+    overallStatusIcon: {
+        marginRight: MaterialSpacing.md,
+    },
+    overallStatusTextContainer: {
+        flex: 1,
+    },
+    overallStatusTitle: {
+        ...MaterialTypography.h2,
+        color: MaterialColors.onSurface,
+        fontWeight: '600' as const,
+        marginBottom: MaterialSpacing.xs,
+    },
+    overallStatusSubtitle: {
+        ...MaterialTypography.body,
+        fontWeight: '500' as const,
+    },
+
+    // Quick Stats
+    quickStatsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: MaterialSpacing.md,
+        borderTopWidth: 1,
+        borderTopColor: MaterialColors.outlineVariant,
+    },
+    quickStat: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    quickStatValue: {
+        ...MaterialTypography.h3,
+        color: MaterialColors.primary,
+        fontWeight: '700' as const,
+        marginBottom: MaterialSpacing.xs,
+    },
+    quickStatLabel: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.onSurfaceVariant,
+        textAlign: 'center',
+        fontWeight: '500' as const,
+    },
+    quickStatDivider: {
+        width: 1,
+        height: 40,
+        backgroundColor: MaterialColors.outlineVariant,
+        marginHorizontal: MaterialSpacing.sm,
+    },
+
+    // Devices Container
+    devicesContainer: {
+        gap: MaterialSpacing.md,
+        marginBottom: MaterialSpacing.lg,
+    },
+
+    // Last Update Info
+    lastUpdateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: MaterialSpacing.md,
+        backgroundColor: MaterialColors.surfaceVariant,
+        borderRadius: MaterialBorderRadius.md,
+        marginTop: MaterialSpacing.sm,
+    },
+    lastUpdateIcon: {
+        marginRight: MaterialSpacing.xs,
+    },
+    lastUpdateText: {
+        ...MaterialTypography.caption,
+        color: MaterialColors.onSurfaceVariant,
+        fontWeight: '500' as const,
+    },
+
+    // Legacy styles (kept for compatibility)
     statusCard: {
         backgroundColor: MaterialColors.surface,
         borderRadius: MaterialBorderRadius.md,
@@ -25,8 +121,6 @@ export const connectionStatusStyles = StyleSheet.create({
         color: MaterialColors.text,
         fontWeight: '600' as const,
     },
-    
-    // Status Header
     statusHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -53,8 +147,6 @@ export const connectionStatusStyles = StyleSheet.create({
     heartbeatHealthy: {
         color: MaterialColors.primary,
     },
-    
-    // Device Container
     deviceContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -119,8 +211,6 @@ export const connectionStatusStyles = StyleSheet.create({
         fontSize: 12,
         marginLeft: MaterialSpacing.xs,
     },
-    
-    // Warning and Reconnection Styles
     warningContainer: {
         flexDirection: 'row',
         alignItems: 'flex-start',
@@ -163,8 +253,6 @@ export const connectionStatusStyles = StyleSheet.create({
         color: '#FFFFFF',
         fontWeight: '600' as const,
     },
-
-    // Firmware Information
     firmwareContainer: {
         marginTop: MaterialSpacing.md,
         paddingTop: MaterialSpacing.md,
@@ -196,7 +284,6 @@ export const connectionStatusStyles = StyleSheet.create({
         fontSize: 10,
         lineHeight: 12,
     },
-    // Inline style replacements
     batteryIconSpacing: {
         marginLeft: 4,
     },

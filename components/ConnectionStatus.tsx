@@ -1,10 +1,11 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import BluetoothService from '../services/BluetoothService';
 import { BatteryInfo, DeviceStatus } from '../services/types';
 import { connectionStatusStyles as styles } from '../styles/ConnectionStatusStyles';
 import { MaterialColors } from '../styles/MaterialTheme';
+import DeviceStatusCard from './DeviceStatusCard';
 
 interface ConnectionStatusProps {
     leftConnected: boolean;
@@ -114,214 +115,80 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         }
     };
 
-    const getDeviceIcon = (connected: boolean) => {
-        return connected ? '✓' : '✗';
+    const getDeviceStatus = () => {
+        if (!leftConnected && !rightConnected) return 'All Devices Offline';
+        if (bothConnected) return 'All Devices Online';
+        if (leftConnected || rightConnected) return 'Partial Connection';
+        return 'All Devices Offline';
     };
 
-    const getBatteryDisplay = (batteryLevel: number) => {
-        if (batteryLevel < 0) return '';
-        return ` (${batteryLevel}%)`;
+    const getOverallStatusIcon = () => {
+        if (bothConnected) return 'check-circle';
+        if (leftConnected || rightConnected) return 'warning';
+        return 'error';
     };
 
-    const getBatteryIcon = (batteryLevel: number) => {
-        if (batteryLevel < 0) return 'battery-unknown';
-        if (batteryLevel > 75) return 'battery-full';
-        if (batteryLevel > 50) return 'battery-5-bar';
-        if (batteryLevel > 25) return 'battery-3-bar';
-        return 'battery-1-bar';
-    };
-
-    const getBatteryIconColor = (batteryLevel: number) => {
-        if (batteryLevel < 0) return MaterialColors.onSurfaceVariant;
-        if (batteryLevel > 25) return MaterialColors.success;
+    const getOverallStatusColor = () => {
+        if (bothConnected) return MaterialColors.success;
+        if (leftConnected || rightConnected) return MaterialColors.warning;
         return MaterialColors.error;
     };
 
-    const extractFirmwareVersion = (firmwareText: string | null) => {
-        if (!firmwareText) return null;
-        
-        // Extract version from firmware text
-        // Example: "net build time: 2024-12-28 20:21:57, app build time 2024-12-28 20:20:45, ver 1.4.5, JBD DeviceID 4010"
-        const versionMatch = firmwareText.match(/ver\s+([\d\.]+)/);
-        if (versionMatch) {
-            return versionMatch[1];
-        }
-        
-        // Fallback: look for version patterns
-        const fallbackMatch = firmwareText.match(/v?(\d+\.\d+\.\d+)/);
-        if (fallbackMatch) {
-            return fallbackMatch[1];
-        }
-        
-        return 'Unknown';
-    };
-
-    const getFirmwareDisplay = (firmwareText: string | null) => {
-        if (!firmwareText) return '';
-        const version = extractFirmwareVersion(firmwareText);
-        return version ? ` (fw: ${version})` : '';
-    };
-
-    const getUptimeDisplay = (uptime: number) => {
-        if (uptime < 0) return '';
-        
-        const hours = Math.floor(uptime / 3600);
-        const minutes = Math.floor((uptime % 3600) / 60);
-        const seconds = uptime % 60;
-        
-        if (hours > 0) {
-            return ` (up: ${hours}h ${minutes}m)`;
-        } else if (minutes > 0) {
-            return ` (up: ${minutes}m ${seconds}s)`;
-        } else {
-            return ` (up: ${seconds}s)`;
-        }
-    };
-
-    const getUptimeIcon = (uptime: number) => {
-        return uptime >= 0 ? 'schedule' : 'error';
-    };
-
-    const getUptimeIconColor = (uptime: number) => {
-        return uptime >= 0 ? MaterialColors.success : MaterialColors.error;
-    };
-
-    const getDeviceStatus = () => {
-        if (!leftConnected && !rightConnected) return 'Disconnected';
-        if (bothConnected) return 'Both Connected';
-        if (leftConnected || rightConnected) return 'Partial Connection';
-        return 'Disconnected';
-    };
-
     return (
-        <View style={[styles.statusCard, bothConnected ? styles.statusConnected : styles.statusPartial]}>
-            <View style={styles.statusHeader}>
-                <Text style={styles.statusTitle}>Device Status</Text>
-                <Text style={[styles.statusOverview, bothConnected && styles.statusOverviewConnected]}>
-                    {getDeviceStatus()}
-                </Text>
-            </View>
-            
-            <View style={styles.deviceContainer}>
-                <View style={[
-                    styles.deviceChip, 
-                    leftConnected && styles.deviceChipConnected
-                ]}>
-                    <Text style={[
-                        styles.deviceIcon, 
-                        leftConnected && styles.deviceIconConnected
-                    ]}>
-                        {getDeviceIcon(leftConnected)}
-                    </Text>
-                    <Text style={[
-                        styles.deviceText, 
-                        leftConnected && styles.deviceTextConnected
-                    ]}>
-                        Left Glass{getBatteryDisplay(batteryInfo.left)}{getFirmwareDisplay(deviceStatus?.left?.firmware || null)}{getUptimeDisplay(deviceStatus?.left?.uptime || -1)}
-                    </Text>
-                    {leftConnected && batteryInfo.left >= 0 && (
-                        <MaterialIcons 
-                            name={getBatteryIcon(batteryInfo.left) as any} 
-                            size={16} 
-                            color={getBatteryIconColor(batteryInfo.left)}
-                            style={styles.batteryIconSpacing}
-                        />
-                    )}
-                </View>
-                
-                <View style={[
-                    styles.deviceChip, 
-                    rightConnected && styles.deviceChipConnected
-                ]}>
-                    <Text style={[
-                        styles.deviceIcon, 
-                        rightConnected && styles.deviceIconConnected
-                    ]}>
-                        {getDeviceIcon(rightConnected)}
-                    </Text>
-                    <Text style={[
-                        styles.deviceText, 
-                        rightConnected && styles.deviceTextConnected
-                    ]}>
-                        Right Glass{getBatteryDisplay(batteryInfo.right)}{getFirmwareDisplay(deviceStatus?.right?.firmware || null)}{getUptimeDisplay(deviceStatus?.right?.uptime || -1)}
-                    </Text>
-                    {rightConnected && batteryInfo.right >= 0 && (
-                        <MaterialIcons 
-                            name={getBatteryIcon(batteryInfo.right) as any} 
-                            size={16} 
-                            color={getBatteryIconColor(batteryInfo.right)}
-                            style={styles.batteryIconSpacing}
-                        />
-                    )}
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            {/* Overall Status Header */}
+            <View style={styles.overallStatusCard}>
+                <View style={styles.overallStatusHeader}>
+                    <MaterialIcons 
+                        name={getOverallStatusIcon() as any}
+                        size={24}
+                        color={getOverallStatusColor()}
+                        style={styles.overallStatusIcon}
+                    />
+                    <View style={styles.overallStatusTextContainer}>
+                        <Text style={styles.overallStatusTitle}>System Status</Text>
+                        <Text style={[
+                            styles.overallStatusSubtitle,
+                            { color: getOverallStatusColor() }
+                        ]}>
+                            {getDeviceStatus()}
+                        </Text>
+                    </View>
                 </View>
             </View>
-            
-            {/* Firmware Information Section */}
-            {(deviceStatus?.left?.firmware || deviceStatus?.right?.firmware) && (
-                <View style={styles.firmwareContainer}>
-                    <Text style={styles.firmwareTitle}>Firmware Information</Text>
-                    {deviceStatus?.left?.firmware && leftConnected && (
-                        <View style={styles.firmwareItem}>
-                            <Text style={styles.firmwareLabel}>Left:</Text>
-                            <Text style={styles.firmwareText} numberOfLines={2}>
-                                {deviceStatus.left.firmware}
-                            </Text>
-                        </View>
-                    )}
-                    {deviceStatus?.right?.firmware && rightConnected && (
-                        <View style={styles.firmwareItem}>
-                            <Text style={styles.firmwareLabel}>Right:</Text>
-                            <Text style={styles.firmwareText} numberOfLines={2}>
-                                {deviceStatus.right.firmware}
-                            </Text>
-                        </View>
-                    )}
-                </View>
-            )}
 
-            {/* Device Uptime Information */}
-            {(leftConnected || rightConnected) && (
-                <View style={styles.firmwareContainer}>
-                    <Text style={styles.firmwareTitle}>Device Uptime</Text>
-                    {leftConnected && (
-                        <View style={styles.firmwareItem}>
-                            <Text style={styles.firmwareLabel}>Left:</Text>
-                            <View style={styles.uptimeIconRow}>
-                                <MaterialIcons 
-                                    name={getUptimeIcon(deviceStatus?.left?.uptime || -1) as any} 
-                                    size={14} 
-                                    color={getUptimeIconColor(deviceStatus?.left?.uptime || -1)}
-                                    style={styles.uptimeIconSpacing}
-                                />
-                                <Text style={styles.firmwareText}>
-                                    {deviceStatus?.left?.uptime && deviceStatus.left.uptime >= 0 
-                                        ? `${Math.floor(deviceStatus.left.uptime / 3600)}h ${Math.floor((deviceStatus.left.uptime % 3600) / 60)}m ${deviceStatus.left.uptime % 60}s` 
-                                        : 'Unknown'}
-                                </Text>
-                            </View>
-                        </View>
-                    )}
-                    {rightConnected && (
-                        <View style={styles.firmwareItem}>
-                            <Text style={styles.firmwareLabel}>Right:</Text>
-                            <View style={styles.uptimeIconRow}>
-                                <MaterialIcons 
-                                    name={getUptimeIcon(deviceStatus?.right?.uptime || -1) as any} 
-                                    size={14} 
-                                    color={getUptimeIconColor(deviceStatus?.right?.uptime || -1)}
-                                    style={styles.uptimeIconSpacing}
-                                />
-                                <Text style={styles.firmwareText}>
-                                    {deviceStatus?.right?.uptime && deviceStatus.right.uptime >= 0 
-                                        ? `${Math.floor(deviceStatus.right.uptime / 3600)}h ${Math.floor((deviceStatus.right.uptime % 3600) / 60)}m ${deviceStatus.right.uptime % 60}s` 
-                                        : 'Unknown'}
-                                </Text>
-                            </View>
-                        </View>
-                    )}
+            {/* Device Status Cards */}
+            <View style={styles.devicesContainer}>
+                <DeviceStatusCard
+                    side="left"
+                    connected={leftConnected}
+                    batteryLevel={batteryInfo.left}
+                    deviceStatus={deviceStatus?.left}
+                />
+                
+                <DeviceStatusCard
+                    side="right"
+                    connected={rightConnected}
+                    batteryLevel={batteryInfo.right}
+                    deviceStatus={deviceStatus?.right}
+                />
+            </View>
+
+            {/* Last Update Info */}
+            {batteryInfo.lastUpdated && (
+                <View style={styles.lastUpdateContainer}>
+                    <MaterialIcons 
+                        name="update"
+                        size={16}
+                        color={MaterialColors.onSurfaceVariant}
+                        style={styles.lastUpdateIcon}
+                    />
+                    <Text style={styles.lastUpdateText}>
+                        Last updated: {new Date(batteryInfo.lastUpdated).toLocaleTimeString()}
+                    </Text>
                 </View>
             )}
-        </View>
+        </ScrollView>
     );
 };
 

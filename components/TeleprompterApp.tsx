@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { defaultBitmapGenerator } from '../services/BitmapGenerator';
 import BluetoothService from '../services/BluetoothService';
@@ -50,7 +50,6 @@ const TeleprompterApp: React.FC = () => {
     const [savedLeftMac, setSavedLeftMac] = useState<string | null>(null);
     const [savedRightMac, setSavedRightMac] = useState<string | null>(null);
     const [isAutoConnecting, setIsAutoConnecting] = useState(false);
-    const [reconnectionFailed, setReconnectionFailed] = useState(false);
     const [splashMessage, setSplashMessage] = useState('Initializing...');
     
     // Message state
@@ -60,12 +59,46 @@ const TeleprompterApp: React.FC = () => {
     const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
     const [isSending, setIsSending] = useState(false);
 
+    const initializeApp = useCallback(async () => {
+        try {
+            // Step 1: Check for saved MAC addresses
+            setSplashMessage('Checking for saved devices...');
+            const { leftMac, rightMac } = await loadSavedMacAddresses();
+            
+            // Step 2: If we have saved devices, try auto-reconnection
+            if (leftMac && rightMac) {
+                setSplashMessage('Connecting to saved Even G1 devices...');
+                const reconnected = await attemptAutoReconnection(leftMac, rightMac);
+                
+                if (reconnected) {
+                    // Success! Auto-reconnection worked, we're already in home view
+                    return;
+                } else {
+                    // Auto-reconnection failed, show reconnection screen
+                    setCurrentView('reconnection');
+                    return;
+                }
+            }
+            
+            // Step 3: No saved devices, go to connection screen
+            setSplashMessage('Loading available devices...');
+            await loadPairedDevices();
+            setCurrentView('connection');
+            
+        } catch (error) {
+            console.error('Failed to initialize app:', error);
+            // On error, default to connection screen
+            setCurrentView('connection');
+            Alert.alert('Initialization Error', 'There was an issue starting the app. Please try connecting manually.');
+        }
+    }, []);
+
     useEffect(() => {
         initializeApp();
         return () => {
             BluetoothService.disconnect();
         };
-    }, []);
+    }, [initializeApp]);
 
     // Auto-advance to home when both devices connected
     useEffect(() => {
@@ -139,41 +172,6 @@ const TeleprompterApp: React.FC = () => {
             console.error('Auto-reconnection failed:', error);
             setIsAutoConnecting(false);
             return false;
-        }
-    };
-
-    const initializeApp = async () => {
-        try {
-            // Step 1: Check for saved MAC addresses
-            setSplashMessage('Checking for saved devices...');
-            const { leftMac, rightMac } = await loadSavedMacAddresses();
-            
-            // Step 2: If we have saved devices, try auto-reconnection
-            if (leftMac && rightMac) {
-                setSplashMessage('Connecting to saved Even G1 devices...');
-                const reconnected = await attemptAutoReconnection(leftMac, rightMac);
-                
-                if (reconnected) {
-                    // Success! Auto-reconnection worked, we're already in home view
-                    return;
-                } else {
-                    // Auto-reconnection failed, show reconnection screen
-                    setReconnectionFailed(true);
-                    setCurrentView('reconnection');
-                    return;
-                }
-            }
-            
-            // Step 3: No saved devices, go to connection screen
-            setSplashMessage('Loading available devices...');
-            await loadPairedDevices();
-            setCurrentView('connection');
-            
-        } catch (error) {
-            console.error('Failed to initialize app:', error);
-            // On error, default to connection screen
-            setCurrentView('connection');
-            Alert.alert('Initialization Error', 'There was an issue starting the app. Please try connecting manually.');
         }
     };
 
@@ -332,7 +330,6 @@ const TeleprompterApp: React.FC = () => {
     const handleConnectAgain = async () => {
         // Clear saved devices and go to manual connection
         await clearSavedMacAddresses();
-        setReconnectionFailed(false);
         setCurrentView('connection');
         setConnectionStep('left');
         setLeftConnected(false);

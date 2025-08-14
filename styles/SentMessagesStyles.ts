@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { MaterialColors, MaterialSpacing, MaterialBorderRadius, MaterialTypography } from './MaterialTheme';
+import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const sentMessagesStyles = StyleSheet.create({
     container: {
@@ -96,10 +96,6 @@ export const sentMessagesStyles = StyleSheet.create({
         borderWidth: 1,
         borderColor: MaterialColors.border,
         elevation: 1,
-        shadowColor: MaterialColors.text,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
     },
     currentMessage: {
         backgroundColor: MaterialColors.primaryLight,
