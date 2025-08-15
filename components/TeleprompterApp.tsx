@@ -9,6 +9,7 @@ import AppBottomNavigation from './AppBottomNavigation';
 import DeviceConnection from './DeviceConnection';
 import DeviceScreen from './DeviceScreen';
 import HomeScreen from './HomeScreen';
+import PresentationsScreen from './PresentationsScreen';
 import ReconnectionScreen from './ReconnectionScreen';
 import SentMessagesScreen from './SentMessagesScreen';
 import SplashScreen from './SplashScreen';
@@ -32,7 +33,7 @@ const STORAGE_KEYS = {
     RIGHT_DEVICE_MAC: 'right_device_mac',
 };
 
-type AppView = 'splash' | 'connection' | 'home' | 'device' | 'messages' | 'reconnection';
+type AppView = 'splash' | 'connection' | 'home' | 'device' | 'messages' | 'reconnection' | 'presentations';
 type ConnectionStep = 'left' | 'right';
 
 const TeleprompterApp: React.FC = () => {
@@ -380,6 +381,9 @@ const TeleprompterApp: React.FC = () => {
                         />
                     );
                 
+                case 'presentations':
+                    return <PresentationsScreen />;
+                
                 case 'messages':
                     return (
                         <SentMessagesScreen
@@ -407,10 +411,10 @@ const TeleprompterApp: React.FC = () => {
         })();
 
         // Show bottom navigation for home and device views
-        const showBottomNav = currentView === 'home' || currentView === 'device';
+        const showBottomNav = currentView === 'home' || currentView === 'device' || currentView === 'presentations';
         
         // Show top app bar for main app views (not splash, connection, or reconnection)
-        const showTopAppBar = currentView === 'home' || currentView === 'device' || currentView === 'messages';
+        const showTopAppBar = currentView === 'home' || currentView === 'device' || currentView === 'messages' || currentView === 'presentations';
         
         return (
             <>

@@ -5,29 +5,29 @@ import { bottomNavigationStyles as styles } from '../styles/BottomNavigationStyl
 import { MaterialColors } from '../styles/MaterialTheme';
 
 interface AppBottomNavigationProps {
-    currentView: 'home' | 'device';
-    onNavigate: (view: 'home' | 'device') => void;
+    currentView: 'home' | 'device' | 'presentations';
+    onNavigate: (view: 'home' | 'device' | 'presentations') => void;
 }
 
 const AppBottomNavigation: React.FC<AppBottomNavigationProps> = ({
     currentView,
     onNavigate
 }) => {
-    const getTabStyle = (tabName: 'home' | 'device') => 
+    const getTabStyle = (tabName: 'home' | 'device' | 'presentations') => 
         currentView === tabName ? styles.activeTab : styles.tab;
 
-    const getTabInnerStyle = (tabName: 'home' | 'device') => 
+    const getTabInnerStyle = (tabName: 'home' | 'device' | 'presentations') => 
         currentView === tabName ? styles.activeTabInner : styles.tabInner;
 
-    const getIconContainerStyle = (tabName: 'home' | 'device') => 
+    const getIconContainerStyle = (tabName: 'home' | 'device' | 'presentations') => 
         currentView === tabName ? styles.activeIconContainer : styles.iconContainer;
 
-    const getTabTextStyle = (tabName: 'home' | 'device') => [
+    const getTabTextStyle = (tabName: 'home' | 'device' | 'presentations') => [
         styles.tabText,
         currentView === tabName && styles.activeTabText
     ];
 
-    const getIconColor = (tabName: 'home' | 'device') => 
+    const getIconColor = (tabName: 'home' | 'device' | 'presentations') => 
         currentView === tabName ? MaterialColors.onSecondaryContainer : MaterialColors.onSurfaceVariant;
 
     return (
@@ -63,6 +63,23 @@ const AppBottomNavigation: React.FC<AppBottomNavigationProps> = ({
                         />
                     </View>
                     <Text style={getTabTextStyle('device')}>Device</Text>
+                </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+                style={getTabStyle('presentations')}
+                onPress={() => onNavigate('presentations')}
+                activeOpacity={0.6}
+            >
+                <View style={getTabInnerStyle('presentations')}>
+                    <View style={getIconContainerStyle('presentations')}>
+                        <MaterialIcons 
+                            name="slideshow" 
+                            size={20} 
+                            color={getIconColor('presentations')}
+                        />
+                    </View>
+                    <Text style={getTabTextStyle('presentations')}>Presentations</Text>
                 </View>
             </TouchableOpacity>
         </View>
