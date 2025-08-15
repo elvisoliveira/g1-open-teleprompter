@@ -231,8 +231,9 @@ const TeleprompterApp: React.FC = () => {
         }
     };
 
-    const handleSendMessage = async () => {
-        if (!inputText.trim()) return;
+    const handleSendMessage = async (text?: string) => {
+        const messageText = text || inputText.trim();
+        if (!messageText) return;
         
         setIsSending(true);
         try {
@@ -240,11 +241,11 @@ const TeleprompterApp: React.FC = () => {
             
             if (outputMode === 'text') {
                 // Send as text directly
-                success = await BluetoothService.sendText(inputText);
+                success = await BluetoothService.sendText(messageText);
             } else {
                 // Convert text to BMP bitmap and send as image
                 try {
-                    const bmpBuffer = await defaultBitmapGenerator.textToBitmap(inputText);
+                    const bmpBuffer = await defaultBitmapGenerator.textToBitmap(messageText);
                     
                     // Validate the BMP format
                     if (!defaultBitmapGenerator.validateBmpFormat(bmpBuffer)) {
@@ -265,12 +266,16 @@ const TeleprompterApp: React.FC = () => {
             if (success) {
                 const newMessage: SentTextItem = {
                     id: Date.now().toString(),
-                    text: inputText,
+                    text: messageText,
                     timestamp: new Date()
                 };
                 setSentMessages(prev => [newMessage, ...prev]);
                 setCurrentMessageId(newMessage.id);
-                setInputText('');
+                
+                // Only clear input text if we're using the default behavior (not when text is passed)
+                if (!text) {
+                    setInputText('');
+                }
                 
                 // Show success message with mode info
                 const modeText = outputMode === 'text' ? 'text' : 'image (BMP)';
@@ -382,7 +387,10 @@ const TeleprompterApp: React.FC = () => {
                     );
                 
                 case 'presentations':
-                    return <PresentationsScreen />;
+                    return <PresentationsScreen 
+                        onSendMessage={handleSendMessage} 
+                        onExitToDashboard={handleExitToDashboard}
+                    />;
                 
                 case 'messages':
                     return (

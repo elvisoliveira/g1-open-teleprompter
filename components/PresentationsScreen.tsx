@@ -19,7 +19,12 @@ interface Presentation {
 
 const STORAGE_KEY = 'presentations_data';
 
-const PresentationsScreen: React.FC = () => {
+interface PresentationsScreenProps {
+    onSendMessage: (text: string) => Promise<void>;
+    onExitToDashboard: () => Promise<void>;
+}
+
+const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ onSendMessage, onExitToDashboard }) => {
     const [presentations, setPresentations] = useState<Presentation[]>([]);
     const [selectedPresentation, setSelectedPresentation] = useState<Presentation | null>(null);
     const [newPresentationName, setNewPresentationName] = useState('');
@@ -128,6 +133,8 @@ const PresentationsScreen: React.FC = () => {
                 presentation={selectedPresentation}
                 onGoBack={() => setSelectedPresentation(null)}
                 onUpdatePresentation={handleUpdatePresentation}
+                onSendMessage={onSendMessage}
+                onExitToDashboard={onExitToDashboard}
             />
         );
     }

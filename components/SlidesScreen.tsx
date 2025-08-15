@@ -1,5 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
@@ -19,17 +19,22 @@ interface SlidesScreenProps {
     presentation: Presentation;
     onGoBack: () => void;
     onUpdatePresentation: (updatedPresentation: Presentation) => void;
+    onSendMessage: (text: string) => Promise<void>;
+    onExitToDashboard: () => Promise<void>;
 }
 
 const SlidesScreen: React.FC<SlidesScreenProps> = ({
     presentation,
     onGoBack,
-    onUpdatePresentation
+    onUpdatePresentation,
+    onSendMessage,
+    onExitToDashboard
 }) => {
     const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
     const [presentingSlideId, setPresentingSlideId] = useState<string | null>(null);
     const flatListRef = useRef<FlatList>(null);
+    const presentingSlideRef = useRef<string | null>(null);
 
     const addSlide = () => {
         const newSlide: Slide = {
@@ -115,12 +120,24 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         setEditText('');
     };
 
-    const togglePresenting = (slideId: string) => {
+    const togglePresenting = async (slideId: string) => {
         const newPresentingSlideId = presentingSlideId === slideId ? null : slideId;
         setPresentingSlideId(newPresentingSlideId);
+        presentingSlideRef.current = newPresentingSlideId; // Keep ref in sync
         
-        // If we're setting a slide to presenting (not turning it off), scroll to center it
+        // If we're setting a slide to presenting (not turning it off), send text and scroll to center it
         if (newPresentingSlideId) {
+            const slide = presentation.slides.find(s => s.id === slideId);
+            if (slide) {
+                // Send the slide text to the glasses
+                try {
+                    await onSendMessage(slide.text);
+                } catch (error) {
+                    console.error('Failed to send slide text to glasses:', error);
+                    // Continue with presentation mode even if sending fails
+                }
+            }
+            
             const slideIndex = presentation.slides.findIndex(s => s.id === slideId);
             if (slideIndex !== -1) {
                 setTimeout(() => {
@@ -131,7 +148,39 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                     });
                 }, 50); // Small delay to ensure state update has processed
             }
+        } else {
+            // We're stopping presentation, call onExitToDashboard
+            try {
+                await onExitToDashboard();
+            } catch (error) {
+                console.error('Failed to exit dashboard when stopping presentation:', error);
+            }
         }
+    };
+
+    // Cleanup effect: Stop presentation when component unmounts
+    useEffect(() => {
+        return () => {
+            // Component is unmounting, stop any active presentation
+            if (presentingSlideRef.current) {
+                onExitToDashboard().catch(error => {
+                    console.error('Failed to exit dashboard on component unmount:', error);
+                });
+            }
+        };
+    }, []); // Empty dependency array - only run on mount/unmount
+
+    // Handle going back with active presentation cleanup
+    const handleGoBack = async () => {
+        if (presentingSlideId) {
+            try {
+                await onExitToDashboard();
+                presentingSlideRef.current = null; // Clear ref since we manually stopped
+            } catch (error) {
+                console.error('Failed to exit dashboard on going back:', error);
+            }
+        }
+        onGoBack();
     };
 
     return (
@@ -142,7 +191,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                         alignItems: 'center'
                     }]}>
                         <TouchableOpacity
-                            onPress={onGoBack}
+                            onPress={handleGoBack}
                             style={[ButtonStyles.tertiaryButton]}
                         >
                             <MaterialIcons name="arrow-back" size={20} color={MaterialColors.primary} />
@@ -216,6 +265,46 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                             justifyContent: 'flex-end',
                                             gap: MaterialSpacing.xs
                                         }}>
+                                            {!presentingSlideId && (
+                                                <>
+                                                    <TouchableOpacity
+                                                        onPress={(e) => {
+                                                            e.stopPropagation();
+                                                            startEditingSlide(item);
+                                                        }}
+                                                        style={{
+                                                            backgroundColor: MaterialColors.primary,
+                                                            paddingHorizontal: MaterialSpacing.md,
+                                                            paddingVertical: MaterialSpacing.sm,
+                                                            borderRadius: MaterialBorderRadius.xl,
+                                                        }}
+                                                    >
+                                                        <Text style={[MaterialTypography.labelMedium, {
+                                                            color: MaterialColors.onPrimary
+                                                        }]}>
+                                                            Edit
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        onPress={(e) => {
+                                                            e.stopPropagation();
+                                                            deleteSlide(item.id);
+                                                        }}
+                                                        style={{
+                                                            backgroundColor: MaterialColors.error,
+                                                            paddingHorizontal: MaterialSpacing.md,
+                                                            paddingVertical: MaterialSpacing.sm,
+                                                            borderRadius: MaterialBorderRadius.xl,
+                                                        }}
+                                                    >
+                                                        <Text style={[MaterialTypography.labelMedium, {
+                                                            color: MaterialColors.onError
+                                                        }]}>
+                                                            Delete
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                </>
+                                            )}
                                             <TouchableOpacity
                                                 onPress={(e) => {
                                                     e.stopPropagation();
@@ -234,42 +323,6 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                                     {presentingSlideId === item.id ? 'Presenting' : 'Present'}
                                                 </Text>
                                             </TouchableOpacity>
-                                            <TouchableOpacity
-                                                onPress={(e) => {
-                                                    e.stopPropagation();
-                                                    startEditingSlide(item);
-                                                }}
-                                                style={{
-                                                    backgroundColor: MaterialColors.primary,
-                                                    paddingHorizontal: MaterialSpacing.md,
-                                                    paddingVertical: MaterialSpacing.sm,
-                                                    borderRadius: MaterialBorderRadius.xl,
-                                                }}
-                                            >
-                                                <Text style={[MaterialTypography.labelMedium, {
-                                                    color: MaterialColors.onPrimary
-                                                }]}>
-                                                    Edit
-                                                </Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                onPress={(e) => {
-                                                    e.stopPropagation();
-                                                    deleteSlide(item.id);
-                                                }}
-                                                style={{
-                                                    backgroundColor: MaterialColors.error,
-                                                    paddingHorizontal: MaterialSpacing.md,
-                                                    paddingVertical: MaterialSpacing.sm,
-                                                    borderRadius: MaterialBorderRadius.xl,
-                                                }}
-                                            >
-                                                <Text style={[MaterialTypography.labelMedium, {
-                                                    color: MaterialColors.onError
-                                                }]}>
-                                                    Delete
-                                                </Text>
-                                            </TouchableOpacity>
                                         </View>
                                     </View>
                                 </TouchableOpacity>
@@ -281,28 +334,51 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 </View>
             </View>
             
-            {/* Bottom Add Slide Button */}
+            {/* Bottom Button Section */}
             <View style={{
                 backgroundColor: MaterialColors.surface,
                 paddingHorizontal: MaterialSpacing.lg,
                 paddingVertical: MaterialSpacing.md,
             }}>
-                <TouchableOpacity
-                    onPress={addSlide}
-                    style={[ButtonStyles.primaryButton, {
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }]}
-                >
-                    <MaterialIcons name="add" size={24} color={MaterialColors.onPrimary} style={{ marginRight: MaterialSpacing.xs }} />
-                    <Text style={[MaterialTypography.labelLarge, { 
-                        color: MaterialColors.onPrimary, 
-                        fontWeight: 'bold' 
-                    }]}>
-                        Add Slide
-                    </Text>
-                </TouchableOpacity>
+                {presentingSlideId ? (
+                    <TouchableOpacity
+                        onPress={async () => {
+                            await onExitToDashboard();
+                            setPresentingSlideId(null);
+                            presentingSlideRef.current = null; // Clear ref since we manually stopped
+                        }}
+                        style={[ButtonStyles.secondaryButton, {
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }]}
+                    >
+                        <MaterialIcons name="stop" size={24} color={MaterialColors.onSurface} style={{ marginRight: MaterialSpacing.xs }} />
+                        <Text style={[MaterialTypography.labelLarge, { 
+                            color: MaterialColors.onSurface, 
+                            fontWeight: 'bold' 
+                        }]}>
+                            Stop Presenting
+                        </Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        onPress={addSlide}
+                        style={[ButtonStyles.primaryButton, {
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }]}
+                    >
+                        <MaterialIcons name="add" size={24} color={MaterialColors.onPrimary} style={{ marginRight: MaterialSpacing.xs }} />
+                        <Text style={[MaterialTypography.labelLarge, { 
+                            color: MaterialColors.onPrimary, 
+                            fontWeight: 'bold' 
+                        }]}>
+                            Add Slide
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
