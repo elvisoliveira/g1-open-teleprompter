@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { ContainerStyles } from './CommonStyles';
 import { MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const topAppBarStyles = StyleSheet.create({
@@ -7,19 +8,17 @@ export const topAppBarStyles = StyleSheet.create({
         borderBottomWidth: 0,
         paddingTop: MaterialSpacing.lg,
         paddingBottom: MaterialSpacing.md,
+        // ...UtilityStyles.shadowLow,
     },
     content: {
+        ...ContainerStyles.row,
         paddingHorizontal: MaterialSpacing.lg,
-        flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'flex-start',
         minHeight: 56,
     },
     title: {
-        ...MaterialTypography.h2,
+        ...MaterialTypography.headlineSmall,
         color: MaterialColors.onSurface,
-        fontWeight: '400' as const,
-        letterSpacing: 0,
         flex: 1,
     },
 });

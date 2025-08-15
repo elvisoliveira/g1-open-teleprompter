@@ -80,34 +80,166 @@ export const MaterialBorderRadius = {
 };
 
 export const MaterialTypography = {
+    // Display typography
+    displayLarge: {
+        fontSize: 57,
+        fontWeight: '400' as const,
+        lineHeight: 64,
+        letterSpacing: -0.25,
+    },
+    displayMedium: {
+        fontSize: 45,
+        fontWeight: '400' as const,
+        lineHeight: 52,
+        letterSpacing: 0,
+    },
+    displaySmall: {
+        fontSize: 36,
+        fontWeight: '400' as const,
+        lineHeight: 44,
+        letterSpacing: 0,
+    },
+    
+    // Headline typography
+    headlineLarge: {
+        fontSize: 32,
+        fontWeight: '400' as const,
+        lineHeight: 40,
+        letterSpacing: 0,
+    },
+    headlineMedium: {
+        fontSize: 28,
+        fontWeight: '400' as const,
+        lineHeight: 36,
+        letterSpacing: 0,
+    },
+    headlineSmall: {
+        fontSize: 24,
+        fontWeight: '400' as const,
+        lineHeight: 32,
+        letterSpacing: 0,
+    },
+    
+    // Title typography
+    titleLarge: {
+        fontSize: 22,
+        fontWeight: '400' as const,
+        lineHeight: 28,
+        letterSpacing: 0,
+    },
+    titleMedium: {
+        fontSize: 16,
+        fontWeight: '500' as const,
+        lineHeight: 24,
+        letterSpacing: 0.15,
+    },
+    titleSmall: {
+        fontSize: 14,
+        fontWeight: '500' as const,
+        lineHeight: 20,
+        letterSpacing: 0.1,
+    },
+    
+    // Body typography
+    bodyLarge: {
+        fontSize: 16,
+        fontWeight: '400' as const,
+        lineHeight: 24,
+        letterSpacing: 0.5,
+    },
+    bodyMedium: {
+        fontSize: 14,
+        fontWeight: '400' as const,
+        lineHeight: 20,
+        letterSpacing: 0.25,
+    },
+    bodySmall: {
+        fontSize: 12,
+        fontWeight: '400' as const,
+        lineHeight: 16,
+        letterSpacing: 0.4,
+    },
+    
+    // Label typography
+    labelLarge: {
+        fontSize: 14,
+        fontWeight: '500' as const,
+        lineHeight: 20,
+        letterSpacing: 0.1,
+    },
+    labelMedium: {
+        fontSize: 12,
+        fontWeight: '500' as const,
+        lineHeight: 16,
+        letterSpacing: 0.5,
+    },
+    labelSmall: {
+        fontSize: 11,
+        fontWeight: '500' as const,
+        lineHeight: 16,
+        letterSpacing: 0.5,
+    },
+    
+    // Legacy typography for backward compatibility
     h1: {
         fontSize: 32,
-        fontWeight: '700' as const,
+        fontWeight: '400' as const,
         lineHeight: 40,
+        letterSpacing: 0,
     },
     h2: {
         fontSize: 24,
-        fontWeight: '600' as const,
+        fontWeight: '400' as const,
         lineHeight: 32,
+        letterSpacing: 0,
     },
     h3: {
         fontSize: 20,
-        fontWeight: '600' as const,
+        fontWeight: '400' as const,
         lineHeight: 28,
+        letterSpacing: 0,
     },
     body: {
         fontSize: 16,
         fontWeight: '400' as const,
         lineHeight: 24,
+        letterSpacing: 0.5,
     },
     caption: {
         fontSize: 12,
         fontWeight: '400' as const,
         lineHeight: 16,
+        letterSpacing: 0.4,
     },
     small: {
-        fontSize: 10,
-        fontWeight: '400' as const,
-        lineHeight: 14,
+        fontSize: 11,
+        fontWeight: '500' as const,
+        lineHeight: 16,
+        letterSpacing: 0.5,
     },
+};
+
+// Animation values following Material Design 3
+export const MaterialAnimations = {
+    duration: {
+        short: 150,
+        medium: 300,
+        long: 500,
+    },
+    easing: {
+        standard: 'ease' as const,
+        emphasized: 'cubic-bezier(0.2, 0, 0, 1)' as const,
+        decelerated: 'cubic-bezier(0, 0, 0.2, 1)' as const,
+        accelerated: 'cubic-bezier(0.4, 0, 1, 1)' as const,
+    },
+};
+
+// Elevation values following Material Design 3
+export const MaterialElevation = {
+    level0: 0,
+    level1: 1,
+    level2: 3,
+    level3: 6,
+    level4: 8,
+    level5: 12,
 };

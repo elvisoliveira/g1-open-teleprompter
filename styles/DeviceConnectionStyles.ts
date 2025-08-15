@@ -1,16 +1,16 @@
 import { StyleSheet } from 'react-native';
+import { BadgeStyles, ButtonStyles, CardStyles, ContainerStyles, UtilityStyles } from './CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const deviceConnectionStyles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: MaterialColors.background,
-        paddingHorizontal: MaterialSpacing.lg,
+        ...ContainerStyles.screen,
+        ...ContainerStyles.content,
     },
     
     // Header
     header: {
-        alignItems: 'center',
+        ...ContainerStyles.center,
         paddingVertical: MaterialSpacing.xxl,
     },
     emoji: {
@@ -19,25 +19,24 @@ export const deviceConnectionStyles = StyleSheet.create({
         color: MaterialColors.primary,
     },
     title: {
-        ...MaterialTypography.h2,
-        color: MaterialColors.text,
+        ...MaterialTypography.headlineSmall,
+        color: MaterialColors.onSurface,
         marginBottom: MaterialSpacing.xs,
         textAlign: 'center',
     },
     subtitle: {
-        ...MaterialTypography.body,
-        color: MaterialColors.textSecondary,
+        ...MaterialTypography.bodyMedium,
+        color: MaterialColors.onSurfaceVariant,
         textAlign: 'center',
     },
     
     // Step Indicator
     stepContainer: {
+        ...ContainerStyles.center,
         marginBottom: MaterialSpacing.xxl,
-        alignItems: 'center',
     },
     stepIndicator: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        ...ContainerStyles.row,
         justifyContent: 'center',
         marginBottom: MaterialSpacing.lg,
     },
@@ -46,19 +45,18 @@ export const deviceConnectionStyles = StyleSheet.create({
         height: 20,
         borderRadius: 10,
         backgroundColor: MaterialColors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
+        ...ContainerStyles.center,
     },
     stepInactive: {
-        backgroundColor: MaterialColors.border,
+        backgroundColor: MaterialColors.outlineVariant,
     },
     stepNumber: {
-        ...MaterialTypography.small,
-        color: MaterialColors.background,
+        ...MaterialTypography.labelSmall,
+        color: MaterialColors.onPrimary,
         fontWeight: '600',
     },
     stepNumberInactive: {
-        color: MaterialColors.textDisabled,
+        color: MaterialColors.onSurfaceVariant,
     },
     stepLine: {
         width: 40,
@@ -67,16 +65,16 @@ export const deviceConnectionStyles = StyleSheet.create({
         marginHorizontal: MaterialSpacing.md,
     },
     stepLineInactive: {
-        backgroundColor: MaterialColors.border,
+        backgroundColor: MaterialColors.outlineVariant,
     },
     stepLabels: {
-        flexDirection: 'row',
+        ...ContainerStyles.row,
         justifyContent: 'space-between',
         width: 140,
     },
     stepLabel: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.textSecondary,
+        ...MaterialTypography.labelSmall,
+        color: MaterialColors.onSurfaceVariant,
         textAlign: 'center',
     },
     stepLabelActive: {
@@ -89,36 +87,31 @@ export const deviceConnectionStyles = StyleSheet.create({
         flex: 1,
     },
     listHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        ...ContainerStyles.spaceBetween,
         paddingVertical: MaterialSpacing.md,
         marginBottom: MaterialSpacing.sm,
     },
     listTitle: {
-        ...MaterialTypography.h3,
-        color: MaterialColors.text,
+        ...MaterialTypography.titleLarge,
+        color: MaterialColors.onSurface,
     },
     refreshButton: {
+        ...ButtonStyles.tertiaryButton,
         padding: MaterialSpacing.sm,
     },
     refreshButtonText: {
-        ...MaterialTypography.body,
-        color: MaterialColors.primary,
-        fontSize: 16,
+        ...ButtonStyles.tertiaryButtonText,
+        ...MaterialTypography.labelLarge,
     },
     
     // Device Cards
     deviceCard: {
+        ...CardStyles.cardOutlined,
         marginBottom: MaterialSpacing.sm,
-        backgroundColor: MaterialColors.background,
-        borderWidth: 1,
-        borderColor: MaterialColors.border,
-        borderRadius: MaterialBorderRadius.md,
     },
     deviceCardConnected: {
         borderColor: MaterialColors.primary,
-        backgroundColor: MaterialColors.primaryLight,
+        backgroundColor: MaterialColors.primaryContainer,
     },
     deviceCardConnecting: {
         borderColor: MaterialColors.onSurfaceVariant,
@@ -134,26 +127,25 @@ export const deviceConnectionStyles = StyleSheet.create({
         paddingHorizontal: MaterialSpacing.lg,
     },
     deviceInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        ...ContainerStyles.row,
         gap: MaterialSpacing.md,
     },
     deviceIcon: {
         fontSize: 12,
-        color: MaterialColors.textSecondary,
+        color: MaterialColors.onSurfaceVariant,
     },
     deviceTextContainer: {
         flex: 1,
     },
     deviceName: {
-        ...MaterialTypography.body,
-        color: MaterialColors.text,
+        ...MaterialTypography.bodyLarge,
+        color: MaterialColors.onSurface,
         marginBottom: 2,
         fontWeight: '500',
     },
     deviceId: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.textSecondary,
+        ...MaterialTypography.bodySmall,
+        color: MaterialColors.onSurfaceVariant,
     },
     deviceNameConnecting: {
         color: MaterialColors.onSurfaceVariant,
@@ -161,116 +153,62 @@ export const deviceConnectionStyles = StyleSheet.create({
     deviceIdConnecting: {
         color: MaterialColors.onSurfaceVariant,
     },
-    // Add base badge styles for non-connected state
+    
+    // Status Badges
     statusBadge: {
-        backgroundColor: MaterialColors.background,
+        ...BadgeStyles.badge,
+        backgroundColor: MaterialColors.surface,
         borderWidth: 1,
-        borderColor: MaterialColors.border,
-        paddingHorizontal: MaterialSpacing.sm,
-        paddingVertical: MaterialSpacing.xs,
-        borderRadius: MaterialBorderRadius.sm,
+        borderColor: MaterialColors.outlineVariant,
     },
     statusBadgeConnected: {
-        backgroundColor: MaterialColors.primary,
-        paddingHorizontal: MaterialSpacing.sm,
-        paddingVertical: MaterialSpacing.xs,
-        borderRadius: MaterialBorderRadius.sm,
+        ...BadgeStyles.badgeSuccess,
     },
     statusBadgeConnecting: {
-        backgroundColor: MaterialColors.surfaceVariant,
-        paddingHorizontal: MaterialSpacing.sm,
-        paddingVertical: MaterialSpacing.xs,
-        borderRadius: MaterialBorderRadius.sm,
+        ...BadgeStyles.badgeInfo,
         flexDirection: 'row',
         alignItems: 'center',
         gap: MaterialSpacing.xs,
     },
     statusText: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.textSecondary,
-        fontWeight: '600' as const,
+        ...BadgeStyles.badgeText,
+        color: MaterialColors.onSurfaceVariant,
     },
     statusTextConnected: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.background,
-        fontWeight: '600' as const,
+        ...BadgeStyles.badgeTextSuccess,
     },
     statusTextConnecting: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.onSurfaceVariant,
-        fontWeight: '600' as const,
+        ...BadgeStyles.badgeTextInfo,
     },
     
     // Empty State
     emptyState: {
-        alignItems: 'center',
+        ...ContainerStyles.center,
         paddingVertical: MaterialSpacing.xxl,
     },
     emptyIcon: {
-        fontSize: 24,
-        marginBottom: MaterialSpacing.md,
-        color: MaterialColors.textDisabled,
-    },
-    emptyTitle: {
-        ...MaterialTypography.body,
-        color: MaterialColors.textSecondary,
-        marginBottom: MaterialSpacing.xs,
-        textAlign: 'center',
-        fontWeight: '500',
-    },
-    emptySubtitle: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.textSecondary,
-        textAlign: 'center',
+        fontSize: 48,
         marginBottom: MaterialSpacing.lg,
-        lineHeight: 16,
-    },
-    refreshButtonContainer: {
-        backgroundColor: MaterialColors.primary,
-        paddingVertical: MaterialSpacing.sm,
-        paddingHorizontal: MaterialSpacing.lg,
-        borderRadius: MaterialBorderRadius.md,
-    },
-    refreshText: {
-        ...MaterialTypography.body,
-        color: MaterialColors.background,
-        fontWeight: '600',
-    },
-    buttonGroup: {
-        gap: MaterialSpacing.sm,
-        width: '100%',
-    },
-    showAllButton: {
-        backgroundColor: MaterialColors.secondary,
-    },
-    
-    // Enhanced Empty State Styles
-    emptyIconContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: MaterialSpacing.lg,
-        gap: MaterialSpacing.xs,
-    },
-    emptyIconSecondary: {
-        fontSize: 16,
-        color: MaterialColors.textDisabled,
+        color: MaterialColors.onSurfaceVariant,
         opacity: 0.6,
     },
-    emptyMessageContainer: {
+    emptyTitle: {
+        ...MaterialTypography.titleMedium,
+        color: MaterialColors.onSurfaceVariant,
+        marginBottom: MaterialSpacing.sm,
+        textAlign: 'center',
+    },
+    emptySubtitle: {
+        ...MaterialTypography.bodyMedium,
+        color: MaterialColors.onSurfaceVariant,
+        textAlign: 'center',
         marginBottom: MaterialSpacing.xl,
+        lineHeight: 20,
     },
-    checklistContainer: {
-        marginTop: MaterialSpacing.sm,
-        paddingLeft: MaterialSpacing.sm,
-    },
-    checklistItem: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.textSecondary,
-        marginBottom: MaterialSpacing.xs,
-        lineHeight: 18,
-    },
+    
+    // Action Buttons
     actionButtonGroup: {
+        ...ContainerStyles.column,
         width: '100%',
         gap: MaterialSpacing.md,
     },
@@ -278,114 +216,131 @@ export const deviceConnectionStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: MaterialSpacing.md,
-        paddingHorizontal: MaterialSpacing.lg,
+        paddingVertical: MaterialSpacing.lg,
+        paddingHorizontal: MaterialSpacing.xl,
         borderRadius: MaterialBorderRadius.lg,
         gap: MaterialSpacing.sm,
+        minHeight: 48,
     },
     primaryActionButton: {
-        backgroundColor: MaterialColors.primary,
-        elevation: 2,
-    },
-    secondaryActionButton: {
-        backgroundColor: 'transparent',
-        borderWidth: 1,
-        borderColor: MaterialColors.border,
-    },
-    actionButtonIcon: {
-        fontSize: 18,
+        ...ButtonStyles.primaryButton,
+        ...UtilityStyles.shadowMedium,
     },
     primaryActionText: {
-        ...MaterialTypography.body,
-        color: MaterialColors.background,
-        fontWeight: '600',
+        ...ButtonStyles.primaryButtonText,
+        ...MaterialTypography.labelLarge,
+    },
+    secondaryActionButton: {
+        ...ButtonStyles.secondaryButton,
     },
     secondaryActionText: {
-        ...MaterialTypography.body,
-        color: MaterialColors.textSecondary,
-        fontWeight: '500',
+        ...ButtonStyles.secondaryButtonText,
+        ...MaterialTypography.labelLarge,
     },
+    
+    // Divider styles for empty state
     dividerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: MaterialSpacing.sm,
+        marginVertical: MaterialSpacing.md,
     },
     dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: MaterialColors.borderLight,
+        backgroundColor: MaterialColors.outlineVariant,
     },
     dividerText: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.textDisabled,
+        ...MaterialTypography.bodySmall,
+        color: MaterialColors.onSurfaceVariant,
         marginHorizontal: MaterialSpacing.md,
-        fontStyle: 'italic',
-    },
-    helpTextContainer: {
-        marginTop: MaterialSpacing.lg,
-        paddingVertical: MaterialSpacing.sm,
-        paddingHorizontal: MaterialSpacing.md,
-        backgroundColor: MaterialColors.backgroundSecondary,
-        borderRadius: MaterialBorderRadius.sm,
-    },
-    helpText: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.textSecondary,
-        textAlign: 'center',
-        lineHeight: 16,
         fontStyle: 'italic',
     },
     
     // Loading State
     loadingContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
+        ...ContainerStyles.center,
         paddingVertical: MaterialSpacing.xl,
     },
     loadingIconContainer: {
-        marginBottom: MaterialSpacing.md,
-    },
-    loadingIcon: {
-        fontSize: 24,
-        color: MaterialColors.primary,
+        marginBottom: MaterialSpacing.lg,
     },
     loadingTitle: {
-        ...MaterialTypography.body,
-        color: MaterialColors.text,
-        fontWeight: '600',
-        marginBottom: MaterialSpacing.xs,
+        ...MaterialTypography.titleMedium,
+        color: MaterialColors.onSurface,
+        marginBottom: MaterialSpacing.sm,
         textAlign: 'center',
     },
     loadingSubtitle: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.textSecondary,
+        ...MaterialTypography.bodyMedium,
+        color: MaterialColors.onSurfaceVariant,
         textAlign: 'center',
         marginBottom: MaterialSpacing.lg,
     },
-    loadingProgressContainer: {
-        flexDirection: 'row',
-        gap: MaterialSpacing.xs,
+    
+    // Additional styles for comprehensive device connection UI
+    instructionsContainer: {
+        backgroundColor: MaterialColors.surfaceVariant,
+        borderRadius: MaterialBorderRadius.md,
+        padding: MaterialSpacing.lg,
+        marginVertical: MaterialSpacing.md,
     },
-    loadingDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: MaterialColors.primary,
-        opacity: 0.6,
+    instructionTitle: {
+        ...MaterialTypography.titleMedium,
+        color: MaterialColors.onSurfaceVariant,
+        marginBottom: MaterialSpacing.sm,
     },
-    loadingText: {
-        ...MaterialTypography.body,
-        color: MaterialColors.textSecondary,
+    instructionText: {
+        ...MaterialTypography.bodyMedium,
+        color: MaterialColors.onSurfaceVariant,
+        lineHeight: 20,
     },
     
-    // Section Divider
+    // Connection progress indicator
+    progressContainer: {
+        backgroundColor: MaterialColors.surface,
+        borderRadius: MaterialBorderRadius.lg,
+        padding: MaterialSpacing.lg,
+        marginVertical: MaterialSpacing.md,
+        ...UtilityStyles.shadowLow,
+    },
+    progressBar: {
+        height: 4,
+        backgroundColor: MaterialColors.surfaceVariant,
+        borderRadius: 2,
+        marginVertical: MaterialSpacing.md,
+    },
+    progressFill: {
+        height: '100%',
+        backgroundColor: MaterialColors.primary,
+        borderRadius: 2,
+    },
+    progressText: {
+        ...MaterialTypography.bodyMedium,
+        color: MaterialColors.onSurface,
+        textAlign: 'center',
+    },
+    
+    // Device type indicators
+    deviceTypeChip: {
+        backgroundColor: MaterialColors.primaryContainer,
+        borderRadius: MaterialBorderRadius.xl,
+        paddingHorizontal: MaterialSpacing.md,
+        paddingVertical: MaterialSpacing.xs,
+        marginLeft: MaterialSpacing.sm,
+    },
+    deviceTypeText: {
+        ...MaterialTypography.labelSmall,
+        color: MaterialColors.onPrimaryContainer,
+        fontWeight: '500',
+    },
+    
+    // Utility
     sectionDivider: {
         height: 1,
         backgroundColor: MaterialColors.outlineVariant,
-        marginVertical: MaterialSpacing.sm,
+        marginVertical: MaterialSpacing.lg,
     },
-    // Inline style replacements
     flatListContentContainer: {
-        paddingBottom: 8,
+        paddingBottom: MaterialSpacing.lg,
     },
 });

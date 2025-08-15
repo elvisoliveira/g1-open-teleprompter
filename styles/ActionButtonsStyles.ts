@@ -1,68 +1,61 @@
 import { StyleSheet } from 'react-native';
-import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
+import { ButtonStyles, ContainerStyles } from './CommonStyles';
+import { MaterialColors, MaterialElevation, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const actionButtonsStyles = StyleSheet.create({
     container: {
+        ...ContainerStyles.column,
         gap: MaterialSpacing.lg,
     },
     
-    // Send Button
+    // Send Button - Using enhanced primary button pattern
     sendButton: {
-        backgroundColor: MaterialColors.primary,
-        borderRadius: MaterialBorderRadius.md,
-        paddingVertical: MaterialSpacing.md,
-        paddingHorizontal: MaterialSpacing.lg,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: MaterialSpacing.sm,
+        ...ButtonStyles.primaryButton,
+        elevation: MaterialElevation.level1,
+        shadowColor: MaterialColors.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
     },
     sendButtonDisabled: {
-        backgroundColor: MaterialColors.textDisabled,
+        ...ButtonStyles.primaryButtonDisabled,
+        elevation: 0,
+        shadowOpacity: 0,
     },
     sendButtonIcon: {
-        fontSize: 16,
-        color: MaterialColors.background,
+        fontSize: 20,
     },
     sendButtonText: {
-        ...MaterialTypography.body,
-        color: MaterialColors.background,
-        fontWeight: '600' as const,
+        ...ButtonStyles.primaryButtonText,
+        ...MaterialTypography.labelLarge,
     },
     sendButtonTextDisabled: {
-        color: MaterialColors.background,
-        opacity: 0.7,
+        ...ButtonStyles.primaryButtonTextDisabled,
     },
     
-    // Control Buttons - Enhanced UI
+    // Control Buttons - Enhanced with better spacing and consistency
     controlsRow: {
-        flexDirection: 'row',
-        gap: MaterialSpacing.sm,
+        ...ContainerStyles.row,
+        justifyContent: 'space-between',
         marginTop: MaterialSpacing.sm,
     },
     controlButton: {
+        ...ButtonStyles.secondaryButton,
         flex: 1,
-        backgroundColor: MaterialColors.surface,
-        borderWidth: 1,
-        borderColor: MaterialColors.primary,
-        borderRadius: MaterialBorderRadius.lg,
+        flexDirection: 'column',
         paddingVertical: MaterialSpacing.lg,
         paddingHorizontal: MaterialSpacing.md,
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
         gap: MaterialSpacing.xs,
+        minHeight: 72,
+        marginHorizontal: MaterialSpacing.xs,
     },
     controlButtonIcon: {
         fontSize: 24,
         color: MaterialColors.primary,
-        marginBottom: MaterialSpacing.xs,
     },
     controlButtonText: {
-        ...MaterialTypography.caption,
-        color: MaterialColors.primary,
-        fontWeight: '600' as const,
+        ...ButtonStyles.secondaryButtonText,
+        ...MaterialTypography.labelMedium,
         textAlign: 'center',
-        letterSpacing: 0.5,
     },
 });

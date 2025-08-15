@@ -1,56 +1,85 @@
 import { StyleSheet } from 'react-native';
-import { MaterialColors } from './MaterialTheme';
+import { ContainerStyles } from './CommonStyles';
+import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const bottomNavigationStyles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: MaterialColors.background,
+        ...ContainerStyles.screen,
     },
     content: {
         flex: 1,
     },
     tabBar: {
         flexDirection: 'row',
-        backgroundColor: MaterialColors.surface,
-        borderTopWidth: 0.5,
-        borderTopColor: MaterialColors.outlineVariant,
-        paddingBottom: 16,
-        paddingTop: 12,
-        height: 64,
+        backgroundColor: MaterialColors.surfaceContainer,
+        height: 80,
     },
     tab: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        minHeight: 48,
+        paddingVertical: MaterialSpacing.sm,
+        paddingHorizontal: MaterialSpacing.md,
+        minHeight: 64,
     },
     activeTab: {
-        backgroundColor: 'transparent',
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: MaterialSpacing.sm,
+        paddingHorizontal: MaterialSpacing.md,
+        minHeight: 64,
+    },
+    tabInner: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: MaterialSpacing.xs,
+        paddingHorizontal: MaterialSpacing.sm,
+        minWidth: 64,
+    },
+    activeTabInner: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: MaterialSpacing.xs,
+        paddingHorizontal: MaterialSpacing.sm,
+        minWidth: 64,
+    },
+    iconContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 32,
+        height: 32,
+        marginBottom: MaterialSpacing.xs,
+    },
+    activeIconContainer: {
+        backgroundColor: MaterialColors.secondaryContainer,
+        borderRadius: MaterialBorderRadius.lg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 32,
+        height: 32,
+        marginBottom: MaterialSpacing.xs,
     },
     tabText: {
-        fontSize: 12,
+        ...MaterialTypography.labelSmall,
         color: MaterialColors.onSurfaceVariant,
-        marginTop: 2,
-        fontWeight: '400',
-        lineHeight: 14,
+        marginTop: MaterialSpacing.xs,
     },
     activeTabText: {
-        color: MaterialColors.primary,
+        ...MaterialTypography.labelSmall,
+        color: MaterialColors.onSecondaryContainer,
         fontWeight: '500',
     },
     tabIcon: {
-        fontSize: 20,
+        fontSize: 24,
         color: MaterialColors.onSurfaceVariant,
-        marginBottom: 4,
-        fontWeight: '400',
+        marginBottom: MaterialSpacing.xs,
     },
     activeTabIcon: {
-        color: MaterialColors.primary,
-        fontWeight: '600',
+        fontSize: 24,
+        color: MaterialColors.onSecondaryContainer,
     },
     iconSpacing: {
-        marginBottom: 4,
+        marginBottom: MaterialSpacing.xs,
     },
 });

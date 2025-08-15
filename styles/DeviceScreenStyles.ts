@@ -1,9 +1,8 @@
 import { StyleSheet } from 'react-native';
-import { MaterialColors } from './MaterialTheme';
+import { ContainerStyles } from './CommonStyles';
 
 export const deviceScreenStyles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: MaterialColors.background
+        ...ContainerStyles.screen,
     },
 });

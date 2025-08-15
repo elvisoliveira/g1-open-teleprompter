@@ -1,52 +1,46 @@
 import { StyleSheet } from 'react-native';
+import { CardStyles, ContainerStyles } from './CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const connectionStatusStyles = StyleSheet.create({
     // Main Container
     container: {
-        flex: 1,
-        backgroundColor: MaterialColors.background,
-        padding: MaterialSpacing.md,
+        ...ContainerStyles.screen,
+        ...ContainerStyles.content,
     },
 
     // Overall Status Card
     overallStatusCard: {
-        backgroundColor: MaterialColors.surface,
-        borderRadius: MaterialBorderRadius.md,
-        padding: MaterialSpacing.lg,
+        ...CardStyles.cardElevated,
         marginBottom: MaterialSpacing.lg,
-        borderWidth: 1,
-        borderColor: MaterialColors.outline,
     },
     overallStatusHeader: {
-        flexDirection: 'row',
-        alignItems: 'center'
+        ...ContainerStyles.row,
     },
     overallStatusTextContainer: {
         flex: 1,
     },
     overallStatusTitle: {
-        ...MaterialTypography.h2,
+        ...MaterialTypography.headlineMedium,
         color: MaterialColors.onSurface,
         fontWeight: '600' as const,
         marginBottom: MaterialSpacing.xs,
     },
     overallStatusSubtitle: {
-        ...MaterialTypography.body,
+        ...MaterialTypography.bodyLarge,
         fontWeight: '500' as const,
     },
 
     // Quick Stats
     quickStatsContainer: {
-        flexDirection: 'row',
+        ...ContainerStyles.row,
         justifyContent: 'center',
-        alignItems: 'center',
         paddingTop: MaterialSpacing.md,
         borderTopWidth: 1,
         borderTopColor: MaterialColors.outlineVariant,
     },
     quickStat: {
-        alignItems: 'center',
+        ...ContainerStyles.center,
         flex: 1,
     },
     quickStatValue: {

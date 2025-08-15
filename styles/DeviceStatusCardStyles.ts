@@ -1,18 +1,17 @@
 import { StyleSheet } from 'react-native';
+import { CardStyles, ContainerStyles, StatusStyles, UtilityStyles } from './CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const deviceStatusCardStyles = StyleSheet.create({
+    // Base container using common card pattern
     container: {
-        backgroundColor: MaterialColors.surface,
-        borderRadius: MaterialBorderRadius.md,
-        borderWidth: 1,
-        borderColor: MaterialColors.outline,
-        padding: MaterialSpacing.md,
-        marginVertical: MaterialSpacing.xs
+        ...CardStyles.cardOutlined,
+        marginVertical: MaterialSpacing.xs,
     },
     containerConnected: {
         borderColor: MaterialColors.primary,
         backgroundColor: MaterialColors.surface,
+        ...UtilityStyles.shadowLow,
     },
     containerDisconnected: {
         borderColor: MaterialColors.outline,
@@ -25,16 +24,14 @@ export const deviceStatusCardStyles = StyleSheet.create({
 
     // Header Section
     header: {
-        marginBottom: MaterialSpacing.xs,
+        marginBottom: MaterialSpacing.sm,
     },
     titleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        ...ContainerStyles.spaceBetween,
         marginBottom: MaterialSpacing.xs,
     },
     title: {
-        ...MaterialTypography.body,
-        fontWeight: '600' as const,
+        ...MaterialTypography.titleMedium,
         flex: 1,
     },
     titleConnected: {
@@ -44,19 +41,18 @@ export const deviceStatusCardStyles = StyleSheet.create({
         color: MaterialColors.onSurfaceVariant,
     },
     statusIndicator: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        ...StatusStyles.statusIndicator,
         flex: 1,
     },
     statusText: {
-        ...MaterialTypography.caption,
-        fontWeight: '400' as const,
+        ...StatusStyles.statusText,
+        ...MaterialTypography.labelSmall,
     },
     statusTextConnected: {
-        color: MaterialColors.success,
+        ...StatusStyles.statusTextSuccess,
     },
     statusTextDisconnected: {
-        color: MaterialColors.error,
+        ...StatusStyles.statusTextError,
     },
 
     // Content Section

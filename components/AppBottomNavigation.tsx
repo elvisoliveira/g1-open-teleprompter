@@ -13,10 +13,14 @@ const AppBottomNavigation: React.FC<AppBottomNavigationProps> = ({
     currentView,
     onNavigate
 }) => {
-    const getTabStyle = (tabName: 'home' | 'device') => [
-        styles.tab,
-        currentView === tabName && styles.activeTab
-    ];
+    const getTabStyle = (tabName: 'home' | 'device') => 
+        currentView === tabName ? styles.activeTab : styles.tab;
+
+    const getTabInnerStyle = (tabName: 'home' | 'device') => 
+        currentView === tabName ? styles.activeTabInner : styles.tabInner;
+
+    const getIconContainerStyle = (tabName: 'home' | 'device') => 
+        currentView === tabName ? styles.activeIconContainer : styles.iconContainer;
 
     const getTabTextStyle = (tabName: 'home' | 'device') => [
         styles.tabText,
@@ -24,7 +28,7 @@ const AppBottomNavigation: React.FC<AppBottomNavigationProps> = ({
     ];
 
     const getIconColor = (tabName: 'home' | 'device') => 
-        currentView === tabName ? MaterialColors.primary : MaterialColors.onSurfaceVariant;
+        currentView === tabName ? MaterialColors.onSecondaryContainer : MaterialColors.onSurfaceVariant;
 
     return (
         <View style={styles.tabBar}>
@@ -33,13 +37,16 @@ const AppBottomNavigation: React.FC<AppBottomNavigationProps> = ({
                 onPress={() => onNavigate('home')}
                 activeOpacity={0.6}
             >
-                <MaterialIcons 
-                    name="home" 
-                    size={24} 
-                    color={getIconColor('home')}
-                    style={styles.iconSpacing}
-                />
-                <Text style={getTabTextStyle('home')}>Home</Text>
+                <View style={getTabInnerStyle('home')}>
+                    <View style={getIconContainerStyle('home')}>
+                        <MaterialIcons 
+                            name="home" 
+                            size={20} 
+                            color={getIconColor('home')}
+                        />
+                    </View>
+                    <Text style={getTabTextStyle('home')}>Home</Text>
+                </View>
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -47,13 +54,16 @@ const AppBottomNavigation: React.FC<AppBottomNavigationProps> = ({
                 onPress={() => onNavigate('device')}
                 activeOpacity={0.6}
             >
-                <MaterialIcons 
-                    name="devices" 
-                    size={24} 
-                    color={getIconColor('device')}
-                    style={styles.iconSpacing}
-                />
-                <Text style={getTabTextStyle('device')}>Device</Text>
+                <View style={getTabInnerStyle('device')}>
+                    <View style={getIconContainerStyle('device')}>
+                        <MaterialIcons 
+                            name="devices" 
+                            size={20} 
+                            color={getIconColor('device')}
+                        />
+                    </View>
+                    <Text style={getTabTextStyle('device')}>Device</Text>
+                </View>
             </TouchableOpacity>
         </View>
     );

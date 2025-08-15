@@ -1,26 +1,23 @@
 import { StyleSheet } from 'react-native';
-import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
+import { ContainerStyles, InputStyles } from './CommonStyles';
+import { MaterialTypography } from './MaterialTheme';
 
 export const textInputStyles = StyleSheet.create({
     container: {
-        marginBottom: MaterialSpacing.xl,
+        ...ContainerStyles.section,
     },
     label: {
-        ...MaterialTypography.h3,
-        color: MaterialColors.text,
-        marginBottom: MaterialSpacing.md,
+        ...InputStyles.inputLabel,
+        ...MaterialTypography.titleMedium,
     },
     textInput: {
-        backgroundColor: MaterialColors.background,
-        borderWidth: 1,
-        borderColor: MaterialColors.border,
-        borderRadius: MaterialBorderRadius.md,
-        paddingVertical: MaterialSpacing.md,
-        paddingHorizontal: MaterialSpacing.lg,
-        ...MaterialTypography.body,
-        color: MaterialColors.text,
-        textAlignVertical: 'top',
-        minHeight: 100,
-        marginBottom: MaterialSpacing.sm,
+        ...InputStyles.textInputMultiline,
+        minHeight: 120,
+    },
+    textInputFocused: {
+        ...InputStyles.textInputFocused,
+    },
+    helperText: {
+        ...InputStyles.helperText,
     },
 });

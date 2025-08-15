@@ -1,43 +1,41 @@
 import { StyleSheet } from 'react-native';
-import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
+import { CardStyles, ContainerStyles } from './CommonStyles';
+import { MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const outputModeSelectorStyles = StyleSheet.create({
     container: {
-        marginBottom: MaterialSpacing.lg,
+        ...ContainerStyles.section,
     },
     title: {
-        ...MaterialTypography.h3,
-        color: MaterialColors.text,
-        marginBottom: MaterialSpacing.sm,
+        ...MaterialTypography.titleLarge,
+        color: MaterialColors.onSurface,
+        marginBottom: MaterialSpacing.md,
     },
     optionsContainer: {
-        gap: MaterialSpacing.xs,
+        ...ContainerStyles.column,
+        gap: MaterialSpacing.sm,
     },
     optionButton: {
-        backgroundColor: MaterialColors.surface,
-        borderRadius: MaterialBorderRadius.md,
-        borderWidth: 1,
-        borderColor: MaterialColors.border,
-        padding: MaterialSpacing.md,
-        marginVertical: MaterialSpacing.xs / 2,
+        ...CardStyles.cardOutlined,
+        padding: MaterialSpacing.lg,
+        marginVertical: 0,
     },
     selectedOption: {
-        backgroundColor: MaterialColors.primaryLight,
+        backgroundColor: MaterialColors.primaryContainer,
         borderColor: MaterialColors.primary,
+        borderWidth: 2,
     },
     radioContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        ...ContainerStyles.row,
     },
     radioButton: {
         width: 20,
         height: 20,
         borderRadius: 10,
         borderWidth: 2,
-        borderColor: MaterialColors.border,
-        backgroundColor: MaterialColors.background,
-        justifyContent: 'center',
-        alignItems: 'center',
+        borderColor: MaterialColors.outline,
+        backgroundColor: MaterialColors.surface,
+        ...ContainerStyles.center,
         marginRight: MaterialSpacing.md,
     },
     radioButtonSelected: {
@@ -47,26 +45,25 @@ export const outputModeSelectorStyles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: MaterialColors.primary,
     },
     textContainer: {
         flex: 1,
     },
     optionLabel: {
-        fontSize: 16,
+        ...MaterialTypography.bodyLarge,
         fontWeight: '500',
-        color: MaterialColors.text,
-        marginBottom: MaterialSpacing.xs / 2,
+        color: MaterialColors.onSurface,
+        marginBottom: MaterialSpacing.xs,
     },
     selectedLabel: {
         color: MaterialColors.primary,
     },
     optionDescription: {
-        fontSize: 14,
-        color: MaterialColors.textSecondary,
-        lineHeight: 18,
+        ...MaterialTypography.bodyMedium,
+        color: MaterialColors.onSurfaceVariant,
+        lineHeight: 20,
     },
     selectedDescription: {
-        color: MaterialColors.text,
+        color: MaterialColors.onSurface,
     },
 });

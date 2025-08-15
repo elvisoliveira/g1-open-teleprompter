@@ -242,7 +242,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                                 <MaterialIcons
                                     name="refresh"
                                     size={18}
-                                    color={isScanning ? MaterialColors.textDisabled : MaterialColors.primary}
+                                    color={isScanning ? MaterialColors.onSurfaceVariant : MaterialColors.primary}
                                 />
                             </TouchableOpacity>
                         </View>

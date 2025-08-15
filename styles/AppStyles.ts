@@ -1,10 +1,10 @@
 import { StyleSheet } from 'react-native';
+import { ContainerStyles } from './CommonStyles';
 import { MaterialColors } from './MaterialTheme';
 
 export const teleprompterAppStyles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: MaterialColors.background
+        ...ContainerStyles.screen,
     },
     flexContainer: {
         flex: 1,
@@ -13,7 +13,7 @@ export const teleprompterAppStyles = StyleSheet.create({
 
 export const appIndexStyles = StyleSheet.create({
     container: {
-        flex: 1,
+        ...ContainerStyles.screen,
         backgroundColor: MaterialColors.surfaceContainer,
     },
 });

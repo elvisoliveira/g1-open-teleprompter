@@ -1,10 +1,9 @@
 import { StyleSheet } from 'react-native';
-import { MaterialColors, MaterialSpacing } from './MaterialTheme';
+import { ContainerStyles } from './CommonStyles';
 
 export const homeScreenStyles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: MaterialColors.background,
-        padding: MaterialSpacing.md,
+        ...ContainerStyles.screen,
+        ...ContainerStyles.content,
     },
 });
