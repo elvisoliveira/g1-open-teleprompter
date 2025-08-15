@@ -1,4 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
@@ -33,8 +34,45 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
     const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
     const [presentingSlideId, setPresentingSlideId] = useState<string | null>(null);
+    const { keyEvent } = useKeyEvent();
     const flatListRef = useRef<FlatList>(null);
     const presentingSlideRef = useRef<string | null>(null);
+
+    const navigateToPreviousSlide = async () => {
+        if (!presentingSlideId) return;
+
+        const currentIndex = presentation.slides.findIndex(s => s.id === presentingSlideId);
+        if (currentIndex > 0) {
+            const previousSlide = presentation.slides[currentIndex - 1];
+            await togglePresenting(previousSlide.id);
+        }
+    };
+
+    const navigateToNextSlide = async () => {
+        if (!presentingSlideId) return;
+
+        const currentIndex = presentation.slides.findIndex(s => s.id === presentingSlideId);
+        if (currentIndex < presentation.slides.length - 1) {
+            const nextSlide = presentation.slides[currentIndex + 1];
+            await togglePresenting(nextSlide.id);
+        }
+    };
+
+    useEffect(() => {
+        if (keyEvent) {
+            const keyCode = parseInt(keyEvent.key);
+            switch (keyCode) {
+                case 88:
+                    navigateToNextSlide();
+                    break;
+                case 87:
+                    navigateToPreviousSlide();
+                    break;
+                default:
+                    break;
+            }
+        }
+    }, [keyEvent]);
 
     const addSlide = () => {
         const newSlide: Slide = {
@@ -66,11 +104,11 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         };
 
         onUpdatePresentation(updatedPresentation);
-        
+
         // Set the new slide to edit mode
         setEditingSlideId(newSlide.id);
         setEditText(newSlide.text);
-        
+
         // Scroll to the new slide after a short delay to ensure the list has updated
         setTimeout(() => {
             flatListRef.current?.scrollToIndex({
@@ -124,7 +162,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         const newPresentingSlideId = presentingSlideId === slideId ? null : slideId;
         setPresentingSlideId(newPresentingSlideId);
         presentingSlideRef.current = newPresentingSlideId; // Keep ref in sync
-        
+
         // If we're setting a slide to presenting (not turning it off), send text and scroll to center it
         if (newPresentingSlideId) {
             const slide = presentation.slides.find(s => s.id === slideId);
@@ -137,7 +175,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                     // Continue with presentation mode even if sending fails
                 }
             }
-            
+
             const slideIndex = presentation.slides.findIndex(s => s.id === slideId);
             if (slideIndex !== -1) {
                 setTimeout(() => {
@@ -187,7 +225,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         <View style={ContainerStyles.screen}>
             <View style={ContainerStyles.content}>
                 <View style={{ marginBottom: MaterialSpacing.lg }}>
-                    <View style={[ContainerStyles.row, { 
+                    <View style={[ContainerStyles.row, {
                         alignItems: 'center'
                     }]}>
                         <TouchableOpacity
@@ -196,7 +234,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                         >
                             <MaterialIcons name="arrow-back" size={20} color={MaterialColors.primary} />
                         </TouchableOpacity>
-                        <Text style={[MaterialTypography.headlineSmall, { 
+                        <Text style={[MaterialTypography.headlineSmall, {
                             flex: 1,
                             color: MaterialColors.onSurface
                         }]}>
@@ -211,129 +249,129 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                         data={presentation.slides}
                         keyExtractor={item => item.id}
                         renderItem={({ item, index }) => (
-                        <View style={{
-                            backgroundColor: presentingSlideId === item.id ? MaterialColors.primaryContainer : MaterialColors.surfaceVariant,
-                            borderRadius: MaterialBorderRadius.lg,
-                            marginBottom: MaterialSpacing.md,
-                            minHeight: 80,
-                        }}>
-                            {editingSlideId === item.id ? (
-                                <View style={{ padding: MaterialSpacing.lg }}>
-                                    <TextInput
-                                        style={[MaterialTypography.bodyLarge, { marginBottom: MaterialSpacing.md, minHeight: 60 }]}
-                                        value={editText}
-                                        onChangeText={setEditText}
-                                        placeholder="Enter slide text..."
-                                        multiline
-                                        placeholderTextColor={MaterialColors.onSurfaceVariant}
-                                        autoFocus
-                                    />
-                                    <View style={ContainerStyles.row}>
-                                        <TouchableOpacity
-                                            onPress={cancelEdit}
-                                            style={[ButtonStyles.secondaryButton, { flex: 1, marginRight: MaterialSpacing.sm }]}
-                                        >
-                                            <Text style={ButtonStyles.secondaryButtonText}>Cancel</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            onPress={saveEditSlide}
-                                            style={[ButtonStyles.primaryButton, { flex: 1 }]}
-                                        >
-                                            <Text style={ButtonStyles.primaryButtonText}>Save</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                            ) : (
-                                <TouchableOpacity
-                                    style={{ 
-                                        flex: 1,
-                                        padding: MaterialSpacing.lg
-                                    }}
-                                    onPress={() => togglePresenting(item.id)}
-                                    activeOpacity={0.8}
-                                >
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={[MaterialTypography.bodyMedium, {
-                                            color: presentingSlideId === item.id ? MaterialColors.onPrimaryContainer : MaterialColors.onSurfaceVariant,
-                                            lineHeight: 20,
-                                            marginBottom: MaterialSpacing.md
-                                        }]}>
-                                            {item.text.length > 60 ? item.text.substring(0, 60) + '...' : item.text}
-                                        </Text>
-                                        <View style={{
-                                            flexDirection: 'row',
-                                            justifyContent: 'flex-end',
-                                            gap: MaterialSpacing.xs
-                                        }}>
-                                            {!presentingSlideId && (
-                                                <>
-                                                    <TouchableOpacity
-                                                        onPress={(e) => {
-                                                            e.stopPropagation();
-                                                            startEditingSlide(item);
-                                                        }}
-                                                        style={{
-                                                            backgroundColor: MaterialColors.primary,
-                                                            paddingHorizontal: MaterialSpacing.md,
-                                                            paddingVertical: MaterialSpacing.sm,
-                                                            borderRadius: MaterialBorderRadius.xl,
-                                                        }}
-                                                    >
-                                                        <Text style={[MaterialTypography.labelMedium, {
-                                                            color: MaterialColors.onPrimary
-                                                        }]}>
-                                                            Edit
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity
-                                                        onPress={(e) => {
-                                                            e.stopPropagation();
-                                                            deleteSlide(item.id);
-                                                        }}
-                                                        style={{
-                                                            backgroundColor: MaterialColors.error,
-                                                            paddingHorizontal: MaterialSpacing.md,
-                                                            paddingVertical: MaterialSpacing.sm,
-                                                            borderRadius: MaterialBorderRadius.xl,
-                                                        }}
-                                                    >
-                                                        <Text style={[MaterialTypography.labelMedium, {
-                                                            color: MaterialColors.onError
-                                                        }]}>
-                                                            Delete
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                </>
-                                            )}
+                            <View style={{
+                                backgroundColor: presentingSlideId === item.id ? MaterialColors.primaryContainer : MaterialColors.surfaceVariant,
+                                borderRadius: MaterialBorderRadius.lg,
+                                marginBottom: MaterialSpacing.md,
+                                minHeight: 80,
+                            }}>
+                                {editingSlideId === item.id ? (
+                                    <View style={{ padding: MaterialSpacing.lg }}>
+                                        <TextInput
+                                            style={[MaterialTypography.bodyLarge, { marginBottom: MaterialSpacing.md, minHeight: 60 }]}
+                                            value={editText}
+                                            onChangeText={setEditText}
+                                            placeholder="Enter slide text..."
+                                            multiline
+                                            placeholderTextColor={MaterialColors.onSurfaceVariant}
+                                            autoFocus
+                                        />
+                                        <View style={ContainerStyles.row}>
                                             <TouchableOpacity
-                                                onPress={(e) => {
-                                                    e.stopPropagation();
-                                                    togglePresenting(item.id);
-                                                }}
-                                                style={{
-                                                    backgroundColor: presentingSlideId === item.id ? MaterialColors.secondary : MaterialColors.primaryContainer,
-                                                    paddingHorizontal: MaterialSpacing.md,
-                                                    paddingVertical: MaterialSpacing.sm,
-                                                    borderRadius: MaterialBorderRadius.xl,
-                                                }}
+                                                onPress={cancelEdit}
+                                                style={[ButtonStyles.secondaryButton, { flex: 1, marginRight: MaterialSpacing.sm }]}
                                             >
-                                                <Text style={[MaterialTypography.labelMedium, {
-                                                    color: presentingSlideId === item.id ? MaterialColors.onSecondary : MaterialColors.onPrimaryContainer,
-                                                }]}>
-                                                    {presentingSlideId === item.id ? 'Presenting' : 'Present'}
-                                                </Text>
+                                                <Text style={ButtonStyles.secondaryButtonText}>Cancel</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                onPress={saveEditSlide}
+                                                style={[ButtonStyles.primaryButton, { flex: 1 }]}
+                                            >
+                                                <Text style={ButtonStyles.primaryButtonText}>Save</Text>
                                             </TouchableOpacity>
                                         </View>
                                     </View>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    )}
-                    showsVerticalScrollIndicator={false}
-                />
+                                ) : (
+                                    <TouchableOpacity
+                                        style={{
+                                            flex: 1,
+                                            padding: MaterialSpacing.lg
+                                        }}
+                                        onPress={() => togglePresenting(item.id)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={[MaterialTypography.bodyMedium, {
+                                                color: presentingSlideId === item.id ? MaterialColors.onPrimaryContainer : MaterialColors.onSurfaceVariant,
+                                                lineHeight: 20,
+                                                marginBottom: MaterialSpacing.md
+                                            }]}>
+                                                {item.text.length > 60 ? item.text.substring(0, 60) + '...' : item.text}
+                                            </Text>
+                                            <View style={{
+                                                flexDirection: 'row',
+                                                justifyContent: 'flex-end',
+                                                gap: MaterialSpacing.xs
+                                            }}>
+                                                {!presentingSlideId && (
+                                                    <>
+                                                        <TouchableOpacity
+                                                            onPress={(e) => {
+                                                                e.stopPropagation();
+                                                                startEditingSlide(item);
+                                                            }}
+                                                            style={{
+                                                                backgroundColor: MaterialColors.primary,
+                                                                paddingHorizontal: MaterialSpacing.md,
+                                                                paddingVertical: MaterialSpacing.sm,
+                                                                borderRadius: MaterialBorderRadius.xl,
+                                                            }}
+                                                        >
+                                                            <Text style={[MaterialTypography.labelMedium, {
+                                                                color: MaterialColors.onPrimary
+                                                            }]}>
+                                                                Edit
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                        <TouchableOpacity
+                                                            onPress={(e) => {
+                                                                e.stopPropagation();
+                                                                deleteSlide(item.id);
+                                                            }}
+                                                            style={{
+                                                                backgroundColor: MaterialColors.error,
+                                                                paddingHorizontal: MaterialSpacing.md,
+                                                                paddingVertical: MaterialSpacing.sm,
+                                                                borderRadius: MaterialBorderRadius.xl,
+                                                            }}
+                                                        >
+                                                            <Text style={[MaterialTypography.labelMedium, {
+                                                                color: MaterialColors.onError
+                                                            }]}>
+                                                                Delete
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    </>
+                                                )}
+                                                <TouchableOpacity
+                                                    onPress={(e) => {
+                                                        e.stopPropagation();
+                                                        togglePresenting(item.id);
+                                                    }}
+                                                    style={{
+                                                        backgroundColor: presentingSlideId === item.id ? MaterialColors.secondary : MaterialColors.primaryContainer,
+                                                        paddingHorizontal: MaterialSpacing.md,
+                                                        paddingVertical: MaterialSpacing.sm,
+                                                        borderRadius: MaterialBorderRadius.xl,
+                                                    }}
+                                                >
+                                                    <Text style={[MaterialTypography.labelMedium, {
+                                                        color: presentingSlideId === item.id ? MaterialColors.onSecondary : MaterialColors.onPrimaryContainer,
+                                                    }]}>
+                                                        {presentingSlideId === item.id ? 'Presenting' : 'Present'}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        )}
+                        showsVerticalScrollIndicator={false}
+                    />
                 </View>
             </View>
-            
+
             {/* Bottom Button Section */}
             <View style={{
                 backgroundColor: MaterialColors.surface,
@@ -354,9 +392,9 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                         }]}
                     >
                         <MaterialIcons name="stop" size={24} color={MaterialColors.onSurface} style={{ marginRight: MaterialSpacing.xs }} />
-                        <Text style={[MaterialTypography.labelLarge, { 
-                            color: MaterialColors.onSurface, 
-                            fontWeight: 'bold' 
+                        <Text style={[MaterialTypography.labelLarge, {
+                            color: MaterialColors.onSurface,
+                            fontWeight: 'bold'
                         }]}>
                             Stop Presenting
                         </Text>
@@ -371,9 +409,9 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                         }]}
                     >
                         <MaterialIcons name="add" size={24} color={MaterialColors.onPrimary} style={{ marginRight: MaterialSpacing.xs }} />
-                        <Text style={[MaterialTypography.labelLarge, { 
-                            color: MaterialColors.onPrimary, 
-                            fontWeight: 'bold' 
+                        <Text style={[MaterialTypography.labelLarge, {
+                            color: MaterialColors.onPrimary,
+                            fontWeight: 'bold'
                         }]}>
                             Add Slide
                         </Text>
