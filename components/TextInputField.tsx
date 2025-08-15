@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { MaterialColors, MaterialSpacing } from '../styles/MaterialTheme';
+import { MaterialColors } from '../styles/MaterialTheme';
 import { textInputStyles as styles } from '../styles/TextInputStyles';
 
 interface TextInputFieldProps {

@@ -315,6 +315,48 @@ export const BadgeStyles = StyleSheet.create({
   },
 });
 
+// Empty State Styles - Reusable empty state patterns
+export const EmptyStateStyles = StyleSheet.create({
+  // Container for empty state
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: MaterialSpacing.xl,
+    paddingVertical: MaterialSpacing.xxl,
+  },
+
+  // Compact empty state (for smaller sections)
+  containerCompact: {
+    paddingHorizontal: MaterialSpacing.lg,
+    paddingVertical: MaterialSpacing.xl,
+    alignItems: 'center',
+  },
+
+  // Icon for empty state
+  icon: {
+    marginBottom: MaterialSpacing.lg,
+    opacity: 0.5,
+  },
+
+  // Title text for empty state
+  title: {
+    ...MaterialTypography.headlineSmall,
+    color: MaterialColors.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: MaterialSpacing.sm,
+  },
+
+  // Subtitle/description text for empty state
+  subtitle: {
+    ...MaterialTypography.bodyMedium,
+    color: MaterialColors.onSurfaceVariant,
+    textAlign: 'center',
+    opacity: 0.8,
+    lineHeight: 20,
+  },
+});
+
 // Common utility styles
 export const UtilityStyles = StyleSheet.create({
   // Opacity states

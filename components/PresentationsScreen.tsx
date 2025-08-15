@@ -2,7 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
+import { ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 import SlidesScreen from './SlidesScreen';
 
@@ -177,7 +177,7 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={addPresentation}
-                                style={[ButtonStyles.primaryButton, { flex: 1 }]}
+                                style={[ButtonStyles.primaryButton, { flex: 2 }]}
                             >
                                 <Text style={ButtonStyles.primaryButtonText}>Add Presentation</Text>
                             </TouchableOpacity>
@@ -185,107 +185,123 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                     </View>
                 )}
 
-                <FlatList
-                    data={presentations}
-                    keyExtractor={item => item.id}
-                    renderItem={({ item }) => (
-                        <View style={{
-                            backgroundColor: MaterialColors.surfaceVariant,
-                            borderRadius: MaterialBorderRadius.lg,
-                            marginBottom: MaterialSpacing.md,
-                            padding: MaterialSpacing.lg,
-                            minHeight: 80,
-                        }}>
-                            {editingPresentationId === item.id ? (
-                                <View>
-                                    <TextInput
-                                        style={[MaterialTypography.bodyLarge, { marginBottom: MaterialSpacing.md }]}
-                                        value={editText}
-                                        onChangeText={setEditText}
-                                        placeholder="Enter presentation name..."
-                                        placeholderTextColor={MaterialColors.onSurfaceVariant}
-                                        autoFocus
-                                    />
-                                    <View style={ContainerStyles.row}>
-                                        <TouchableOpacity
-                                            onPress={cancelEdit}
-                                            style={[ButtonStyles.secondaryButton, { flex: 1, marginRight: MaterialSpacing.sm }]}
-                                        >
-                                            <Text style={ButtonStyles.secondaryButtonText}>Cancel</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            onPress={saveEditPresentation}
-                                            style={[ButtonStyles.primaryButton, { flex: 1 }]}
-                                        >
-                                            <Text style={ButtonStyles.primaryButtonText}>Save</Text>
-                                        </TouchableOpacity>
+                {presentations.length === 0 ? (
+                    <View style={EmptyStateStyles.container}>
+                        <MaterialIcons 
+                            name="slideshow" 
+                            size={64} 
+                            color={MaterialColors.onSurfaceVariant} 
+                            style={EmptyStateStyles.icon}
+                        />
+                        <Text style={EmptyStateStyles.title}>
+                            No Presentations Yet
+                        </Text>
+                        <Text style={EmptyStateStyles.subtitle}>
+                            Create your first presentation to get started with organizing your slides and content.
+                        </Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        data={presentations}
+                        keyExtractor={item => item.id}
+                        renderItem={({ item }) => (
+                            <View style={{
+                                backgroundColor: MaterialColors.surfaceVariant,
+                                borderRadius: MaterialBorderRadius.md,
+                                marginBottom: MaterialSpacing.md,
+                                padding: MaterialSpacing.lg,
+                                minHeight: 80,
+                            }}>
+                                {editingPresentationId === item.id ? (
+                                    <View>
+                                        <TextInput
+                                            style={[MaterialTypography.bodyLarge, { marginBottom: MaterialSpacing.md }]}
+                                            value={editText}
+                                            onChangeText={setEditText}
+                                            placeholder="Enter presentation name..."
+                                            placeholderTextColor={MaterialColors.onSurfaceVariant}
+                                            autoFocus
+                                        />
+                                        <View style={ContainerStyles.row}>
+                                            <TouchableOpacity
+                                                onPress={cancelEdit}
+                                                style={[ButtonStyles.secondaryButton, { flex: 1, marginRight: MaterialSpacing.sm }]}
+                                            >
+                                                <Text style={ButtonStyles.secondaryButtonText}>Cancel</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                onPress={saveEditPresentation}
+                                                style={[ButtonStyles.primaryButton, { flex: 1 }]}
+                                            >
+                                                <Text style={ButtonStyles.primaryButtonText}>Save</Text>
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
-                                </View>
-                            ) : (
-                                <View style={{ flex: 1 }}>
-                                    <TouchableOpacity
-                                        onPress={() => setSelectedPresentation(item)}
-                                        style={{ flex: 1 }}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Text style={[MaterialTypography.headlineSmall, { 
-                                            color: MaterialColors.onSurface, 
-                                            fontWeight: 'bold',
-                                            marginBottom: MaterialSpacing.xs 
-                                        }]}>
-                                            {item.name}
-                                        </Text>
-                                        <Text style={[MaterialTypography.bodyMedium, { 
-                                            color: MaterialColors.onSurfaceVariant,
-                                            marginBottom: MaterialSpacing.md
-                                        }]}>
-                                            {item.slides.length} slides
-                                        </Text>
-                                    </TouchableOpacity>
-                                    <View style={{ 
-                                        flexDirection: 'row', 
-                                        justifyContent: 'flex-end',
-                                        gap: MaterialSpacing.xs 
-                                    }}>
-                                        <TouchableOpacity 
-                                            onPress={() => startEditingPresentation(item)}
-                                            style={{
-                                                backgroundColor: MaterialColors.primary,
-                                                paddingHorizontal: MaterialSpacing.md,
-                                                paddingVertical: MaterialSpacing.sm,
-                                                borderRadius: MaterialBorderRadius.xl,
-                                            }}
+                                ) : (
+                                    <View style={{ flex: 1 }}>
+                                        <TouchableOpacity
+                                            onPress={() => setSelectedPresentation(item)}
+                                            style={{ flex: 1 }}
+                                            activeOpacity={0.8}
                                         >
-                                            <Text style={[MaterialTypography.labelMedium, { 
-                                                color: MaterialColors.onPrimary, 
-                                                fontWeight: 'bold' 
+                                            <Text style={[MaterialTypography.headlineSmall, { 
+                                                color: MaterialColors.onSurface, 
+                                                marginBottom: MaterialSpacing.xs 
                                             }]}>
-                                                Edit
+                                                {item.name}
+                                            </Text>
+                                            <Text style={[MaterialTypography.bodyMedium, { 
+                                                color: MaterialColors.onSurfaceVariant,
+                                                marginBottom: MaterialSpacing.md
+                                            }]}>
+                                                {item.slides.length} slides
                                             </Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity 
-                                            onPress={() => deletePresentation(item.id)}
-                                            style={{
-                                                backgroundColor: MaterialColors.error,
-                                                paddingHorizontal: MaterialSpacing.md,
-                                                paddingVertical: MaterialSpacing.sm,
-                                                borderRadius: MaterialBorderRadius.xl,
-                                            }}
-                                        >
-                                            <Text style={[MaterialTypography.labelMedium, { 
-                                                color: MaterialColors.onError, 
-                                                fontWeight: 'bold' 
-                                            }]}>
-                                                Delete
-                                            </Text>
-                                        </TouchableOpacity>
+                                        <View style={{ 
+                                            flexDirection: 'row', 
+                                            justifyContent: 'flex-end',
+                                            gap: MaterialSpacing.xs 
+                                        }}>
+                                            <TouchableOpacity 
+                                                onPress={() => startEditingPresentation(item)}
+                                                style={{
+                                                    backgroundColor: MaterialColors.primary,
+                                                    paddingHorizontal: MaterialSpacing.md,
+                                                    paddingVertical: MaterialSpacing.sm,
+                                                    borderRadius: MaterialBorderRadius.lg,
+                                                }}
+                                            >
+                                                <Text style={[MaterialTypography.labelMedium, { 
+                                                    color: MaterialColors.onPrimary, 
+                                                    fontWeight: 'bold' 
+                                                }]}>
+                                                    Edit
+                                                </Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity 
+                                                onPress={() => deletePresentation(item.id)}
+                                                style={{
+                                                    backgroundColor: MaterialColors.error,
+                                                    paddingHorizontal: MaterialSpacing.md,
+                                                    paddingVertical: MaterialSpacing.sm,
+                                                    borderRadius: MaterialBorderRadius.lg,
+                                                }}
+                                            >
+                                                <Text style={[MaterialTypography.labelMedium, { 
+                                                    color: MaterialColors.onError, 
+                                                    fontWeight: 'bold' 
+                                                }]}>
+                                                    Delete
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
-                                </View>
-                            )}
-                        </View>
-                    )}
-                    showsVerticalScrollIndicator={false}
-                />
+                                )}
+                            </View>
+                        )}
+                        showsVerticalScrollIndicator={false}
+                    />
+                )}
             </View>
         </View>
     );

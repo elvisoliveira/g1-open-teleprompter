@@ -17,7 +17,6 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     const [batteryInfo, setBatteryInfo] = useState<BatteryInfo>({ left: -1, right: -1, lastUpdated: null });
     const [deviceStatus, setDeviceStatus] = useState<{ left: DeviceStatus; right: DeviceStatus }>();
     const [isUpdatingBattery, setIsUpdatingBattery] = useState(false);
-    const [isUpdatingFirmware, setIsUpdatingFirmware] = useState(false);
     const [isUpdatingUptime, setIsUpdatingUptime] = useState(false);
     const bothConnected = leftConnected && rightConnected;
 
@@ -36,7 +35,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
             // Get initial battery status and firmware info
             updateBatteryStatus();
             // updateFirmwareInfo();
-            // updateUptimeInfo();
+            updateUptimeInfo();
             updateDeviceStatus();
             
             // Periodically update device status (every 30 seconds)
@@ -68,20 +67,6 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
             console.warn('Failed to update battery status:', error);
         } finally {
             setIsUpdatingBattery(false);
-        }
-    };
-
-    const updateFirmwareInfo = async () => {
-        if (isUpdatingFirmware) return;
-        
-        setIsUpdatingFirmware(true);
-        try {
-            // Get firmware info for both sides
-            await BluetoothService.getFirmwareInfo();
-        } catch (error) {
-            console.warn('Failed to update firmware info:', error);
-        } finally {
-            setIsUpdatingFirmware(false);
         }
     };
 
