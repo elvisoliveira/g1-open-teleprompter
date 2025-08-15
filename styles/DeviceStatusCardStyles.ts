@@ -1,111 +1,120 @@
 import { StyleSheet } from 'react-native';
-import { CardStyles, ContainerStyles, StatusStyles } from './CommonStyles';
+import { CardStyles, ContainerStyles } from './CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const deviceStatusCardStyles = StyleSheet.create({
-    // Base container using common card pattern
+    // Base container - flat design without borders
     container: {
-        ...CardStyles.cardOutlined,
-        marginVertical: MaterialSpacing.xs,
+        ...CardStyles.card
     },
     containerConnected: {
-        borderColor: MaterialColors.primary,
-        backgroundColor: MaterialColors.surface
+        backgroundColor: MaterialColors.surfaceContainer,
     },
     containerDisconnected: {
-        borderColor: MaterialColors.outline,
         backgroundColor: MaterialColors.surfaceVariant,
         opacity: 0.8,
     },
-    containerCompact: {
-        padding: MaterialSpacing.sm,
-    },
 
-    // Header Section
+    // Header Section - device name and status aligned as specified
     header: {
-        marginBottom: MaterialSpacing.sm,
+        ...ContainerStyles.spaceBetween,
+        marginBottom: MaterialSpacing.md,
     },
     titleRow: {
-        ...ContainerStyles.spaceBetween,
-        marginBottom: MaterialSpacing.xs,
+        flex: 1,
     },
     title: {
         ...MaterialTypography.titleMedium,
-        flex: 1,
+        color: MaterialColors.onSurface,
+        fontWeight: '600' as const,
     },
     titleConnected: {
-        color: MaterialColors.primary,
+        color: MaterialColors.onSurface,
     },
     titleDisconnected: {
         color: MaterialColors.onSurfaceVariant,
     },
     statusIndicator: {
-        ...StatusStyles.statusIndicator,
-        flex: 1,
+        alignItems: 'flex-end',
     },
     statusText: {
-        ...StatusStyles.statusText,
         ...MaterialTypography.labelSmall,
+        color: MaterialColors.success,
+        fontWeight: '500' as const,
     },
     statusTextConnected: {
-        ...StatusStyles.statusTextSuccess,
+        color: MaterialColors.success,
     },
     statusTextDisconnected: {
-        ...StatusStyles.statusTextError,
+        color: MaterialColors.error,
     },
 
-    // Content Section
+    // Content Section - battery and firmware info
     content: {
-        gap: MaterialSpacing.sm,
+        ...ContainerStyles.column,
+        gap: MaterialSpacing.md,
     },
     infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        ...ContainerStyles.column,
+        alignItems: 'flex-start',
+        gap: MaterialSpacing.xs,
     },
     infoLabel: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
     },
     labelText: {
-        ...MaterialTypography.caption,
+        ...MaterialTypography.bodySmall,
         color: MaterialColors.onSurfaceVariant,
         fontWeight: '400' as const,
     },
     valueText: {
-        ...MaterialTypography.body,
-        color: MaterialColors.primary,
+        ...MaterialTypography.headlineSmall,
+        color: MaterialColors.onSurface,
+        fontWeight: '700' as const,
+    },
+    valueTextBattery: {
+        ...MaterialTypography.headlineSmall,
+        color: MaterialColors.onSurface,
+        fontWeight: '700' as const,
+    },
+    valueTextFirmware: {
+        ...MaterialTypography.titleMedium,
         fontWeight: '600' as const,
-        textAlign: 'right',
+    },
+    valueTextFirmwareUnknown: {
+        color: MaterialColors.tertiary, // Purple for unknown firmware
+    },
+    valueTextFirmwareKnown: {
+        color: MaterialColors.onSurface, // Black for known firmware
     },
 
-    // Details Section
+    // Details Section - light gray background with rounded corners
     detailsSection: {
-        marginTop: MaterialSpacing.sm,
-        padding: MaterialSpacing.sm,
+        marginTop: MaterialSpacing.md,
+        padding: MaterialSpacing.md,
         backgroundColor: MaterialColors.surfaceVariant,
         borderRadius: MaterialBorderRadius.md,
     },
     detailsTitle: {
-        ...MaterialTypography.caption,
+        ...MaterialTypography.labelMedium,
         color: MaterialColors.onSurfaceVariant,
-        fontWeight: '600' as const,
+        fontWeight: '500' as const,
         marginBottom: MaterialSpacing.xs,
     },
     detailsText: {
-        ...MaterialTypography.small,
+        ...MaterialTypography.bodySmall,
         color: MaterialColors.onSurfaceVariant,
         lineHeight: 16,
     },
 
     // Disconnected State
     disconnectedContent: {
-        alignItems: 'center',
+        ...ContainerStyles.center,
         paddingVertical: MaterialSpacing.md,
     },
     disconnectedText: {
-        ...MaterialTypography.body,
+        ...MaterialTypography.bodyMedium,
         color: MaterialColors.onSurfaceVariant,
         textAlign: 'center',
     },

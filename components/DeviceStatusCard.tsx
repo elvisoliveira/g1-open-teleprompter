@@ -58,10 +58,9 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
     return (
         <View style={[
             styles.container,
-            connected ? styles.containerConnected : styles.containerDisconnected,
-            isCompact && styles.containerCompact
+            connected ? styles.containerConnected : styles.containerDisconnected
         ]}>
-            {/* Header */}
+            {/* Header - Device name (bold, dark text) and Status (small, green text on right) */}
             <View style={styles.header}>
                 <View style={styles.titleRow}>
                     <Text style={[
@@ -84,37 +83,28 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
             {/* Content - only show when connected */}
             {connected && (
                 <View style={styles.content}>
-                    {/* Battery Info */}
+                    {/* Battery Reading - Label in light gray, Large bold percentage in black */}
                     {batteryLevel >= 0 && (
                         <View style={styles.infoRow}>
-                            <View style={styles.infoLabel}>
-                                <Text style={styles.labelText}>Battery</Text>
-                            </View>
-                            <Text style={styles.valueText}>{batteryLevel}%</Text>
+                            <Text style={styles.labelText}>Battery</Text>
+                            <Text style={styles.valueTextBattery}>{batteryLevel}%</Text>
                         </View>
                     )}
 
-                    {/* Firmware Version */}
-                    {firmwareVersion && (
-                        <View style={styles.infoRow}>
-                            <View style={styles.infoLabel}>
-                                <Text style={styles.labelText}>Firmware</Text>
-                            </View>
-                            <Text style={styles.valueText}>{firmwareVersion}</Text>
-                        </View>
-                    )}
+                    {/* Firmware Reading - Label in light gray, Value with color coding */}
+                    <View style={styles.infoRow}>
+                        <Text style={styles.labelText}>Firmware</Text>
+                        <Text style={[
+                            styles.valueTextFirmware,
+                            firmwareVersion === 'Unknown' 
+                                ? styles.valueTextFirmwareUnknown 
+                                : styles.valueTextFirmwareKnown
+                        ]}>
+                            {firmwareVersion || 'Unknown'}
+                        </Text>
+                    </View>
 
-                    {/* Uptime */}
-                    {deviceStatus?.uptime !== undefined && deviceStatus.uptime >= 0 && (
-                        <View style={styles.infoRow}>
-                            <View style={styles.infoLabel}>
-                                <Text style={styles.labelText}>Uptime</Text>
-                            </View>
-                            <Text style={styles.valueText}>{formatUptime(deviceStatus.uptime)}</Text>
-                        </View>
-                    )}
-
-                    {/* Full Firmware Info (expandable section) */}
+                    {/* Full Firmware Info (Firmware Details Section with light gray background) */}
                     {!isCompact && deviceStatus?.firmware && (
                         <View style={styles.detailsSection}>
                             <Text style={styles.detailsTitle}>Firmware Details</Text>

@@ -23,7 +23,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     useEffect(() => {
         let unsubscribe: (() => void) | null = null;
         let statusInterval: NodeJS.Timeout | null = null;
-        
+
         // Subscribe to battery updates and get device status
         if (leftConnected || rightConnected) {
             unsubscribe = BluetoothService.onBatteryUpdate((battery) => {
@@ -31,13 +31,13 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                 // Update device status when battery changes
                 updateDeviceStatus();
             });
-            
+
             // Get initial battery status and firmware info
             updateBatteryStatus();
             // updateFirmwareInfo();
             updateUptimeInfo();
             updateDeviceStatus();
-            
+
             // Periodically update device status (every 30 seconds)
             statusInterval = setInterval(() => {
                 updateDeviceStatus();
@@ -46,7 +46,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
             // Clear device status when disconnected
             setDeviceStatus(undefined);
         }
-        
+
         return () => {
             if (unsubscribe) {
                 unsubscribe();
@@ -59,7 +59,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
 
     const updateBatteryStatus = async () => {
         if (isUpdatingBattery) return;
-        
+
         setIsUpdatingBattery(true);
         try {
             await BluetoothService.refreshBatteryInfo();
@@ -72,7 +72,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
 
     const updateUptimeInfo = async () => {
         if (isUpdatingUptime) return;
-        
+
         setIsUpdatingUptime(true);
         try {
             // Get uptime for both devices
@@ -109,14 +109,10 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             {/* Overall Status Header */}
             <View style={styles.overallStatusCard}>
-                <View style={styles.overallStatusHeader}>
-                    <View style={styles.overallStatusTextContainer}>
-                        <Text style={styles.overallStatusTitle}>System Status</Text>
-                        <Text style={styles.overallStatusSubtitle}>
-                            {getDeviceStatus()}
-                        </Text>
-                    </View>
-                </View>
+                <Text style={styles.overallStatusTitle}>System Status</Text>
+                <Text style={styles.overallStatusSubtitle}>
+                    {getDeviceStatus()}
+                </Text>
             </View>
 
             {/* Device Status Cards */}
@@ -126,13 +122,15 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                     connected={leftConnected}
                     batteryLevel={batteryInfo.left}
                     deviceStatus={deviceStatus?.left}
+                    isCompact={true}
                 />
-                
+
                 <DeviceStatusCard
                     side="right"
                     connected={rightConnected}
                     batteryLevel={batteryInfo.right}
                     deviceStatus={deviceStatus?.right}
+                    isCompact={true}
                 />
             </View>
 
