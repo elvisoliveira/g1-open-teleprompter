@@ -7,8 +7,7 @@ export const topAppBarStyles = StyleSheet.create({
         backgroundColor: MaterialColors.surfaceContainer,
         borderBottomWidth: 0,
         paddingTop: MaterialSpacing.lg,
-        paddingBottom: MaterialSpacing.md,
-        // ...UtilityStyles.shadowLow,
+        paddingBottom: MaterialSpacing.md
     },
     content: {
         ...ContainerStyles.row,

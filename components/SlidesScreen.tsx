@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import BluetoothService from '../services/BluetoothService';
 import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 
@@ -20,16 +21,12 @@ interface SlidesScreenProps {
     presentation: Presentation;
     onGoBack: () => void;
     onUpdatePresentation: (updatedPresentation: Presentation) => void;
-    onSendMessage: (text: string) => Promise<void>;
-    onExitToDashboard: () => Promise<void>;
 }
 
 const SlidesScreen: React.FC<SlidesScreenProps> = ({
     presentation,
     onGoBack,
-    onUpdatePresentation,
-    onSendMessage,
-    onExitToDashboard
+    onUpdatePresentation
 }) => {
     const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
@@ -169,7 +166,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
             if (slide) {
                 // Send the slide text to the glasses
                 try {
-                    await onSendMessage(slide.text);
+                    await BluetoothService.sendText(slide.text);
                 } catch (error) {
                     console.error('Failed to send slide text to glasses:', error);
                     // Continue with presentation mode even if sending fails
@@ -187,9 +184,9 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 }, 50); // Small delay to ensure state update has processed
             }
         } else {
-            // We're stopping presentation, call onExitToDashboard
+            // We're stopping presentation, call exitToDashboard
             try {
-                await onExitToDashboard();
+                await BluetoothService.exitToDashboard();
             } catch (error) {
                 console.error('Failed to exit dashboard when stopping presentation:', error);
             }
@@ -201,7 +198,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         return () => {
             // Component is unmounting, stop any active presentation
             if (presentingSlideRef.current) {
-                onExitToDashboard().catch(error => {
+                BluetoothService.exitToDashboard().catch((error: any) => {
                     console.error('Failed to exit dashboard on component unmount:', error);
                 });
             }
@@ -212,7 +209,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
     const handleGoBack = async () => {
         if (presentingSlideId) {
             try {
-                await onExitToDashboard();
+                await BluetoothService.exitToDashboard();
                 presentingSlideRef.current = null; // Clear ref since we manually stopped
             } catch (error) {
                 console.error('Failed to exit dashboard on going back:', error);
@@ -381,7 +378,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 {presentingSlideId ? (
                     <TouchableOpacity
                         onPress={async () => {
-                            await onExitToDashboard();
+                            await BluetoothService.exitToDashboard();
                             setPresentingSlideId(null);
                             presentingSlideRef.current = null; // Clear ref since we manually stopped
                         }}

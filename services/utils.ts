@@ -10,6 +10,7 @@ export class Utils {
      * @returns Array of text lines
      */
     static splitTextIntoLines(text: string): string[] {
+        console.log(text);
         const words = text.split(' ');
         const lines: string[] = [];
         let currentLine = '';

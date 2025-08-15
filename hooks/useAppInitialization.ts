@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
-export type AppView = 'splash' | 'connection' | 'composer' | 'messages' | 'reconnection';
+export type AppView = 'splash' | 'connection' | 'composer' | 'reconnection';
 
 interface UseAppInitializationProps {
     loadSavedMacAddresses: () => Promise<{ leftMac: string | null; rightMac: string | null }>;

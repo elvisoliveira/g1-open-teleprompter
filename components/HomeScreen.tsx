@@ -1,8 +1,10 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
-import { View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { ButtonStyles } from '../styles/CommonStyles';
 import { homeScreenStyles as styles } from '../styles/HomeScreenStyles';
+import { MaterialColors, MaterialElevation, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 import { OutputMode } from '../types/OutputMode';
-import ActionButtons from './ActionButtons';
 import OutputModeSelector from './OutputModeSelector';
 import TextInputField from './TextInputField';
 
@@ -13,10 +15,8 @@ interface HomeScreenProps {
     onOutputModeChange: (mode: OutputMode) => void;
     onSend: () => void;
     onExitToDashboard: () => void;
-    onViewMessages: () => void;
     leftConnected: boolean;
     rightConnected: boolean;
-    messageCount: number;
     isSending?: boolean;
 }
 
@@ -27,10 +27,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     onOutputModeChange,
     onSend,
     onExitToDashboard,
-    onViewMessages,
     leftConnected,
     rightConnected,
-    messageCount,
     isSending = false
 }) => {
     const canSend = inputText.trim().length > 0 && (leftConnected || rightConnected) && !isSending;
@@ -55,6 +53,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     };
 
     const getSendButtonText = () => {
+        if (isSending) return 'Sending...';
         if (bothConnected) return 'Send to Both Devices';
         if (leftConnected) return 'Send to Left Device';
         if (rightConnected) return 'Send to Right Device';
@@ -63,28 +62,73 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
     return (
         <View style={styles.container}>
-            <TextInputField
-                label="Your Message"
-                value={inputText}
-                onChangeText={onTextChange}
-                placeholder="Type your message here..."
-            />
-
             <OutputModeSelector
                 selectedMode={outputMode}
                 onModeChange={onOutputModeChange}
             />
 
-            <ActionButtons
-                canSend={canSend}
-                onSend={onSend}
-                onExitToDashboard={onExitToDashboard}
-                onViewMessages={onViewMessages}
+            <TextInputField
+                label="Your Message"
+                value={inputText}
+                onChangeText={onTextChange}
+                placeholder="Type your message here..."
                 onInsertLoremIpsum={insertRandomLoremIpsum}
-                sendButtonText={getSendButtonText()}
-                messageCount={messageCount}
-                isSending={isSending}
             />
+
+            {/* Send Button */}
+            <TouchableOpacity
+                style={[
+                    {
+                        ...ButtonStyles.primaryButton,
+                        elevation: MaterialElevation.level1,
+                        shadowColor: MaterialColors.primary,
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 4,
+                        marginVertical: MaterialSpacing.lg,
+                    },
+                    !canSend && {
+                        ...ButtonStyles.primaryButtonDisabled,
+                        elevation: 0,
+                        shadowOpacity: 0,
+                    }
+                ]}
+                onPress={onSend}
+                disabled={!canSend}
+                activeOpacity={0.8}
+            >
+                <MaterialIcons 
+                    name="send" 
+                    size={20} 
+                    color={canSend ? MaterialColors.onPrimary : MaterialColors.onSurfaceVariant} 
+                />
+                <Text style={[
+                    {
+                        ...ButtonStyles.primaryButtonText,
+                        ...MaterialTypography.labelLarge,
+                    },
+                    !canSend && ButtonStyles.primaryButtonTextDisabled
+                ]}>
+                    {getSendButtonText()}
+                </Text>
+            </TouchableOpacity>
+
+            {/* Exit to Dashboard Button */}
+            <TouchableOpacity
+                onPress={onExitToDashboard}
+                style={[ButtonStyles.secondaryButton, {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: MaterialSpacing.sm,
+                }]}
+                activeOpacity={0.8}
+            >
+                <MaterialIcons name="dashboard" size={18} color={MaterialColors.onSurface} />
+                <Text style={[ButtonStyles.secondaryButtonText, MaterialTypography.labelMedium]}>
+                    Exit to Dashboard
+                </Text>
+            </TouchableOpacity>
         </View>
     );
 };

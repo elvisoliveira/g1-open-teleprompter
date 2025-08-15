@@ -11,7 +11,6 @@ import DeviceScreen from './DeviceScreen';
 import HomeScreen from './HomeScreen';
 import PresentationsScreen from './PresentationsScreen';
 import ReconnectionScreen from './ReconnectionScreen';
-import SentMessagesScreen from './SentMessagesScreen';
 import SplashScreen from './SplashScreen';
 import TopAppBar from './TopAppBar';
 
@@ -21,19 +20,13 @@ interface PairedDevice {
     isConnected: boolean;
 }
 
-interface SentTextItem {
-    id: string;
-    text: string;
-    timestamp: Date;
-}
-
 // Storage keys for saved devices
 const STORAGE_KEYS = {
     LEFT_DEVICE_MAC: 'left_device_mac',
     RIGHT_DEVICE_MAC: 'right_device_mac',
 };
 
-type AppView = 'splash' | 'connection' | 'home' | 'device' | 'messages' | 'reconnection' | 'presentations';
+type AppView = 'splash' | 'connection' | 'home' | 'device' | 'reconnection' | 'presentations';
 type ConnectionStep = 'left' | 'right';
 
 const TeleprompterApp: React.FC = () => {
@@ -57,8 +50,6 @@ const TeleprompterApp: React.FC = () => {
     // Message state
     const [inputText, setInputText] = useState('');
     const [outputMode, setOutputMode] = useState<OutputMode>('text');
-    const [sentMessages, setSentMessages] = useState<SentTextItem[]>([]);
-    const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
     const [isSending, setIsSending] = useState(false);
 
     const initializeApp = useCallback(async () => {
@@ -231,8 +222,8 @@ const TeleprompterApp: React.FC = () => {
         }
     };
 
-    const handleSendMessage = async (text?: string) => {
-        const messageText = text || inputText.trim();
+    const handleSendMessage = async () => {
+        const messageText = inputText.trim();
         if (!messageText) return;
         
         setIsSending(true);
@@ -264,18 +255,7 @@ const TeleprompterApp: React.FC = () => {
             }
             
             if (success) {
-                const newMessage: SentTextItem = {
-                    id: Date.now().toString(),
-                    text: messageText,
-                    timestamp: new Date()
-                };
-                setSentMessages(prev => [newMessage, ...prev]);
-                setCurrentMessageId(newMessage.id);
-                
-                // Only clear input text if we're using the default behavior (not when text is passed)
-                if (!text) {
-                    setInputText('');
-                }
+                setInputText('');
                 
                 // Show success message with mode info
                 const modeText = outputMode === 'text' ? 'text' : 'image (BMP)';
@@ -291,36 +271,15 @@ const TeleprompterApp: React.FC = () => {
         }
     };
 
-    const handleResendMessage = async (text: string) => {
-        try {
-            const success = await BluetoothService.sendText(text);
-            if (!success) {
-                Alert.alert('Error', 'Failed to resend message');
-            }
-        } catch (error) {
-            console.error('Error resending message:', error);
-            Alert.alert('Error', 'Failed to resend message');
-        }
-    };
-
     const handleExitToDashboard = async () => {
         try {
             const success = await BluetoothService.exitToDashboard();
-            if (success) {
-                setCurrentMessageId(null);
-            } else {
+            if (!success) {
                 Alert.alert('Error', 'Failed to exit to dashboard');
             }
         } catch (error) {
             console.error('Error exiting to dashboard:', error);
             Alert.alert('Error', 'Failed to exit to dashboard');
-        }
-    };
-
-    const handleDeleteMessage = (id: string) => {
-        setSentMessages(prev => prev.filter(item => item.id !== id));
-        if (currentMessageId === id) {
-            setCurrentMessageId(null);
         }
     };
 
@@ -370,10 +329,8 @@ const TeleprompterApp: React.FC = () => {
                             onOutputModeChange={setOutputMode}
                             onSend={handleSendMessage}
                             onExitToDashboard={handleExitToDashboard}
-                            onViewMessages={() => setCurrentView('messages')}
                             leftConnected={leftConnected}
                             rightConnected={rightConnected}
-                            messageCount={sentMessages.length}
                             isSending={isSending}
                         />
                     );
@@ -387,22 +344,7 @@ const TeleprompterApp: React.FC = () => {
                     );
                 
                 case 'presentations':
-                    return <PresentationsScreen 
-                        onSendMessage={handleSendMessage} 
-                        onExitToDashboard={handleExitToDashboard}
-                    />;
-                
-                case 'messages':
-                    return (
-                        <SentMessagesScreen
-                            sentTexts={sentMessages}
-                            onGoBack={() => setCurrentView('home')}
-                            onResendText={handleResendMessage}
-                            onDeleteText={handleDeleteMessage}
-                            currentlyDisplayedMessageId={currentMessageId}
-                            onSetCurrentMessage={setCurrentMessageId}
-                        />
-                    );
+                    return <PresentationsScreen />;
                 
                 case 'reconnection':
                     return (
@@ -422,7 +364,7 @@ const TeleprompterApp: React.FC = () => {
         const showBottomNav = currentView === 'home' || currentView === 'device' || currentView === 'presentations';
         
         // Show top app bar for main app views (not splash, connection, or reconnection)
-        const showTopAppBar = currentView === 'home' || currentView === 'device' || currentView === 'messages' || currentView === 'presentations';
+        const showTopAppBar = currentView === 'home' || currentView === 'device' || currentView === 'presentations';
         
         return (
             <>

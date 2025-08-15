@@ -105,25 +105,7 @@ export const CardStyles = StyleSheet.create({
     backgroundColor: MaterialColors.surface,
     borderRadius: MaterialBorderRadius.lg,
     padding: MaterialSpacing.lg,
-    marginVertical: MaterialSpacing.xs,
-    elevation: 1,
-    shadowColor: MaterialColors.onSurface,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-
-  // Elevated card
-  cardElevated: {
-    backgroundColor: MaterialColors.surface,
-    borderRadius: MaterialBorderRadius.lg,
-    padding: MaterialSpacing.lg,
-    marginVertical: MaterialSpacing.xs,
-    elevation: 3,
-    shadowColor: MaterialColors.onSurface,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginVertical: MaterialSpacing.xs
   },
 
   // Outlined card
@@ -142,11 +124,6 @@ export const CardStyles = StyleSheet.create({
     borderRadius: MaterialBorderRadius.md,
     padding: MaterialSpacing.md,
     marginVertical: MaterialSpacing.xs,
-    elevation: 1,
-    shadowColor: MaterialColors.onSurface,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
   },
 });
 
@@ -340,29 +317,6 @@ export const BadgeStyles = StyleSheet.create({
 
 // Common utility styles
 export const UtilityStyles = StyleSheet.create({
-  // Shadows
-  shadowLow: {
-    elevation: 1,
-    shadowColor: MaterialColors.onSurface,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  shadowMedium: {
-    elevation: 3,
-    shadowColor: MaterialColors.onSurface,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  shadowHigh: {
-    elevation: 6,
-    shadowColor: MaterialColors.onSurface,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
-
   // Opacity states
   disabled: {
     opacity: 0.38,

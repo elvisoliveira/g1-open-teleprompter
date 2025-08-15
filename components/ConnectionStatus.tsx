@@ -35,8 +35,8 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
             
             // Get initial battery status and firmware info
             updateBatteryStatus();
-            updateFirmwareInfo();
-            updateUptimeInfo();
+            // updateFirmwareInfo();
+            // updateUptimeInfo();
             updateDeviceStatus();
             
             // Periodically update device status (every 30 seconds)

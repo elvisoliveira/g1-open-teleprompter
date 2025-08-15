@@ -11,7 +11,7 @@ export const connectionStatusStyles = StyleSheet.create({
 
     // Overall Status Card
     overallStatusCard: {
-        ...CardStyles.cardElevated,
+        ...CardStyles.card,
         marginBottom: MaterialSpacing.lg,
     },
     overallStatusHeader: {

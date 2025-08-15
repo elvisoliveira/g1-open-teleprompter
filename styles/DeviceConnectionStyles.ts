@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { BadgeStyles, ButtonStyles, CardStyles, ContainerStyles, UtilityStyles } from './CommonStyles';
+import { BadgeStyles, ButtonStyles, CardStyles, ContainerStyles } from './CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const deviceConnectionStyles = StyleSheet.create({
@@ -224,7 +224,6 @@ export const deviceConnectionStyles = StyleSheet.create({
     },
     primaryActionButton: {
         ...ButtonStyles.primaryButton,
-        ...UtilityStyles.shadowMedium,
     },
     primaryActionText: {
         ...ButtonStyles.primaryButtonText,
@@ -300,8 +299,7 @@ export const deviceConnectionStyles = StyleSheet.create({
         backgroundColor: MaterialColors.surface,
         borderRadius: MaterialBorderRadius.lg,
         padding: MaterialSpacing.lg,
-        marginVertical: MaterialSpacing.md,
-        ...UtilityStyles.shadowLow,
+        marginVertical: MaterialSpacing.md
     },
     progressBar: {
         height: 4,

@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { CardStyles, ContainerStyles, StatusStyles, UtilityStyles } from './CommonStyles';
+import { CardStyles, ContainerStyles, StatusStyles } from './CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const deviceStatusCardStyles = StyleSheet.create({
@@ -10,8 +10,7 @@ export const deviceStatusCardStyles = StyleSheet.create({
     },
     containerConnected: {
         borderColor: MaterialColors.primary,
-        backgroundColor: MaterialColors.surface,
-        ...UtilityStyles.shadowLow,
+        backgroundColor: MaterialColors.surface
     },
     containerDisconnected: {
         borderColor: MaterialColors.outline,

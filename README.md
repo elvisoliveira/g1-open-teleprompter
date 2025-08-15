@@ -15,8 +15,6 @@ An open-source companion app for Even Realities G1 smart glasses that lets you s
 
 - Send text messages to your Even G1 glasses
 - Connect both glasses (left and right) at the same time
-- Keep message history - see what you've sent before
-- Resend old messages quickly
 - Remember your glasses - automatically connects next time
 
 ## What You Need
