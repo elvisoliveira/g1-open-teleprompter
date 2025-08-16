@@ -3,7 +3,7 @@ import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import BluetoothService from '../services/BluetoothService';
-import { ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
+import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 
 interface Slide {
@@ -330,7 +330,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             }}
                             renderItem={({ item, index }) => (
                                 <View style={{
-                                    backgroundColor: presentingSlideId === item.id ? MaterialColors.primaryContainer : MaterialColors.surfaceVariant,
+                                    backgroundColor: presentingSlideId === item.id ? MaterialColors.surfaceVariant : MaterialColors.surfaceContainer,
                                     borderRadius: MaterialBorderRadius.lg,
                                     marginBottom: MaterialSpacing.md,
                                     minHeight: 104, // Adjusted to match getItemLayout calculation (120 - 16 margin)
@@ -391,21 +391,19 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                                                     e.stopPropagation();
                                                                     moveSlideUp(item.id);
                                                                 }}
-                                                                style={{
-                                                                    backgroundColor: index === 0 ? MaterialColors.surfaceVariant : MaterialColors.infoContainer,
-                                                                    width: 48,
-                                                                    height: 48,
-                                                                    borderRadius: MaterialBorderRadius.xl,
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    opacity: index === 0 ? 0.5 : 1,
-                                                                }}
+                                                                style={[
+                                                                    ActionButtonStyles.navigationButton,
+                                                                    index === 0 && ActionButtonStyles.navigationButtonDisabled
+                                                                ]}
                                                                 disabled={index === 0}
                                                             >
                                                                 <MaterialIcons
                                                                     name="keyboard-arrow-up"
                                                                     size={24}
-                                                                    color={index === 0 ? MaterialColors.onSurfaceVariant : MaterialColors.onInfoContainer}
+                                                                    style={[
+                                                                        ActionButtonStyles.navigationIcon,
+                                                                        index === 0 && ActionButtonStyles.navigationIconDisabled
+                                                                    ]}
                                                                 />
                                                             </TouchableOpacity>
 
@@ -415,84 +413,66 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                                                     e.stopPropagation();
                                                                     moveSlideDown(item.id);
                                                                 }}
-                                                                style={{
-                                                                    backgroundColor: index === presentation.slides.length - 1 ? MaterialColors.surfaceVariant : MaterialColors.infoContainer,
-                                                                    width: 48,
-                                                                    height: 48,
-                                                                    borderRadius: MaterialBorderRadius.xl,
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    opacity: index === presentation.slides.length - 1 ? 0.5 : 1,
-                                                                }}
+                                                                style={[
+                                                                    ActionButtonStyles.navigationButton,
+                                                                    index === presentation.slides.length - 1 && ActionButtonStyles.navigationButtonDisabled
+                                                                ]}
                                                                 disabled={index === presentation.slides.length - 1}
                                                             >
                                                                 <MaterialIcons
                                                                     name="keyboard-arrow-down"
                                                                     size={24}
-                                                                    color={index === presentation.slides.length - 1 ? MaterialColors.onSurfaceVariant : MaterialColors.onInfoContainer}
+                                                                    style={[
+                                                                        ActionButtonStyles.navigationIcon,
+                                                                        index === presentation.slides.length - 1 && ActionButtonStyles.navigationIconDisabled
+                                                                    ]}
                                                                 />
                                                             </TouchableOpacity>
 
+                                                            {/* Edit Slide */}
                                                             <TouchableOpacity
                                                                 onPress={(e) => {
                                                                     e.stopPropagation();
                                                                     startEditingSlide(item);
                                                                 }}
-                                                                style={{
-                                                                    backgroundColor: MaterialColors.warningContainer,
-                                                                    width: 48,
-                                                                    height: 48,
-                                                                    borderRadius: MaterialBorderRadius.xl,
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                }}
+                                                                style={ActionButtonStyles.editButton}
                                                             >
                                                                 <MaterialIcons
                                                                     name="edit"
                                                                     size={24}
-                                                                    color={MaterialColors.onWarningContainer}
+                                                                    style={ActionButtonStyles.editIcon}
                                                                 />
                                                             </TouchableOpacity>
+
+                                                            {/* Delete Slide */}
                                                             <TouchableOpacity
                                                                 onPress={(e) => {
                                                                     e.stopPropagation();
                                                                     deleteSlide(item.id);
                                                                 }}
-                                                                style={{
-                                                                    backgroundColor: MaterialColors.errorContainer,
-                                                                    width: 48,
-                                                                    height: 48,
-                                                                    borderRadius: MaterialBorderRadius.xl,
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                }}
+                                                                style={ActionButtonStyles.deleteButton}
                                                             >
                                                                 <MaterialIcons
                                                                     name="delete"
                                                                     size={24}
-                                                                    color={MaterialColors.onErrorContainer}
+                                                                    style={ActionButtonStyles.deleteIcon}
                                                                 />
                                                             </TouchableOpacity>
                                                         </>
                                                     )}
+
+                                                    {/* Present Slide */}
                                                     <TouchableOpacity
                                                         onPress={(e) => {
                                                             e.stopPropagation();
                                                             togglePresenting(item.id);
                                                         }}
-                                                        style={{
-                                                            backgroundColor: presentingSlideId === item.id ? MaterialColors.errorContainer : MaterialColors.successContainer,
-                                                            width: 48,
-                                                            height: 48,
-                                                            borderRadius: MaterialBorderRadius.xl,
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                        }}
+                                                        style={presentingSlideId === item.id ? ActionButtonStyles.stopButton : ActionButtonStyles.presentButton}
                                                     >
                                                         <MaterialIcons
                                                             name={presentingSlideId === item.id ? 'stop-screen-share' : 'play-arrow'}
                                                             size={24}
-                                                            color={presentingSlideId === item.id ? MaterialColors.onErrorContainer : MaterialColors.onSuccessContainer}
+                                                            style={presentingSlideId === item.id ? ActionButtonStyles.stopIcon : ActionButtonStyles.presentIcon}
                                                         />
                                                     </TouchableOpacity>
                                                 </View>
@@ -514,26 +494,63 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 paddingVertical: MaterialSpacing.md,
             }}>
                 {presentingSlideId ? (
-                    <TouchableOpacity
-                        onPress={async () => {
-                            await BluetoothService.exitToDashboard();
-                            setPresentingSlideId(null);
-                            presentingSlideRef.current = null; // Clear ref since we manually stopped
-                        }}
-                        style={[ButtonStyles.secondaryButton, {
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }]}
-                    >
-                        <MaterialIcons name="stop" size={24} color={MaterialColors.onSurface} style={{ marginRight: MaterialSpacing.xs }} />
-                        <Text style={[MaterialTypography.labelLarge, {
-                            color: MaterialColors.onSurface,
-                            fontWeight: 'bold'
-                        }]}>
-                            Stop Presenting
-                        </Text>
-                    </TouchableOpacity>
+                    <View style={[ContainerStyles.row, { gap: MaterialSpacing.md }]}>
+                        {/* Previous Slide Button */}
+                        <TouchableOpacity
+                            onPress={navigateToPreviousSlide}
+                            style={[
+                                ActionButtonStyles.navigationButton,
+                                { flex: 1 },
+                                presentation.slides.findIndex(s => s.id === presentingSlideId) === 0 && ActionButtonStyles.navigationButtonDisabled
+                            ]}
+                            disabled={presentation.slides.findIndex(s => s.id === presentingSlideId) === 0}
+                        >
+                            <MaterialIcons
+                                name="skip-previous"
+                                size={24}
+                                style={[
+                                    ActionButtonStyles.navigationIcon,
+                                    presentation.slides.findIndex(s => s.id === presentingSlideId) === 0 && ActionButtonStyles.navigationIconDisabled
+                                ]}
+                            />
+                        </TouchableOpacity>
+
+                        {/* Stop Presenting Button */}
+                        <TouchableOpacity
+                            onPress={async () => {
+                                await BluetoothService.exitToDashboard();
+                                setPresentingSlideId(null);
+                                presentingSlideRef.current = null; // Clear ref since we manually stopped
+                            }}
+                            style={[ActionButtonStyles.stopButton, { flex: 2 }]}
+                        >
+                            <MaterialIcons
+                                name="stop"
+                                size={24}
+                                style={ActionButtonStyles.stopIcon}
+                            />
+                        </TouchableOpacity>
+
+                        {/* Next Slide Button */}
+                        <TouchableOpacity
+                            onPress={navigateToNextSlide}
+                            style={[
+                                ActionButtonStyles.navigationButton,
+                                { flex: 1 },
+                                presentation.slides.findIndex(s => s.id === presentingSlideId) === presentation.slides.length - 1 && ActionButtonStyles.navigationButtonDisabled
+                            ]}
+                            disabled={presentation.slides.findIndex(s => s.id === presentingSlideId) === presentation.slides.length - 1}
+                        >
+                            <MaterialIcons
+                                name="skip-next"
+                                size={24}
+                                style={[
+                                    ActionButtonStyles.navigationIcon,
+                                    presentation.slides.findIndex(s => s.id === presentingSlideId) === presentation.slides.length - 1 && ActionButtonStyles.navigationIconDisabled
+                                ]}
+                            />
+                        </TouchableOpacity>
+                    </View>
                 ) : (
                     <TouchableOpacity
                         onPress={addSlide}

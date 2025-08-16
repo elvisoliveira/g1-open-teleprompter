@@ -4,7 +4,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
+import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 import SlidesScreen from './SlidesScreen';
 
@@ -198,15 +198,52 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                 return;
             }
 
-            // Validate each presentation has required fields
-            const isValidData = importData.presentations.every((p: any) =>
-                p.id && p.name && Array.isArray(p.slides)
+            // Validate and fix presentation data
+            const processedPresentations = importData.presentations.map((p: any) => {
+                // Validate basic presentation structure
+                if (!p.name || !Array.isArray(p.slides)) {
+                    throw new Error('Invalid presentation structure');
+                }
+
+                // Generate presentation ID if missing
+                if (!p.id) {
+                    p.id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                }
+
+                // Process slides - generate IDs if missing and ensure text property exists
+                p.slides = p.slides.map((slide: any, index: number) => {
+                    // Handle different slide formats
+                    let slideText = '';
+                    if (typeof slide === 'string') {
+                        // If slide is just a string, use it as text
+                        slideText = slide;
+                    } else if (slide && typeof slide === 'object') {
+                        // If slide is an object, try to get text property
+                        slideText = slide.text || slide.content || '';
+                    }
+
+                    return {
+                        id: slide.id || `${p.id}_slide_${index}_${Date.now()}`,
+                        text: slideText
+                    };
+                });
+
+                return p;
+            });
+
+            // Final validation
+            const isValidData = processedPresentations.every((p: any) =>
+                p.id && p.name && Array.isArray(p.slides) &&
+                p.slides.every((s: any) => s.id && typeof s.text === 'string')
             );
 
             if (!isValidData) {
                 Alert.alert('Invalid Data', 'The backup file contains invalid presentation data.');
                 return;
             }
+
+            // Update the import data with processed presentations
+            importData.presentations = processedPresentations;
 
             Alert.alert(
                 'Import Presentations',
@@ -297,10 +334,8 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                 {showAddPresentation && (
                     <View style={[
                         {
-                            backgroundColor: MaterialColors.surface,
+                            backgroundColor: MaterialColors.surfaceContainer,
                             borderRadius: MaterialBorderRadius.md,
-                            borderWidth: 1,
-                            borderColor: MaterialColors.outline,
                             padding: MaterialSpacing.lg,
                             marginBottom: MaterialSpacing.lg
                         }
@@ -350,7 +385,7 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                         keyExtractor={item => item.id}
                         renderItem={({ item }) => (
                             <View style={{
-                                backgroundColor: MaterialColors.surfaceVariant,
+                                backgroundColor: MaterialColors.surfaceContainer,
                                 borderRadius: MaterialBorderRadius.md,
                                 marginBottom: MaterialSpacing.md,
                                 padding: MaterialSpacing.lg,
@@ -408,35 +443,23 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                                         }}>
                                             <TouchableOpacity
                                                 onPress={() => startEditingPresentation(item)}
-                                                style={{
-                                                    backgroundColor: MaterialColors.primary,
-                                                    paddingHorizontal: MaterialSpacing.md,
-                                                    paddingVertical: MaterialSpacing.sm,
-                                                    borderRadius: MaterialBorderRadius.lg,
-                                                }}
+                                                style={ActionButtonStyles.editButton}
                                             >
-                                                <Text style={[MaterialTypography.labelMedium, {
-                                                    color: MaterialColors.onPrimary,
-                                                    fontWeight: 'bold'
-                                                }]}>
-                                                    Edit
-                                                </Text>
+                                                <MaterialIcons
+                                                    name="edit"
+                                                    size={24}
+                                                    style={ActionButtonStyles.editIcon}
+                                                />
                                             </TouchableOpacity>
                                             <TouchableOpacity
                                                 onPress={() => deletePresentation(item.id)}
-                                                style={{
-                                                    backgroundColor: MaterialColors.error,
-                                                    paddingHorizontal: MaterialSpacing.md,
-                                                    paddingVertical: MaterialSpacing.sm,
-                                                    borderRadius: MaterialBorderRadius.lg,
-                                                }}
+                                                style={ActionButtonStyles.deleteButton}
                                             >
-                                                <Text style={[MaterialTypography.labelMedium, {
-                                                    color: MaterialColors.onError,
-                                                    fontWeight: 'bold'
-                                                }]}>
-                                                    Delete
-                                                </Text>
+                                                <MaterialIcons
+                                                    name="delete"
+                                                    size={24}
+                                                    style={ActionButtonStyles.deleteIcon}
+                                                />
                                             </TouchableOpacity>
                                         </View>
                                     </View>
@@ -459,14 +482,20 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                         onPress={importPresentations}
                         style={[ButtonStyles.secondaryButton, { flex: 1 }]}
                     >
-                        <MaterialIcons name="file-upload" size={20} color={MaterialColors.primary} />
+                        <MaterialIcons
+                            name="file-download"
+                            size={20}
+                            color={MaterialColors.primary} />
                         <Text style={ButtonStyles.secondaryButtonText}>Import</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={exportPresentations}
                         style={[ButtonStyles.secondaryButton, { flex: 1 }]}
                     >
-                        <MaterialIcons name="file-download" size={20} color={MaterialColors.primary} />
+                        <MaterialIcons
+                            name="file-upload"
+                            size={20}
+                            color={MaterialColors.primary} />
                         <Text style={ButtonStyles.secondaryButtonText}>Backup</Text>
                     </TouchableOpacity>
                 </View>

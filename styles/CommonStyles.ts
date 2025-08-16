@@ -278,6 +278,92 @@ export const StatusStyles = StyleSheet.create({
   },
 });
 
+// Action Button Styles - Reusable action button patterns for slides and items
+export const ActionButtonStyles = StyleSheet.create({
+  // Base action button
+  actionButton: {
+    width: 48,
+    height: 48,
+    borderRadius: MaterialBorderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Navigation buttons (up/down arrows)
+  navigationButton: {
+    width: 48,
+    height: 48,
+    borderRadius: MaterialBorderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: MaterialColors.infoContainer,
+  },
+  navigationButtonDisabled: {
+    backgroundColor: MaterialColors.surfaceVariant,
+    opacity: 0.5,
+  },
+
+  // Edit button
+  editButton: {
+    width: 48,
+    height: 48,
+    borderRadius: MaterialBorderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: MaterialColors.warningContainer,
+  },
+
+  // Delete button
+  deleteButton: {
+    width: 48,
+    height: 48,
+    borderRadius: MaterialBorderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: MaterialColors.errorContainer,
+  },
+
+  // Present/Play button
+  presentButton: {
+    width: 48,
+    height: 48,
+    borderRadius: MaterialBorderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: MaterialColors.successContainer,
+  },
+
+  // Stop presenting button
+  stopButton: {
+    width: 48,
+    height: 48,
+    borderRadius: MaterialBorderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: MaterialColors.errorContainer,
+  },
+
+  // Icon colors for action buttons
+  navigationIcon: {
+    color: MaterialColors.onInfoContainer,
+  },
+  navigationIconDisabled: {
+    color: MaterialColors.onSurfaceVariant,
+  },
+  editIcon: {
+    color: MaterialColors.onWarningContainer,
+  },
+  deleteIcon: {
+    color: MaterialColors.onErrorContainer,
+  },
+  presentIcon: {
+    color: MaterialColors.onSuccessContainer,
+  },
+  stopIcon: {
+    color: MaterialColors.onErrorContainer,
+  },
+});
+
 // Badge Styles - Reusable badge patterns
 export const BadgeStyles = StyleSheet.create({
   badge: {
