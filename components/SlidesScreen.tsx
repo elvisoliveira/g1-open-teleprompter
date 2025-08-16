@@ -31,6 +31,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
     const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
     const [presentingSlideId, setPresentingSlideId] = useState<string | null>(null);
+    const [currentViewIndex, setCurrentViewIndex] = useState<number>(0);
     const { keyEvent } = useKeyEvent();
     const flatListRef = useRef<FlatList>(null);
     const presentingSlideRef = useRef<string | null>(null);
@@ -77,23 +78,15 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
             text: ''
         };
 
-        let updatedSlides: Slide[];
-        let newSlideIndex: number;
+        // Insert the new slide after the currently viewed position
+        // If no slides exist or we're at the end, add at the end
+        const insertIndex = Math.min(currentViewIndex + 1, presentation.slides.length);
 
-        if (presentingSlideId) {
-            // Insert after the currently presenting slide
-            const presentingIndex = presentation.slides.findIndex(s => s.id === presentingSlideId);
-            updatedSlides = [
-                ...presentation.slides.slice(0, presentingIndex + 1),
-                newSlide,
-                ...presentation.slides.slice(presentingIndex + 1)
-            ];
-            newSlideIndex = presentingIndex + 1;
-        } else {
-            // Add at the end
-            updatedSlides = [...presentation.slides, newSlide];
-            newSlideIndex = presentation.slides.length;
-        }
+        const updatedSlides = [
+            ...presentation.slides.slice(0, insertIndex),
+            newSlide,
+            ...presentation.slides.slice(insertIndex)
+        ];
 
         const updatedPresentation = {
             ...presentation,
@@ -107,13 +100,11 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
 
         // Scroll to the new slide after a short delay to ensure the list has updated
         setTimeout(() => {
-            if (newSlideIndex >= 0 && newSlideIndex < updatedSlides.length) {
-                flatListRef.current?.scrollToIndex({
-                    index: newSlideIndex,
-                    animated: true,
-                    viewPosition: 0.5
-                });
-            }
+            flatListRef.current?.scrollToIndex({
+                index: insertIndex,
+                animated: true,
+                viewPosition: 0.5
+            });
         }, 100);
     };
 
@@ -316,24 +307,49 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             ref={flatListRef}
                             data={presentation.slides}
                             keyExtractor={item => item.id}
-                            getItemLayout={(data, index) => ({
-                                length: 120, // Approximate height of each slide item
-                                offset: 120 * index,
-                                index,
-                            })}
+                            onViewableItemsChanged={({ viewableItems }) => {
+                                // Update current view index based on the first visible item
+                                if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+                                    setCurrentViewIndex(viewableItems[0].index);
+                                }
+                            }}
+                            viewabilityConfig={{
+                                itemVisiblePercentThreshold: 50, // Item is considered visible when 50% is shown
+                            }}
                             onScrollToIndexFailed={(info) => {
                                 console.warn('ScrollToIndex failed:', info);
-                                // Fallback: scroll to the end if index is out of bounds
-                                setTimeout(() => {
-                                    flatListRef.current?.scrollToEnd({ animated: true });
-                                }, 100);
+                                // Fallback: try to scroll to the currently presenting slide
+                                if (presentingSlideId) {
+                                    const presentingIndex = presentation.slides.findIndex(s => s.id === presentingSlideId);
+                                    if (presentingIndex !== -1 && presentingIndex < presentation.slides.length) {
+                                        setTimeout(() => {
+                                            flatListRef.current?.scrollToIndex({
+                                                index: presentingIndex,
+                                                animated: true,
+                                                viewPosition: 0.5
+                                            });
+                                        }, 200);
+                                    }
+                                } else {
+                                    // If no slide is presenting, scroll to the target index or end
+                                    setTimeout(() => {
+                                        if (info.index < presentation.slides.length) {
+                                            flatListRef.current?.scrollToIndex({
+                                                index: Math.min(info.index, presentation.slides.length - 1),
+                                                animated: true,
+                                                viewPosition: 0.5
+                                            });
+                                        } else {
+                                            flatListRef.current?.scrollToEnd({ animated: true });
+                                        }
+                                    }, 200);
+                                }
                             }}
                             renderItem={({ item, index }) => (
                                 <View style={{
-                                    backgroundColor: presentingSlideId === item.id ? MaterialColors.surfaceVariant : MaterialColors.surfaceContainer,
+                                    backgroundColor: presentingSlideId === item.id ? MaterialColors.primaryContainer : MaterialColors.surfaceVariant,
                                     borderRadius: MaterialBorderRadius.lg,
                                     marginBottom: MaterialSpacing.md,
-                                    minHeight: 104, // Adjusted to match getItemLayout calculation (120 - 16 margin)
                                 }}>
                                     {editingSlideId === item.id ? (
                                         <View style={{ padding: MaterialSpacing.lg }}>
@@ -560,7 +576,12 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             justifyContent: 'center',
                         }]}
                     >
-                        <MaterialIcons name="add" size={24} color={MaterialColors.onPrimary} style={{ marginRight: MaterialSpacing.xs }} />
+                        <MaterialIcons
+                            name="add"
+                            size={24}
+                            color={MaterialColors.onPrimary}
+                            style={{ marginRight: MaterialSpacing.xs }}
+                        />
                         <Text style={[MaterialTypography.labelLarge, {
                             color: MaterialColors.onPrimary,
                             fontWeight: 'bold'
