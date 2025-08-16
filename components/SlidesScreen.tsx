@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import BluetoothService from '../services/BluetoothService';
 import { ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
@@ -107,16 +107,72 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
 
         // Scroll to the new slide after a short delay to ensure the list has updated
         setTimeout(() => {
-            flatListRef.current?.scrollToIndex({
-                index: newSlideIndex,
-                animated: true,
-                viewPosition: 0.5
-            });
+            if (newSlideIndex >= 0 && newSlideIndex < updatedSlides.length) {
+                flatListRef.current?.scrollToIndex({
+                    index: newSlideIndex,
+                    animated: true,
+                    viewPosition: 0.5
+                });
+            }
         }, 100);
     };
 
     const deleteSlide = (slideId: string) => {
-        const updatedSlides = presentation.slides.filter(s => s.id !== slideId);
+        Alert.alert(
+            'Delete Slide',
+            'Are you sure you want to delete this slide? This action cannot be undone.',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                        const updatedSlides = presentation.slides.filter(s => s.id !== slideId);
+                        const updatedPresentation = {
+                            ...presentation,
+                            slides: updatedSlides
+                        };
+
+                        onUpdatePresentation(updatedPresentation);
+                    }
+                }
+            ]
+        );
+    };
+
+    const moveSlideUp = (slideId: string) => {
+        const currentIndex = presentation.slides.findIndex(s => s.id === slideId);
+        if (currentIndex <= 0) return; // Already at top or not found
+
+        const updatedSlides = [...presentation.slides];
+        const slideToMove = updatedSlides[currentIndex];
+
+        // Swap with previous slide
+        updatedSlides[currentIndex] = updatedSlides[currentIndex - 1];
+        updatedSlides[currentIndex - 1] = slideToMove;
+
+        const updatedPresentation = {
+            ...presentation,
+            slides: updatedSlides
+        };
+
+        onUpdatePresentation(updatedPresentation);
+    };
+
+    const moveSlideDown = (slideId: string) => {
+        const currentIndex = presentation.slides.findIndex(s => s.id === slideId);
+        if (currentIndex >= presentation.slides.length - 1 || currentIndex === -1) return; // Already at bottom or not found
+
+        const updatedSlides = [...presentation.slides];
+        const slideToMove = updatedSlides[currentIndex];
+
+        // Swap with next slide
+        updatedSlides[currentIndex] = updatedSlides[currentIndex + 1];
+        updatedSlides[currentIndex + 1] = slideToMove;
+
         const updatedPresentation = {
             ...presentation,
             slides: updatedSlides
@@ -173,7 +229,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
             }
 
             const slideIndex = presentation.slides.findIndex(s => s.id === slideId);
-            if (slideIndex !== -1) {
+            if (slideIndex !== -1 && slideIndex < presentation.slides.length) {
                 setTimeout(() => {
                     flatListRef.current?.scrollToIndex({
                         index: slideIndex,
@@ -242,10 +298,10 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 <View style={{ flex: 1 }}>
                     {presentation.slides.length === 0 ? (
                         <View style={EmptyStateStyles.container}>
-                            <MaterialIcons 
-                                name="note-add" 
-                                size={64} 
-                                color={MaterialColors.onSurfaceVariant} 
+                            <MaterialIcons
+                                name="note-add"
+                                size={64}
+                                color={MaterialColors.onSurfaceVariant}
                                 style={EmptyStateStyles.icon}
                             />
                             <Text style={EmptyStateStyles.title}>
@@ -260,12 +316,24 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             ref={flatListRef}
                             data={presentation.slides}
                             keyExtractor={item => item.id}
+                            getItemLayout={(data, index) => ({
+                                length: 120, // Approximate height of each slide item
+                                offset: 120 * index,
+                                index,
+                            })}
+                            onScrollToIndexFailed={(info) => {
+                                console.warn('ScrollToIndex failed:', info);
+                                // Fallback: scroll to the end if index is out of bounds
+                                setTimeout(() => {
+                                    flatListRef.current?.scrollToEnd({ animated: true });
+                                }, 100);
+                            }}
                             renderItem={({ item, index }) => (
                                 <View style={{
                                     backgroundColor: presentingSlideId === item.id ? MaterialColors.primaryContainer : MaterialColors.surfaceVariant,
                                     borderRadius: MaterialBorderRadius.lg,
                                     marginBottom: MaterialSpacing.md,
-                                    minHeight: 80,
+                                    minHeight: 104, // Adjusted to match getItemLayout calculation (120 - 16 margin)
                                 }}>
                                     {editingSlideId === item.id ? (
                                         <View style={{ padding: MaterialSpacing.lg }}>
@@ -317,23 +385,73 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                                 }}>
                                                     {!presentingSlideId && (
                                                         <>
+                                                            {/* Move Up Arrow */}
+                                                            <TouchableOpacity
+                                                                onPress={(e) => {
+                                                                    e.stopPropagation();
+                                                                    moveSlideUp(item.id);
+                                                                }}
+                                                                style={{
+                                                                    backgroundColor: index === 0 ? MaterialColors.surfaceVariant : MaterialColors.infoContainer,
+                                                                    width: 48,
+                                                                    height: 48,
+                                                                    borderRadius: MaterialBorderRadius.xl,
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    opacity: index === 0 ? 0.5 : 1,
+                                                                }}
+                                                                disabled={index === 0}
+                                                            >
+                                                                <MaterialIcons
+                                                                    name="keyboard-arrow-up"
+                                                                    size={24}
+                                                                    color={index === 0 ? MaterialColors.onSurfaceVariant : MaterialColors.onInfoContainer}
+                                                                />
+                                                            </TouchableOpacity>
+
+                                                            {/* Move Down Arrow */}
+                                                            <TouchableOpacity
+                                                                onPress={(e) => {
+                                                                    e.stopPropagation();
+                                                                    moveSlideDown(item.id);
+                                                                }}
+                                                                style={{
+                                                                    backgroundColor: index === presentation.slides.length - 1 ? MaterialColors.surfaceVariant : MaterialColors.infoContainer,
+                                                                    width: 48,
+                                                                    height: 48,
+                                                                    borderRadius: MaterialBorderRadius.xl,
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    opacity: index === presentation.slides.length - 1 ? 0.5 : 1,
+                                                                }}
+                                                                disabled={index === presentation.slides.length - 1}
+                                                            >
+                                                                <MaterialIcons
+                                                                    name="keyboard-arrow-down"
+                                                                    size={24}
+                                                                    color={index === presentation.slides.length - 1 ? MaterialColors.onSurfaceVariant : MaterialColors.onInfoContainer}
+                                                                />
+                                                            </TouchableOpacity>
+
                                                             <TouchableOpacity
                                                                 onPress={(e) => {
                                                                     e.stopPropagation();
                                                                     startEditingSlide(item);
                                                                 }}
                                                                 style={{
-                                                                    backgroundColor: MaterialColors.primary,
-                                                                    paddingHorizontal: MaterialSpacing.md,
-                                                                    paddingVertical: MaterialSpacing.sm,
+                                                                    backgroundColor: MaterialColors.warningContainer,
+                                                                    width: 48,
+                                                                    height: 48,
                                                                     borderRadius: MaterialBorderRadius.xl,
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
                                                                 }}
                                                             >
-                                                                <Text style={[MaterialTypography.labelMedium, {
-                                                                    color: MaterialColors.onPrimary
-                                                                }]}>
-                                                                    Edit
-                                                                </Text>
+                                                                <MaterialIcons
+                                                                    name="edit"
+                                                                    size={24}
+                                                                    color={MaterialColors.onWarningContainer}
+                                                                />
                                                             </TouchableOpacity>
                                                             <TouchableOpacity
                                                                 onPress={(e) => {
@@ -341,17 +459,19 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                                                     deleteSlide(item.id);
                                                                 }}
                                                                 style={{
-                                                                    backgroundColor: MaterialColors.error,
-                                                                    paddingHorizontal: MaterialSpacing.md,
-                                                                    paddingVertical: MaterialSpacing.sm,
+                                                                    backgroundColor: MaterialColors.errorContainer,
+                                                                    width: 48,
+                                                                    height: 48,
                                                                     borderRadius: MaterialBorderRadius.xl,
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
                                                                 }}
                                                             >
-                                                                <Text style={[MaterialTypography.labelMedium, {
-                                                                    color: MaterialColors.onError
-                                                                }]}>
-                                                                    Delete
-                                                                </Text>
+                                                                <MaterialIcons
+                                                                    name="delete"
+                                                                    size={24}
+                                                                    color={MaterialColors.onErrorContainer}
+                                                                />
                                                             </TouchableOpacity>
                                                         </>
                                                     )}
@@ -361,17 +481,19 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                                             togglePresenting(item.id);
                                                         }}
                                                         style={{
-                                                            backgroundColor: presentingSlideId === item.id ? MaterialColors.secondary : MaterialColors.primaryContainer,
-                                                            paddingHorizontal: MaterialSpacing.md,
-                                                            paddingVertical: MaterialSpacing.sm,
+                                                            backgroundColor: presentingSlideId === item.id ? MaterialColors.errorContainer : MaterialColors.successContainer,
+                                                            width: 48,
+                                                            height: 48,
                                                             borderRadius: MaterialBorderRadius.xl,
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
                                                         }}
                                                     >
-                                                        <Text style={[MaterialTypography.labelMedium, {
-                                                            color: presentingSlideId === item.id ? MaterialColors.onSecondary : MaterialColors.onPrimaryContainer,
-                                                        }]}>
-                                                            {presentingSlideId === item.id ? 'Presenting' : 'Present'}
-                                                        </Text>
+                                                        <MaterialIcons
+                                                            name={presentingSlideId === item.id ? 'stop-screen-share' : 'play-arrow'}
+                                                            size={24}
+                                                            color={presentingSlideId === item.id ? MaterialColors.onErrorContainer : MaterialColors.onSuccessContainer}
+                                                        />
                                                     </TouchableOpacity>
                                                 </View>
                                             </View>

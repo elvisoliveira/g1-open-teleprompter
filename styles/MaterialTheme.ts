@@ -53,6 +53,12 @@ export const MaterialColors = {
     warningContainer: '#FFDDB3',
     onWarningContainer: '#291800',
     
+    // Info colors (custom addition for better button differentiation)
+    info: '#0B57D0',
+    onInfo: '#FFFFFF',
+    infoContainer: '#D3E3FD',
+    onInfoContainer: '#001C3B',
+    
     // Legacy colors for compatibility
     text: '#1C1B1F', // Same as onBackground
     textSecondary: '#49454F', // Same as onSurfaceVariant

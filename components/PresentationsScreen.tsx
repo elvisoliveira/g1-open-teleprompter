@@ -1,5 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
@@ -56,13 +58,13 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
 
     const addPresentation = () => {
         if (!newPresentationName.trim()) return;
-        
+
         const newPresentation: Presentation = {
             id: Date.now().toString(),
             name: newPresentationName.trim(),
             slides: []
         };
-        
+
         const updatedPresentations = [...presentations, newPresentation];
         savePresentations(updatedPresentations);
         setNewPresentationName('');
@@ -75,8 +77,8 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
             'Are you sure you want to delete this presentation?',
             [
                 { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: 'Delete', 
+                {
+                    text: 'Delete',
                     style: 'destructive',
                     onPress: () => {
                         const updated = presentations.filter(p => p.id !== id);
@@ -97,13 +99,13 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
 
     const saveEditPresentation = () => {
         if (!editText.trim() || !editingPresentationId) return;
-        
-        const updatedPresentations = presentations.map(p => 
-            p.id === editingPresentationId 
+
+        const updatedPresentations = presentations.map(p =>
+            p.id === editingPresentationId
                 ? { ...p, name: editText.trim() }
                 : p
         );
-        
+
         savePresentations(updatedPresentations);
         if (selectedPresentation?.id === editingPresentationId) {
             setSelectedPresentation({ ...selectedPresentation, name: editText.trim() });
@@ -118,11 +120,153 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
     };
 
     const handleUpdatePresentation = (updatedPresentation: Presentation) => {
-        const updatedPresentations = presentations.map(p => 
+        const updatedPresentations = presentations.map(p =>
             p.id === updatedPresentation.id ? updatedPresentation : p
         );
         savePresentations(updatedPresentations);
         setSelectedPresentation(updatedPresentation);
+    };
+
+    const exportPresentations = async () => {
+        try {
+            if (presentations.length === 0) {
+                Alert.alert('No Data', 'There are no presentations to export.');
+                return;
+            }
+
+            const exportData = {
+                version: '1.0.0',
+                exportDate: new Date().toISOString(),
+                presentations: presentations
+            };
+
+            const fileName = `presentations_backup_${new Date().toISOString().split('T')[0]}.json`;
+
+            // Try to save to Downloads folder first, fallback to document directory
+            let fileUri: string;
+            let locationMessage: string;
+
+            try {
+                // For Android, try to save to Downloads folder
+                if (FileSystem.StorageAccessFramework) {
+                    const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                    if (permissions.granted) {
+                        const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, fileName, 'application/json');
+                        await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
+                        locationMessage = 'Backup saved to your selected folder.';
+                    } else {
+                        throw new Error('Permission denied');
+                    }
+                } else {
+                    throw new Error('Storage Access Framework not available');
+                }
+            } catch (storageError) {
+                // Fallback to document directory
+                fileUri = FileSystem.documentDirectory + fileName;
+                await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
+                locationMessage = `Backup saved to app documents folder.\n\nFile: ${fileName}\nLocation: ${fileUri}`;
+            }
+
+            Alert.alert(
+                'Backup Created Successfully!',
+                `${locationMessage}\n\nYou can now access your backup file through your device's file manager.`,
+                [{ text: 'OK' }]
+            );
+        } catch (error) {
+            console.error('Export failed:', error);
+            Alert.alert('Export Failed', 'Failed to export presentations. Please try again.');
+        }
+    };
+
+    const importPresentations = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/json',
+                copyToCacheDirectory: true
+            });
+
+            if (result.canceled) {
+                return;
+            }
+
+            const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
+            const importData = JSON.parse(fileContent);
+
+            // Validate the import data structure
+            if (!importData.presentations || !Array.isArray(importData.presentations)) {
+                Alert.alert('Invalid File', 'The selected file is not a valid presentations backup.');
+                return;
+            }
+
+            // Validate each presentation has required fields
+            const isValidData = importData.presentations.every((p: any) =>
+                p.id && p.name && Array.isArray(p.slides)
+            );
+
+            if (!isValidData) {
+                Alert.alert('Invalid Data', 'The backup file contains invalid presentation data.');
+                return;
+            }
+
+            Alert.alert(
+                'Import Presentations',
+                `Found ${importData.presentations.length} presentations in backup.\n\nHow would you like to import them?`,
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Replace All',
+                        style: 'destructive',
+                        onPress: () => replaceAllPresentations(importData.presentations)
+                    },
+                    {
+                        text: 'Merge',
+                        onPress: () => mergePresentations(importData.presentations)
+                    }
+                ]
+            );
+        } catch (error) {
+            console.error('Import failed:', error);
+            Alert.alert('Import Failed', 'Failed to import presentations. Please check the file format.');
+        }
+    };
+
+    const replaceAllPresentations = async (importedPresentations: Presentation[]) => {
+        try {
+            await savePresentations(importedPresentations);
+            Alert.alert('Import Complete', `Successfully imported ${importedPresentations.length} presentations.`);
+        } catch (error) {
+            console.error('Replace failed:', error);
+            Alert.alert('Import Failed', 'Failed to replace presentations.');
+        }
+    };
+
+    const mergePresentations = async (importedPresentations: Presentation[]) => {
+        try {
+            const existingIds = new Set(presentations.map(p => p.id));
+            const newPresentations = importedPresentations.filter(p => !existingIds.has(p.id));
+            const duplicates = importedPresentations.filter(p => existingIds.has(p.id));
+
+            if (duplicates.length > 0) {
+                // Generate new IDs for duplicates to avoid conflicts
+                const renamedDuplicates = duplicates.map(p => ({
+                    ...p,
+                    id: `${p.id}_imported_${Date.now()}`,
+                    name: `${p.name} (Imported)`
+                }));
+                newPresentations.push(...renamedDuplicates);
+            }
+
+            const mergedPresentations = [...presentations, ...newPresentations];
+            await savePresentations(mergedPresentations);
+
+            Alert.alert(
+                'Import Complete',
+                `Successfully imported ${newPresentations.length} presentations.\n${duplicates.length > 0 ? `${duplicates.length} duplicates were renamed.` : ''}`
+            );
+        } catch (error) {
+            console.error('Merge failed:', error);
+            Alert.alert('Import Failed', 'Failed to merge presentations.');
+        }
     };
 
     if (selectedPresentation) {
@@ -152,13 +296,13 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
 
                 {showAddPresentation && (
                     <View style={[
-                        { 
+                        {
                             backgroundColor: MaterialColors.surface,
                             borderRadius: MaterialBorderRadius.md,
                             borderWidth: 1,
                             borderColor: MaterialColors.outline,
                             padding: MaterialSpacing.lg,
-                            marginBottom: MaterialSpacing.lg 
+                            marginBottom: MaterialSpacing.lg
                         }
                     ]}>
                         <TextInput
@@ -187,10 +331,10 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
 
                 {presentations.length === 0 ? (
                     <View style={EmptyStateStyles.container}>
-                        <MaterialIcons 
-                            name="slideshow" 
-                            size={64} 
-                            color={MaterialColors.onSurfaceVariant} 
+                        <MaterialIcons
+                            name="slideshow"
+                            size={64}
+                            color={MaterialColors.onSurfaceVariant}
                             style={EmptyStateStyles.icon}
                         />
                         <Text style={EmptyStateStyles.title}>
@@ -244,25 +388,25 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                                             style={{ flex: 1 }}
                                             activeOpacity={0.8}
                                         >
-                                            <Text style={[MaterialTypography.headlineSmall, { 
-                                                color: MaterialColors.onSurface, 
-                                                marginBottom: MaterialSpacing.xs 
+                                            <Text style={[MaterialTypography.headlineSmall, {
+                                                color: MaterialColors.onSurface,
+                                                marginBottom: MaterialSpacing.xs
                                             }]}>
                                                 {item.name}
                                             </Text>
-                                            <Text style={[MaterialTypography.bodyMedium, { 
+                                            <Text style={[MaterialTypography.bodyMedium, {
                                                 color: MaterialColors.onSurfaceVariant,
                                                 marginBottom: MaterialSpacing.md
                                             }]}>
                                                 {item.slides.length} slides
                                             </Text>
                                         </TouchableOpacity>
-                                        <View style={{ 
-                                            flexDirection: 'row', 
+                                        <View style={{
+                                            flexDirection: 'row',
                                             justifyContent: 'flex-end',
-                                            gap: MaterialSpacing.xs 
+                                            gap: MaterialSpacing.xs
                                         }}>
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 onPress={() => startEditingPresentation(item)}
                                                 style={{
                                                     backgroundColor: MaterialColors.primary,
@@ -271,14 +415,14 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                                                     borderRadius: MaterialBorderRadius.lg,
                                                 }}
                                             >
-                                                <Text style={[MaterialTypography.labelMedium, { 
-                                                    color: MaterialColors.onPrimary, 
-                                                    fontWeight: 'bold' 
+                                                <Text style={[MaterialTypography.labelMedium, {
+                                                    color: MaterialColors.onPrimary,
+                                                    fontWeight: 'bold'
                                                 }]}>
                                                     Edit
                                                 </Text>
                                             </TouchableOpacity>
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 onPress={() => deletePresentation(item.id)}
                                                 style={{
                                                     backgroundColor: MaterialColors.error,
@@ -287,9 +431,9 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                                                     borderRadius: MaterialBorderRadius.lg,
                                                 }}
                                             >
-                                                <Text style={[MaterialTypography.labelMedium, { 
-                                                    color: MaterialColors.onError, 
-                                                    fontWeight: 'bold' 
+                                                <Text style={[MaterialTypography.labelMedium, {
+                                                    color: MaterialColors.onError,
+                                                    fontWeight: 'bold'
                                                 }]}>
                                                     Delete
                                                 </Text>
@@ -302,6 +446,30 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                         showsVerticalScrollIndicator={false}
                     />
                 )}
+            </View>
+
+            {/* Bottom Button Section - Backup and Import */}
+            <View style={{
+                backgroundColor: MaterialColors.surface,
+                paddingHorizontal: MaterialSpacing.lg,
+                paddingVertical: MaterialSpacing.md
+            }}>
+                <View style={[ContainerStyles.row, { gap: MaterialSpacing.md }]}>
+                    <TouchableOpacity
+                        onPress={importPresentations}
+                        style={[ButtonStyles.secondaryButton, { flex: 1 }]}
+                    >
+                        <MaterialIcons name="file-upload" size={20} color={MaterialColors.primary} />
+                        <Text style={ButtonStyles.secondaryButtonText}>Import</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={exportPresentations}
+                        style={[ButtonStyles.secondaryButton, { flex: 1 }]}
+                    >
+                        <MaterialIcons name="file-download" size={20} color={MaterialColors.primary} />
+                        <Text style={ButtonStyles.secondaryButtonText}>Backup</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );
