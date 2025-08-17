@@ -12,12 +12,14 @@ export const topAppBarStyles = StyleSheet.create({
     content: {
         ...ContainerStyles.row,
         paddingHorizontal: MaterialSpacing.lg,
-        justifyContent: 'flex-start',
         minHeight: 56,
     },
     title: {
         ...MaterialTypography.headlineSmall,
-        color: MaterialColors.onSurface,
-        flex: 1,
+        color: MaterialColors.onSurface
+    },
+    version: {
+        ...MaterialTypography.labelSmall,
+        color: MaterialColors.outline
     },
 });

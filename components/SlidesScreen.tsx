@@ -121,17 +121,21 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                     text: 'Delete',
                     style: 'destructive',
                     onPress: () => {
-                        const updatedSlides = presentation.slides.filter(s => s.id !== slideId);
-                        const updatedPresentation = {
-                            ...presentation,
-                            slides: updatedSlides
-                        };
-
-                        onUpdatePresentation(updatedPresentation);
+                        deleteSlideWithoutPrompt(slideId);
                     }
                 }
             ]
         );
+    };
+
+    const deleteSlideWithoutPrompt = (slideId: string) => {
+        const updatedSlides = presentation.slides.filter(s => s.id !== slideId);
+        const updatedPresentation = {
+            ...presentation,
+            slides: updatedSlides
+        };
+
+        onUpdatePresentation(updatedPresentation);
     };
 
     const moveSlideUp = (slideId: string) => {
@@ -178,7 +182,12 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
     };
 
     const saveEditSlide = () => {
-        if (!editText.trim() || !editingSlideId) return;
+        if (!editingSlideId) return;
+
+        if(!editText.trim()) {
+            deleteSlideWithoutPrompt(editingSlideId);
+            return;
+        }
 
         const updatedSlides = presentation.slides.map(s =>
             s.id === editingSlideId
@@ -197,6 +206,13 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
     };
 
     const cancelEdit = () => {
+        if (!editingSlideId) return;
+
+        if(!editText.trim()) {
+            deleteSlideWithoutPrompt(editingSlideId);
+            return;
+        }
+
         setEditingSlideId(null);
         setEditText('');
     };
