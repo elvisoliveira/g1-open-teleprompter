@@ -78,6 +78,11 @@ export const deviceStatusCardStyles = StyleSheet.create({
         color: MaterialColors.onSurface,
         fontWeight: '700' as const,
     },
+    valueTextUptime: {
+        ...MaterialTypography.titleMedium,
+        color: MaterialColors.onSurface,
+        fontWeight: '700' as const,
+    },
     valueTextFirmware: {
         ...MaterialTypography.titleMedium,
         fontWeight: '600' as const,

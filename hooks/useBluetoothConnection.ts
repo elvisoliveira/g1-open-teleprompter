@@ -31,10 +31,10 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
         }
     }, [leftConnected, rightConnected, connectionStep]);
 
-    const loadPairedDevices = async () => {
+    const loadPairedDevices = async (showAllDevices = false) => {
         try {
             setIsScanning(true);
-            const devices = await BluetoothService.getPairedDevices();
+            const devices = await BluetoothService.getPairedDevices(showAllDevices);
             setPairedDevices(devices);
         } catch (error) {
             console.error('Failed to load devices:', error);

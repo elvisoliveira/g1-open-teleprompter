@@ -156,13 +156,21 @@ class BluetoothService {
             throw new Error('No devices connected');
         }
 
-        const displayText = Utils.formatTextForDisplay(text);
-        return await this.sendTextToGlasses(displayText);
-    }
+        const packets = CommunicationManager.createTextPackets(
+            Utils.formatTextForDisplay(text)
+        );
 
-    async sendTextToGlasses(text: string): Promise<boolean> {
-        const packets = CommunicationManager.createTextPackets(text);
-        return await this.sendPacketsToBothDevices(packets);
+        const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
+            for (const packet of packets) {
+                if (!await CommunicationManager.writeToDevice(device, packet, false)) {
+                    return false;
+                }
+                await Utils.sleep(5);
+            }
+            return true;
+        });
+
+        return results.every(Boolean);
     }
 
     async sendImage(base64ImageData: string): Promise<boolean> {
@@ -197,7 +205,10 @@ class BluetoothService {
         }
 
         const command = new Uint8Array([EXIT_CMD]);
-        return await this.sendToBothDevices(command, false);
+        const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
+            return await CommunicationManager.writeToDevice(device, command, false);
+        });
+        return results.every(Boolean);
     }
 
     // Heartbeat Methods
@@ -301,39 +312,6 @@ class BluetoothService {
         return results;
     }
 
-    private async sendToBothDevices(data: Uint8Array, requireResponse: boolean = false): Promise<boolean> {
-        // Send to left first (G1 protocol requirement)
-        const leftDevice = this.deviceManager.getDevice('L');
-        if (leftDevice && !await CommunicationManager.writeToDevice(leftDevice, data, requireResponse)) {
-            return false;
-        }
-        
-        // Then send to right (only if left succeeded or no left device)
-        const rightDevice = this.deviceManager.getDevice('R');
-        if (rightDevice && !await CommunicationManager.writeToDevice(rightDevice, data, requireResponse)) {
-            return false;
-        }
-        
-        return true;
-    }
-
-    private async sendPacketsToBothDevices(packets: Uint8Array[]): Promise<boolean> {
-        // Send to left first (G1 protocol requirement)
-        const leftDevice = this.deviceManager.getDevice('L');
-        if (leftDevice && !await CommunicationManager.sendPacketsToDevice(leftDevice, packets, 5)) {
-            console.error('[BluetoothService] Failed to send to left device');
-            return false;
-        }
-
-        // Then send to right (only if left succeeded or no left device)
-        const rightDevice = this.deviceManager.getDevice('R');
-        if (rightDevice && !await CommunicationManager.sendPacketsToDevice(rightDevice, packets, 5)) {
-            console.error('[BluetoothService] Failed to send to right device');
-            return false;
-        }
-
-        return true;
-    }
 }
 
 export default new BluetoothService();

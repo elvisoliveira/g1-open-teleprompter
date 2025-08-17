@@ -13,7 +13,7 @@ export const textInputStyles = StyleSheet.create({
         marginBottom: MaterialSpacing.md,
     },
     title: {
-        ...MaterialTypography.titleLarge,
+        ...MaterialTypography.titleMedium,
         color: MaterialColors.onSurface,
     },
     loremButton: {

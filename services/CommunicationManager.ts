@@ -78,103 +78,54 @@ export class CommunicationManager {
         console.log(`[CommunicationManager] Command: ${Utils.arrayToHex(requestBytes)}, expecting header: ${Utils.arrayToHex(expectedHeader)}`);
         
         try {
-            // Try to set up notification listener for responses
-            let responseReceived: Uint8Array | null = null;
-            
-            // Try to monitor both characteristics for notifications
-            for (const charUUID of [READ_CHARACTERISTIC_UUID, WRITE_CHARACTERISTIC_UUID]) {
-                try {
-                    console.log(`[CommunicationManager] Setting up notifications on ${charUUID === READ_CHARACTERISTIC_UUID ? 'READ' : 'WRITE'} characteristic`);
-                    
-                    const responsePromise = new Promise<Uint8Array | null>((resolve) => {
-                        const timeout = setTimeout(() => {
-                            console.log('[CommunicationManager] Notification timeout');
+            const responsePromise = new Promise<Uint8Array | null>((resolve) => {
+                const timeout = setTimeout(() => resolve(null), waitTimeMs + 1000);
+                const subscription = device.monitorCharacteristicForService(
+                    SERVICE_UUID,
+                    READ_CHARACTERISTIC_UUID,
+                    (error, characteristic) => {
+                        clearTimeout(timeout);
+                        subscription.remove();
+                        if (error || !characteristic?.value) {
                             resolve(null);
-                        }, waitTimeMs + 1000);
-                        
-                        device.monitorCharacteristicForService(
-                            SERVICE_UUID,
-                            charUUID,
-                            (error, characteristic) => {
-                                clearTimeout(timeout);
-                                if (error) {
-                                    console.log('[CommunicationManager] Notification error:', error);
-                                    resolve(null);
-                                    return;
-                                }
-                                
-                                if (characteristic?.value) {
-                                    const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
-                                    console.log(`[CommunicationManager] Received notification: ${Utils.arrayToHex(data)}`);
-                                    resolve(data);
-                                } else {
-                                    resolve(null);
-                                }
-                            }
-                        );
-                    });
-
-                    // Send the command
-                    const success = await this.writeToDevice(device, requestBytes, true);
-                    if (!success) {
-                        console.error('[CommunicationManager] Failed to write command');
-                        continue;
+                            return;
+                        }
+                        const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
+                        console.log(`[CommunicationManager] Received notification: ${Utils.arrayToHex(data)}`);
+                        resolve(data);
                     }
+                );
+            });
 
-                    // Wait for notification response
-                    responseReceived = await responsePromise;
-                    
-                    if (responseReceived && (expectedHeader.length === 0 || this.headerMatches(responseReceived, expectedHeader))) {
-                        console.log('[CommunicationManager] Valid notification response received');
-                        return responseReceived;
-                    }
-                    
-                    break; // Exit characteristic loop if we got some response
-                } catch (notifyError) {
-                    console.log('[CommunicationManager] Failed to set up notifications');
-                    continue;
-                }
+            const success = await this.writeToDevice(device, requestBytes, true);
+            if (!success) {
+                console.error('[CommunicationManager] Failed to write command');
+                return null;
             }
 
-            // Fallback: Direct read approach if notifications failed
-            if (!responseReceived) {
-                console.log('[CommunicationManager] Falling back to direct read approach');
-                
-                // Send command if not sent yet
-                const success = await this.writeToDevice(device, requestBytes, true);
-                if (!success) {
-                    console.error('[CommunicationManager] Failed to write command');
-                    return null;
-                }
+            const response = await responsePromise;
+            if (response && (expectedHeader.length === 0 || this.headerMatches(response, expectedHeader))) {
+                return response;
+            }
 
-                // Wait for device to process
-                if (waitTimeMs > 0) {
-                    await Utils.sleep(waitTimeMs);
-                }
+            if (waitTimeMs > 0) {
+                await Utils.sleep(waitTimeMs);
+            }
 
-                // Try reading from both characteristics
-                for (const charUUID of [READ_CHARACTERISTIC_UUID, WRITE_CHARACTERISTIC_UUID]) {
-                    try {
-                        console.log(`[CommunicationManager] Attempting to read from ${charUUID === READ_CHARACTERISTIC_UUID ? 'READ' : 'write'} characteristic`);
-                        
-                        const characteristic = await device.readCharacteristicForService(
-                            SERVICE_UUID,
-                            charUUID
-                        );
-                        
-                        if (characteristic?.value) {
-                            const responseData = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
-                            console.log(`[CommunicationManager] Response: ${Utils.arrayToHex(responseData)}`);
-                            
-                            // Check header match
-                            if (expectedHeader.length === 0 || this.headerMatches(responseData, expectedHeader)) {
-                                return responseData;
-                            }
-                        }
-                    } catch (readError) {
-                        console.log('[CommunicationManager] Failed to read from characteristic');
+            try {
+                const characteristic = await device.readCharacteristicForService(
+                    SERVICE_UUID,
+                    READ_CHARACTERISTIC_UUID
+                );
+                if (characteristic?.value) {
+                    const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
+                    console.log(`[CommunicationManager] Response: ${Utils.arrayToHex(data)}`);
+                    if (expectedHeader.length === 0 || this.headerMatches(data, expectedHeader)) {
+                        return data;
                     }
                 }
+            } catch (readError) {
+                console.log('[CommunicationManager] Failed to read from characteristic');
             }
 
             return null;

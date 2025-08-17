@@ -1,10 +1,12 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { defaultBitmapGenerator } from '../services/BitmapGenerator';
 import BluetoothService from '../services/BluetoothService';
 import { teleprompterAppStyles } from '../styles/AppStyles';
 import { OutputMode } from '../types/OutputMode';
+import { useAppInitialization } from '../hooks/useAppInitialization';
+import { useBluetoothConnection } from '../hooks/useBluetoothConnection';
+import { useDeviceStorage } from '../hooks/useDeviceStorage';
 import AppBottomNavigation from './AppBottomNavigation';
 import DeviceConnection from './DeviceConnection';
 import DeviceScreen from './DeviceScreen';
@@ -14,238 +16,84 @@ import ReconnectionScreen from './ReconnectionScreen';
 import SplashScreen from './SplashScreen';
 import TopAppBar from './TopAppBar';
 
-interface PairedDevice {
-    id: string;
-    name: string | null;
-    isConnected: boolean;
-}
-
-// Storage keys for saved devices
-const STORAGE_KEYS = {
-    LEFT_DEVICE_MAC: 'left_device_mac',
-    RIGHT_DEVICE_MAC: 'right_device_mac',
-};
-
 type AppView = 'splash' | 'connection' | 'home' | 'device' | 'reconnection' | 'presentations';
-type ConnectionStep = 'left' | 'right';
 
 const TeleprompterApp: React.FC = () => {
-    // Core state
+    // Core view state
     const [currentView, setCurrentView] = useState<AppView>('splash');
-    
-    const [connectionStep, setConnectionStep] = useState<ConnectionStep>('left');
-    
-    // Device state
-    const [leftConnected, setLeftConnected] = useState(false);
-    const [rightConnected, setRightConnected] = useState(false);
-    const [isScanning, setIsScanning] = useState(false);
-    const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
-    
-    // Saved devices and auto-reconnection state
-    const [savedLeftMac, setSavedLeftMac] = useState<string | null>(null);
-    const [savedRightMac, setSavedRightMac] = useState<string | null>(null);
-    const [isAutoConnecting, setIsAutoConnecting] = useState(false);
-    const [splashMessage, setSplashMessage] = useState('Initializing...');
-    
+
+    // Storage hook
+    const { savedLeftMac, savedRightMac, saveMacAddress, loadSavedMacAddresses, clearSavedMacAddresses } =
+        useDeviceStorage();
+
+    // Bluetooth connection hook
+    const {
+        leftConnected,
+        rightConnected,
+        isScanning,
+        pairedDevices,
+        connectionStep,
+        isAutoConnecting,
+        loadPairedDevices,
+        handleDeviceConnection,
+        attemptAutoReconnection,
+        resetConnection,
+    } = useBluetoothConnection((side, deviceId) => {
+        saveMacAddress(side, deviceId);
+    });
+
+    // App initialization hook
+    const { currentView: initView, splashMessage } = useAppInitialization({
+        loadSavedMacAddresses,
+        attemptAutoReconnection,
+        loadPairedDevices,
+    });
+
     // Message state
     const [inputText, setInputText] = useState('');
     const [outputMode, setOutputMode] = useState<OutputMode>('text');
     const [isSending, setIsSending] = useState(false);
 
-    const initializeApp = useCallback(async () => {
-        try {
-            // Step 1: Check for saved MAC addresses
-            setSplashMessage('Checking for saved devices...');
-            const { leftMac, rightMac } = await loadSavedMacAddresses();
-            
-            // Step 2: If we have saved devices, try auto-reconnection
-            if (leftMac && rightMac) {
-                setSplashMessage('Connecting to saved Even G1 devices...');
-                const reconnected = await attemptAutoReconnection(leftMac, rightMac);
-                
-                if (reconnected) {
-                    // Success! Auto-reconnection worked, we're already in home view
-                    return;
-                } else {
-                    // Auto-reconnection failed, show reconnection screen
-                    setCurrentView('reconnection');
-                    return;
-                }
-            }
-            
-            // Step 3: No saved devices, go to connection screen
-            setSplashMessage('Loading available devices...');
-            await loadPairedDevices();
-            setCurrentView('connection');
-            
-        } catch (error) {
-            console.error('Failed to initialize app:', error);
-            // On error, default to connection screen
-            setCurrentView('connection');
-            Alert.alert('Initialization Error', 'There was an issue starting the app. Please try connecting manually.');
+    // Map initialization view to app view
+    useEffect(() => {
+        if (initView === 'composer') {
+            setCurrentView('home');
+        } else {
+            setCurrentView(initView as AppView);
         }
-    }, []);
+    }, [initView]);
 
+    // Navigate to home when both devices connected
     useEffect(() => {
-        initializeApp();
-        return () => {
-            BluetoothService.disconnect();
-        };
-    }, [initializeApp]);
-
-    // Auto-advance to home when both devices connected
-    useEffect(() => {
-        if (leftConnected && rightConnected) {
+        if (connectionStep === 'complete') {
             setCurrentView('home');
         }
-    }, [leftConnected, rightConnected]);
+    }, [connectionStep]);
 
-    // Storage utility functions
-    const saveMacAddress = async (side: 'left' | 'right', macAddress: string) => {
-        try {
-            const key = side === 'left' ? STORAGE_KEYS.LEFT_DEVICE_MAC : STORAGE_KEYS.RIGHT_DEVICE_MAC;
-            await AsyncStorage.setItem(key, macAddress);
-            if (side === 'left') {
-                setSavedLeftMac(macAddress);
-            } else {
-                setSavedRightMac(macAddress);
-            }
-        } catch (error) {
-            console.error(`Failed to save ${side} device MAC:`, error);
-        }
-    };
-
-    const loadSavedMacAddresses = async () => {
-        try {
-            const [leftMac, rightMac] = await Promise.all([
-                AsyncStorage.getItem(STORAGE_KEYS.LEFT_DEVICE_MAC),
-                AsyncStorage.getItem(STORAGE_KEYS.RIGHT_DEVICE_MAC)
-            ]);
-            setSavedLeftMac(leftMac);
-            setSavedRightMac(rightMac);
-            return { leftMac, rightMac };
-        } catch (error) {
-            console.error('Failed to load saved MAC addresses:', error);
-            return { leftMac: null, rightMac: null };
-        }
-    };
-
-    const clearSavedMacAddresses = async () => {
-        try {
-            await Promise.all([
-                AsyncStorage.removeItem(STORAGE_KEYS.LEFT_DEVICE_MAC),
-                AsyncStorage.removeItem(STORAGE_KEYS.RIGHT_DEVICE_MAC)
-            ]);
-            setSavedLeftMac(null);
-            setSavedRightMac(null);
-        } catch (error) {
-            console.error('Failed to clear saved MAC addresses:', error);
-        }
-    };
-
-    // Auto-reconnection functions
-    const attemptAutoReconnection = async (leftMac: string | null, rightMac: string | null) => {
-        if (!leftMac || !rightMac) return false;
-
-        setIsAutoConnecting(true);
-        try {
-            // Try connecting to both saved devices
-            await BluetoothService.connectLeft(leftMac);
-            await BluetoothService.connectRight(rightMac);
-
-            // If we reach here, both connections succeeded
-            setLeftConnected(true);
-            setRightConnected(true);
-            setCurrentView('home');
-            setIsAutoConnecting(false);
-            return true;
-        } catch (error) {
-            console.error('Auto-reconnection failed:', error);
-            setIsAutoConnecting(false);
-            return false;
-        }
-    };
-
-    const loadPairedDevices = async () => {
-        try {
-            setIsScanning(true);
-            console.log('Loading paired devices...');
-            const devices = await BluetoothService.getPairedDevices(false); // Default to filtered (Even G1 only)
-            console.log('Loaded devices:', devices);
-            setPairedDevices(devices);
-            
-            if (devices.length === 0) {
-                console.warn('No devices found. This could be due to:');
-                console.warn('1. Missing permissions');
-                console.warn('2. No paired Bluetooth devices');
-                console.warn('3. Native module not properly linked');
-            }
-        } catch (error) {
-            console.error('Failed to load devices:', error);
-            Alert.alert('Error', 'Failed to load paired devices');
-        } finally {
-            setIsScanning(false);
-        }
-    };
-
+    // Show all paired devices including non-Even G1
     const handleShowAllDevices = async () => {
-        // Directly call getPairedDevices with true to show all devices
-        try {
-            setIsScanning(true);
-            const devices = await BluetoothService.getPairedDevices(true);
-            setPairedDevices(devices);
-        } catch (error) {
-            console.error('Failed to load devices:', error);
-            Alert.alert('Error', 'Failed to load paired devices');
-        } finally {
-            setIsScanning(false);
-        }
-    };
-
-    const handleDeviceConnection = async (deviceId: string, side: 'left' | 'right') => {
-        try {
-            if (side === 'left') {
-                await BluetoothService.connectLeft(deviceId);
-                setLeftConnected(true);
-                setConnectionStep('right');
-                // Save the MAC address for auto-reconnection
-                await saveMacAddress('left', deviceId);
-            } else {
-                await BluetoothService.connectRight(deviceId);
-                setRightConnected(true);
-                // Save the MAC address for auto-reconnection
-                await saveMacAddress('right', deviceId);
-            }
-        } catch (error) {
-            console.error(`Failed to connect ${side} device:`, error);
-            Alert.alert('Connection Error', `Failed to connect to the ${side} device`);
-        }
+        await loadPairedDevices(true);
     };
 
     const handleSendMessage = async () => {
         const messageText = inputText.trim();
         if (!messageText) return;
-        
+
         setIsSending(true);
         try {
             let success = false;
-            
+
             if (outputMode === 'text') {
-                // Send as text directly
                 success = await BluetoothService.sendText(messageText);
             } else {
-                // Convert text to BMP bitmap and send as image
                 try {
                     const bmpBuffer = await defaultBitmapGenerator.textToBitmap(messageText);
-                    
-                    // Validate the BMP format
+
                     if (!defaultBitmapGenerator.validateBmpFormat(bmpBuffer)) {
                         throw new Error('Generated BMP format is invalid');
                     }
-                    
+
                     const base64Image = defaultBitmapGenerator.bufferToBase64(bmpBuffer);
-                    
-                    // Send the BMP image using the BLE protocol
                     success = await BluetoothService.sendImage(base64Image);
                 } catch (bitmapError) {
                     console.error('Error generating bitmap:', bitmapError);
@@ -253,10 +101,10 @@ const TeleprompterApp: React.FC = () => {
                     return;
                 }
             }
-            
+
             if (success) {
                 setInputText('');
-                
+
                 // Show success message with mode info
                 const modeText = outputMode === 'text' ? 'text' : 'image (BMP)';
                 console.log(`Successfully sent ${modeText} to glasses`);
@@ -292,12 +140,9 @@ const TeleprompterApp: React.FC = () => {
     };
 
     const handleConnectAgain = async () => {
-        // Clear saved devices and go to manual connection
         await clearSavedMacAddresses();
+        resetConnection();
         setCurrentView('connection');
-        setConnectionStep('left');
-        setLeftConnected(false);
-        setRightConnected(false);
         await loadPairedDevices();
     };
 
@@ -306,20 +151,20 @@ const TeleprompterApp: React.FC = () => {
             switch (currentView) {
                 case 'splash':
                     return <SplashScreen message={splashMessage} />;
-                
+
                 case 'connection':
                     return (
                         <DeviceConnection
                             devices={pairedDevices}
                             isScanning={isScanning}
-                            connectionStep={connectionStep}
+                            connectionStep={(connectionStep as 'left' | 'right')}
                             onDeviceSelect={handleDeviceConnection}
-                            onRefresh={loadPairedDevices}
+                            onRefresh={() => loadPairedDevices()}
                             onShowAllDevices={handleShowAllDevices}
                             leftConnected={leftConnected}
                         />
                     );
-                
+
                 case 'home':
                     return (
                         <HomeScreen
@@ -334,18 +179,13 @@ const TeleprompterApp: React.FC = () => {
                             isSending={isSending}
                         />
                     );
-                
+
                 case 'device':
-                    return (
-                        <DeviceScreen
-                            leftConnected={leftConnected}
-                            rightConnected={rightConnected}
-                        />
-                    );
-                
+                    return <DeviceScreen leftConnected={leftConnected} rightConnected={rightConnected} />;
+
                 case 'presentations':
                     return <PresentationsScreen />;
-                
+
                 case 'reconnection':
                     return (
                         <ReconnectionScreen
@@ -354,7 +194,7 @@ const TeleprompterApp: React.FC = () => {
                             onConnectAgain={handleConnectAgain}
                         />
                     );
-                
+
                 default:
                     return null;
             }
@@ -362,21 +202,16 @@ const TeleprompterApp: React.FC = () => {
 
         // Show bottom navigation for home and device views
         const showBottomNav = currentView === 'home' || currentView === 'device' || currentView === 'presentations';
-        
+
         // Show top app bar for main app views (not splash, connection, or reconnection)
         const showTopAppBar = currentView === 'home' || currentView === 'device' || currentView === 'presentations';
-        
+
         return (
             <>
                 {showTopAppBar && <TopAppBar />}
-                <View style={teleprompterAppStyles.flexContainer}>
-                    {view}
-                </View>
+                <View style={teleprompterAppStyles.flexContainer}>{view}</View>
                 {showBottomNav && (
-                    <AppBottomNavigation
-                        currentView={currentView}
-                        onNavigate={(newView) => setCurrentView(newView)}
-                    />
+                    <AppBottomNavigation currentView={currentView} onNavigate={setCurrentView} />
                 )}
             </>
         );
@@ -390,3 +225,4 @@ const TeleprompterApp: React.FC = () => {
 };
 
 export default TeleprompterApp;
+

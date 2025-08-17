@@ -53,6 +53,7 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
         }
     };
 
+    const uptime = formatUptime(deviceStatus?.uptime || 0);
     const firmwareVersion = extractFirmwareVersion(deviceStatus?.firmware || null);
 
     return (
@@ -90,6 +91,12 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
                             <Text style={styles.valueTextBattery}>{batteryLevel}%</Text>
                         </View>
                     )}
+
+                    {/* Uptime Reading - Label in light gray, Value with color coding */}
+                    <View style={styles.infoRow}>
+                        <Text style={styles.labelText}>Uptime</Text>
+                        <Text style={styles.valueTextUptime}>{uptime}</Text>
+                    </View>
 
                     {/* Firmware Reading - Label in light gray, Value with color coding */}
                     <View style={styles.infoRow}>
