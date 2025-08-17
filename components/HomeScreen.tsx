@@ -1,8 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { ButtonStyles } from '../styles/CommonStyles';
-import { homeScreenStyles as styles } from '../styles/HomeScreenStyles';
+import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
 import { MaterialColors, MaterialElevation, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 import { OutputMode } from '../types/OutputMode';
 import OutputModeSelector from './OutputModeSelector';
@@ -61,7 +60,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[ContainerStyles.screen, ContainerStyles.content]}>
             <OutputModeSelector
                 selectedMode={outputMode}
                 onModeChange={onOutputModeChange}

@@ -3,12 +3,6 @@ import { ContainerStyles } from './CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const bottomNavigationStyles = StyleSheet.create({
-    container: {
-        ...ContainerStyles.screen,
-    },
-    content: {
-        flex: 1,
-    },
     tabBar: {
         flexDirection: 'row',
         backgroundColor: MaterialColors.surfaceContainer,
@@ -16,37 +10,19 @@ export const bottomNavigationStyles = StyleSheet.create({
     },
     tab: {
         flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: MaterialSpacing.sm,
-        paddingHorizontal: MaterialSpacing.md,
-        minHeight: 64,
-    },
-    activeTab: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
+        ...ContainerStyles.center,
         paddingVertical: MaterialSpacing.sm,
         paddingHorizontal: MaterialSpacing.md,
         minHeight: 64,
     },
     tabInner: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: MaterialSpacing.xs,
-        paddingHorizontal: MaterialSpacing.sm,
-        minWidth: 64,
-    },
-    activeTabInner: {
-        alignItems: 'center',
-        justifyContent: 'center',
+        ...ContainerStyles.center,
         paddingVertical: MaterialSpacing.xs,
         paddingHorizontal: MaterialSpacing.sm,
         minWidth: 64,
     },
     iconContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
+        ...ContainerStyles.center,
         width: 32,
         height: 32,
         marginBottom: MaterialSpacing.xs,
@@ -54,11 +30,6 @@ export const bottomNavigationStyles = StyleSheet.create({
     activeIconContainer: {
         backgroundColor: MaterialColors.secondaryContainer,
         borderRadius: MaterialBorderRadius.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 32,
-        height: 32,
-        marginBottom: MaterialSpacing.xs,
     },
     tabText: {
         ...MaterialTypography.labelSmall,
@@ -66,20 +37,7 @@ export const bottomNavigationStyles = StyleSheet.create({
         marginTop: MaterialSpacing.xs,
     },
     activeTabText: {
-        ...MaterialTypography.labelSmall,
         color: MaterialColors.onSecondaryContainer,
         fontWeight: '500',
-    },
-    tabIcon: {
-        fontSize: 24,
-        color: MaterialColors.onSurfaceVariant,
-        marginBottom: MaterialSpacing.xs,
-    },
-    activeTabIcon: {
-        fontSize: 24,
-        color: MaterialColors.onSecondaryContainer,
-    },
-    iconSpacing: {
-        marginBottom: MaterialSpacing.xs,
     },
 });
