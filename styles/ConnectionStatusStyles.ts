@@ -20,13 +20,19 @@ export const connectionStatusStyles = StyleSheet.create({
     },
     overallStatusSubtitle: {
         ...MaterialTypography.bodyMedium,
-        color: MaterialColors.success,
         fontWeight: '500' as const,
+    },
+    statusTextConnected: {
+        color: MaterialColors.success,
+    },
+    statusTextDisconnected: {
+        color: MaterialColors.error,
     },
 
     // Devices Container - using common spacing
     devicesContainer: {
-        ...ContainerStyles.column,
+        ...ContainerStyles.row,
+        justifyContent: 'space-between',
         gap: MaterialSpacing.md,
         marginBottom: MaterialSpacing.lg,
     },

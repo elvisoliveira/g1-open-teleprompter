@@ -5,7 +5,8 @@ import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypograp
 export const deviceStatusCardStyles = StyleSheet.create({
     // Base container - flat design without borders
     container: {
-        ...CardStyles.card
+        ...CardStyles.card,
+        flexGrow: 1,
     },
     containerConnected: {
         backgroundColor: MaterialColors.surfaceContainer,
@@ -53,6 +54,7 @@ export const deviceStatusCardStyles = StyleSheet.create({
     content: {
         ...ContainerStyles.column,
         gap: MaterialSpacing.md,
+        flex: 1,
     },
     infoRow: {
         ...ContainerStyles.column,

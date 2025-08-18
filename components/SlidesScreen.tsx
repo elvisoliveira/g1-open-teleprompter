@@ -183,7 +183,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
     const saveEditSlide = () => {
         if (!editingSlideId) return;
 
-        if(!editText.trim()) {
+        if (!editText.trim()) {
             deleteSlideWithoutPrompt(editingSlideId);
             return;
         }
@@ -207,7 +207,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
     const cancelEdit = () => {
         if (!editingSlideId) return;
 
-        if(!editText.trim()) {
+        if (!editText.trim()) {
             deleteSlideWithoutPrompt(editingSlideId);
             return;
         }
@@ -542,7 +542,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 paddingVertical: MaterialSpacing.md,
             }}>
                 {presentingSlideId ? (
-                    <View style={[ContainerStyles.row, { gap: MaterialSpacing.md }]}>
+                    <View style={[ContainerStyles.row]}>
                         {/* Previous Slide Button */}
                         <TouchableOpacity
                             onPress={navigateToPreviousSlide}
@@ -600,7 +600,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                         </TouchableOpacity>
                     </View>
                 ) : (
-                    <View style={[ContainerStyles.row, { gap: MaterialSpacing.md }]}>
+                    <View style={[ContainerStyles.row]}>
                         <TouchableOpacity
                             onPress={addSlide}
                             style={[ButtonStyles.primaryButton, { flex: 2 }]}
@@ -611,7 +611,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                 color={MaterialColors.onPrimary}
                             />
                             <Text style={ButtonStyles.primaryButtonText}>
-                                Add After Position {presentation.slides.length > currentViewIndex + 1 ? currentViewIndex + 1 : currentViewIndex}
+                                After {presentation.slides.length > currentViewIndex + 1 ? currentViewIndex + 1 : currentViewIndex}
                             </Text>
                         </TouchableOpacity>
 
@@ -627,7 +627,12 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                         ...presentation,
                                         slides: [...presentation.slides, newSlide]
                                     };
+
                                     onUpdatePresentation(updatedPresentation);
+
+                                    // Set the new slide to edit mode
+                                    setEditingSlideId(newSlide.id);
+
                                     setTimeout(() => {
                                         flatListRef.current?.scrollToEnd({ animated: true });
                                     }, 250);
@@ -639,7 +644,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                     size={20}
                                     color={MaterialColors.primary}
                                 />
-                                <Text style={ButtonStyles.secondaryButtonText}>Add At End</Text>
+                                <Text style={ButtonStyles.secondaryButtonText}>at End</Text>
                             </TouchableOpacity>
                         )}
                     </View>

@@ -110,7 +110,10 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
             {/* Overall Status Header */}
             <View style={styles.overallStatusCard}>
                 <Text style={styles.overallStatusTitle}>System Status</Text>
-                <Text style={styles.overallStatusSubtitle}>
+                <Text style={[
+                    styles.overallStatusSubtitle,
+                    leftConnected && rightConnected ? styles.statusTextConnected : styles.statusTextDisconnected
+                ]}>
                     {getDeviceStatus()}
                 </Text>
             </View>
