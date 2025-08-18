@@ -548,62 +548,68 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 paddingVertical: MaterialSpacing.md,
             }}>
                 {presentingSlideId ? (
-                    <View style={[ContainerStyles.row]}>
+                    <View style={[ContainerStyles.row, { gap: MaterialSpacing.sm }]}>
                         {/* Previous Slide Button */}
-                        <TouchableOpacity
-                            onPress={navigateToPreviousSlide}
-                            style={[
-                                ActionButtonStyles.navigationButton,
-                                { flex: 1 },
-                                presentation.slides.findIndex(s => s.id === presentingSlideId) === 0 && ActionButtonStyles.navigationButtonDisabled
-                            ]}
-                            disabled={presentation.slides.findIndex(s => s.id === presentingSlideId) === 0}
-                        >
-                            <MaterialIcons
-                                name="skip-previous"
-                                size={24}
+                        <View style={{ flex: 1 }}>
+                            <TouchableOpacity
+                                onPress={navigateToPreviousSlide}
                                 style={[
-                                    ActionButtonStyles.navigationIcon,
-                                    presentation.slides.findIndex(s => s.id === presentingSlideId) === 0 && ActionButtonStyles.navigationIconDisabled
+                                    ActionButtonStyles.navigationButton,
+                                    { width: '100%' },
+                                    presentation.slides.findIndex(s => s.id === presentingSlideId) === 0 && ActionButtonStyles.navigationButtonDisabled
                                 ]}
-                            />
-                        </TouchableOpacity>
+                                disabled={presentation.slides.findIndex(s => s.id === presentingSlideId) === 0}
+                            >
+                                <MaterialIcons
+                                    name="skip-previous"
+                                    size={24}
+                                    style={[
+                                        ActionButtonStyles.navigationIcon,
+                                        presentation.slides.findIndex(s => s.id === presentingSlideId) === 0 && ActionButtonStyles.navigationIconDisabled
+                                    ]}
+                                />
+                            </TouchableOpacity>
+                        </View>
 
                         {/* Stop Presenting Button */}
-                        <TouchableOpacity
-                            onPress={async () => {
-                                await BluetoothService.exitToDashboard();
-                                setPresentingSlideId(null);
-                                presentingSlideRef.current = null; // Clear ref since we manually stopped
-                            }}
-                            style={[ActionButtonStyles.stopButton, { flex: 1 }]}
-                        >
-                            <MaterialIcons
-                                name="stop"
-                                size={24}
-                                style={ActionButtonStyles.stopIcon}
-                            />
-                        </TouchableOpacity>
+                        <View style={{ flex: 2 }}>
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    await BluetoothService.exitToDashboard();
+                                    setPresentingSlideId(null);
+                                    presentingSlideRef.current = null; // Clear ref since we manually stopped
+                                }}
+                                style={[ActionButtonStyles.stopButton, { width: '100%' }]}
+                            >
+                                <MaterialIcons
+                                    name="stop"
+                                    size={24}
+                                    style={ActionButtonStyles.stopIcon}
+                                />
+                            </TouchableOpacity>
+                        </View>
 
                         {/* Next Slide Button */}
-                        <TouchableOpacity
-                            onPress={navigateToNextSlide}
-                            style={[
-                                ActionButtonStyles.navigationButton,
-                                { flex: 1 },
-                                presentation.slides.findIndex(s => s.id === presentingSlideId) === presentation.slides.length - 1 && ActionButtonStyles.navigationButtonDisabled
-                            ]}
-                            disabled={presentation.slides.findIndex(s => s.id === presentingSlideId) === presentation.slides.length - 1}
-                        >
-                            <MaterialIcons
-                                name="skip-next"
-                                size={24}
+                        <View style={{ flex: 1 }}>
+                            <TouchableOpacity
+                                onPress={navigateToNextSlide}
                                 style={[
-                                    ActionButtonStyles.navigationIcon,
-                                    presentation.slides.findIndex(s => s.id === presentingSlideId) === presentation.slides.length - 1 && ActionButtonStyles.navigationIconDisabled
+                                    ActionButtonStyles.navigationButton,
+                                    { width: '100%' },
+                                    presentation.slides.findIndex(s => s.id === presentingSlideId) === presentation.slides.length - 1 && ActionButtonStyles.navigationButtonDisabled
                                 ]}
-                            />
-                        </TouchableOpacity>
+                                disabled={presentation.slides.findIndex(s => s.id === presentingSlideId) === presentation.slides.length - 1}
+                            >
+                                <MaterialIcons
+                                    name="skip-next"
+                                    size={24}
+                                    style={[
+                                        ActionButtonStyles.navigationIcon,
+                                        presentation.slides.findIndex(s => s.id === presentingSlideId) === presentation.slides.length - 1 && ActionButtonStyles.navigationIconDisabled
+                                    ]}
+                                />
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 ) : (
                     <View style={[ContainerStyles.row]}>
