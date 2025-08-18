@@ -13,15 +13,15 @@ export class DeviceManager {
     /**
      * Get device for specified side
      */
-    getDevice(side: "L" | "R"): Device | null {
-        return side === "L" ? this.devices.left : this.devices.right;
+    getDevice(side: DeviceSide.LEFT | DeviceSide.RIGHT): Device | null {
+        return side === DeviceSide.LEFT ? this.devices.left : this.devices.right;
     }
 
     /**
      * Set device for specified side
      */
-    setDevice(side: "L" | "R", device: Device | null): void {
-        if (side === "L") {
+    setDevice(side: DeviceSide.LEFT | DeviceSide.RIGHT, device: Device | null): void {
+        if (side === DeviceSide.LEFT) {
             this.devices.left = device;
         } else {
             this.devices.right = device;
@@ -31,13 +31,13 @@ export class DeviceManager {
     /**
      * Get devices for specified side
      */
-    getDevicesForSide(side: DeviceSide): Array<{ device: Device | null; side: "L" | "R" }> {
-        const devices: Array<{ device: Device | null; side: "L" | "R" }> = [];
+    getDevicesForSide(side: DeviceSide): Array<{ device: Device | null; side: DeviceSide.LEFT | DeviceSide.RIGHT }> {
+        const devices: Array<{ device: Device | null; side: DeviceSide.LEFT | DeviceSide.RIGHT }> = [];
         if (side === DeviceSide.BOTH || side === DeviceSide.LEFT) {
-            devices.push({ device: this.devices.left, side: "L" });
+            devices.push({ device: this.devices.left, side: DeviceSide.LEFT });
         }
         if (side === DeviceSide.BOTH || side === DeviceSide.RIGHT) {
-            devices.push({ device: this.devices.right, side: "R" });
+            devices.push({ device: this.devices.right, side: DeviceSide.RIGHT });
         }
         return devices;
     }

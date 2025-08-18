@@ -19,12 +19,6 @@ export interface DeviceStatus {
     firmware: string | null; // Firmware information
 }
 
-export interface HeartbeatStatus {
-    left: boolean;
-    right: boolean;
-    timestamp: Date;
-}
-
 export interface DeviceInfo {
     left: Device | null;
     right: Device | null;

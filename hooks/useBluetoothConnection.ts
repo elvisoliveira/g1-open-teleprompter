@@ -19,7 +19,14 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
     const [isAutoConnecting, setIsAutoConnecting] = useState(false);
 
     useEffect(() => {
+        // Subscribe to connection state changes from BluetoothService
+        const unsubscribe = BluetoothService.onConnectionStateChange((state) => {
+            setLeftConnected(state.left);
+            setRightConnected(state.right);
+        });
+
         return () => {
+            unsubscribe();
             BluetoothService.disconnect();
         };
     }, []);
@@ -48,11 +55,9 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
         try {
             if (side === 'left') {
                 await BluetoothService.connectLeft(deviceId);
-                setLeftConnected(true);
                 setConnectionStep('right');
             } else {
                 await BluetoothService.connectRight(deviceId);
-                setRightConnected(true);
             }
             
             // Notify parent component about successful connection
@@ -71,8 +76,6 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
             await BluetoothService.connectLeft(leftMac);
             await BluetoothService.connectRight(rightMac);
 
-            setLeftConnected(true);
-            setRightConnected(true);
             setConnectionStep('complete');
             setIsAutoConnecting(false);
             return true;
@@ -84,8 +87,6 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
     };
 
     const resetConnection = () => {
-        setLeftConnected(false);
-        setRightConnected(false);
         setConnectionStep('left');
     };
 

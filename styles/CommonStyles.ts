@@ -289,6 +289,21 @@ export const ActionButtonStyles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  // Index
+  indexButton: {
+    width: 48,
+    height: 48,
+    borderRadius: MaterialBorderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: MaterialColors.infoContainer
+  },
+  indexText: {
+    ...MaterialTypography.labelSmall,
+    color: MaterialColors.onPrimaryContainer,
+    fontWeight: '700',
+  },
+
   // Navigation buttons (up/down arrows)
   navigationButton: {
     width: 48,

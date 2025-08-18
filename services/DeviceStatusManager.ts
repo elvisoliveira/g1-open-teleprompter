@@ -221,11 +221,12 @@ export class DeviceStatusManager {
             
             await Utils.sleep(100);
             
-            const initResult = await this.sendInitLeft(devices);
-            if (!initResult) {
-                console.error('[DeviceStatusManager] Init left command failed');
-                return false;
-            }
+            // @TODO: Not sure if we actually need to send this (init command?)
+            // const initResult = await this.sendInitLeft(devices);
+            // if (!initResult) {
+            //     console.error('[DeviceStatusManager] Init left command failed');
+            //     return false;
+            // }
             
             try {
                 await this.updateFirmwareInfo(devices);

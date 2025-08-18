@@ -3,11 +3,12 @@ import { NativeModules, Platform } from 'react-native';
 import { BleManager } from 'react-native-ble-plx';
 import { CommunicationManager } from './CommunicationManager';
 import {
-    EXIT_CMD
+    EXIT_CMD,
+    HEARTBEAT_CMD,
+    HEARTBEAT_INTERVAL_MS
 } from './constants';
 import { DeviceManager } from './DeviceManager';
 import { DeviceStatusManager } from './DeviceStatusManager';
-import { HeartbeatManager } from './HeartbeatManager';
 import { PermissionManager } from './PermissionManager';
 import { BatteryInfo, DeviceSide, DeviceStatus } from './types';
 import { Utils } from './utils';
@@ -15,25 +16,138 @@ import { Utils } from './utils';
 class BluetoothService {
     private manager: BleManager;
     private deviceManager: DeviceManager;
-    private heartbeatManager: HeartbeatManager;
     private statusManager: DeviceStatusManager;
+    private heartbeatInterval: NodeJS.Timeout | null = null;
+    private heartbeatSeq: number = 0;
+    private connectionState: { left: boolean; right: boolean } = { left: false, right: false };
+    private connectionStateCallback: ((state: { left: boolean; right: boolean }) => void) | null = null;
 
     constructor() {
         this.manager = new BleManager();
         this.deviceManager = new DeviceManager(this.manager);
-        this.heartbeatManager = new HeartbeatManager();
         this.statusManager = new DeviceStatusManager();
     }
 
+    // Simple heartbeat management
+    private constructHeartbeat(): Uint8Array {
+        const seq = this.heartbeatSeq++ & 0xFF;
+        return new Uint8Array([
+            HEARTBEAT_CMD,  // 0x25
+            6,               // Length
+            0,               // Length MSB (always 0)
+            seq,             // Sequence number
+            0x04,            // Fixed value
+            seq              // Sequence number (duplicate)
+        ]);
+    }
+
+    private async performHeartbeat(): Promise<void> {
+        const devices = this.deviceManager.getDeviceInfo();
+        const heartbeatData = this.constructHeartbeat();
+
+        // Always send to left first, then right (G1 protocol requirement)
+        let leftSuccess = false;
+        let rightSuccess = false;
+
+        if (devices.left) {
+            console.log('[BluetoothService] Performing heartbeat for left device:', devices.left);
+            try {
+                const leftResponse = await CommunicationManager.sendCommandWithResponse(
+                    devices.left,
+                    heartbeatData,
+                    new Uint8Array([HEARTBEAT_CMD]),
+                    1500
+                );
+                leftSuccess = !!leftResponse &&
+                    leftResponse.length > 5 &&    
+                    leftResponse[0] === HEARTBEAT_CMD &&
+                    leftResponse[4] === 0x04;
+                console.log('[BluetoothService] Left heartbeat success:', leftSuccess);
+            } catch (error) {
+                leftSuccess = false;
+                console.error('[BluetoothService] Error in left heartbeat:', error);
+            }
+        }
+
+        if (devices.right && leftSuccess) {
+            console.log('[BluetoothService] Performing heartbeat for right device:', devices.right);
+            try {
+                const rightResponse = await CommunicationManager.sendCommandWithResponse(
+                    devices.right,
+                    heartbeatData,
+                    new Uint8Array([HEARTBEAT_CMD]),
+                    1500
+                );
+                rightSuccess = !!rightResponse &&
+                    rightResponse.length > 5 &&    
+                    rightResponse[0] === HEARTBEAT_CMD &&
+                    rightResponse[4] === 0x04;
+                console.log('[BluetoothService] Right heartbeat success:', rightSuccess);
+            } catch (error) {
+                rightSuccess = false;
+                console.error('[BluetoothService] Error in right heartbeat:', error);
+            }
+        }
+
+        const newState = {
+            left: leftSuccess && devices.left !== null,
+            right: rightSuccess && devices.right !== null
+        };
+
+        console.log('[BluetoothService] Heartbeat result:', newState);
+        console.log('[BluetoothService] Current connection state:', this.connectionState);
+
+        // Only update and notify if state changed
+        if (this.connectionState.left !== newState.left || this.connectionState.right !== newState.right) {
+            this.connectionState = newState;
+            console.log('[BluetoothService] Connection state changed, calling callback...');
+            this.connectionStateCallback?.(this.connectionState);
+            console.log('[BluetoothService] Connection state updated:', this.connectionState);
+        } else {
+            console.log('[BluetoothService] Connection state unchanged, no callback needed');
+        }
+    }
+
+    private startHeartbeat(): void {
+        console.log('[BluetoothService] Starting heartbeat...');
+        this.stopHeartbeat();
+        
+        this.heartbeatInterval = setInterval(async () => {
+            console.log('[BluetoothService] Heartbeat interval triggered');
+            await this.performHeartbeat();
+        }, HEARTBEAT_INTERVAL_MS);
+        
+        // Perform initial heartbeat
+        console.log('[BluetoothService] Performing initial heartbeat...');
+        this.performHeartbeat();
+    }
+
+    private stopHeartbeat(): void {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
+    }
+
     // Device Connection Methods
-    private async connectDevice(address: string, side: 'L' | 'R'): Promise<void> {
+    private async connectDevice(address: string, side: DeviceSide.LEFT | DeviceSide.RIGHT): Promise<void> {
         try {
-            console.log(`[BluetoothService] Connecting to ${side === 'L' ? 'left' : 'right'} device:`, address);
+            console.log(`[BluetoothService] Connecting to ${side === DeviceSide.LEFT ? 'left' : 'right'} device:`, address);
             
             const device = await this.deviceManager.connectDevice(address);
             this.deviceManager.setDevice(side, device);
             
-            console.log(`[BluetoothService] ${side === 'L' ? 'Left' : 'Right'} device connected successfully`);
+            console.log(`[BluetoothService] ${side === DeviceSide.LEFT ? 'Left' : 'Right'} device connected successfully`);
+            
+            // Update connection state immediately for UI responsiveness
+            if (side === DeviceSide.LEFT) {
+                this.connectionState.left = true;
+            } else {
+                this.connectionState.right = true;
+            }
+            
+            // Notify UI of connection state change
+            this.connectionStateCallback?.(this.connectionState);
             
             // Initialize devices after connection
             const initResult = await this.statusManager.initializeDevices(this.deviceManager.getDeviceInfo());
@@ -42,20 +156,20 @@ class BluetoothService {
             }
             
             // Start heartbeat if this is the first device connected
-            if (!this.deviceManager.isConnected() || (side === 'L' && !this.deviceManager.isRightConnected()) || (side === 'R' && !this.deviceManager.isLeftConnected())) {
-                this.heartbeatManager.start(this.deviceManager.getDeviceInfo());
+            if (!this.isConnected() || (side === DeviceSide.LEFT && !this.isRightConnected()) || (side === DeviceSide.RIGHT && !this.isLeftConnected())) {
+                this.startHeartbeat();
             }
         } catch (error: any) {
-            throw new Error(`Failed to connect ${side === 'L' ? 'left' : 'right'} device: ${error?.message || 'Unknown error'}`);
+            throw new Error(`Failed to connect ${side === DeviceSide.LEFT ? 'left' : 'right'} device: ${error?.message || 'Unknown error'}`);
         }
     }
 
     async connectLeft(address: string): Promise<void> {
-        await this.connectDevice(address, 'L');
+        await this.connectDevice(address, DeviceSide.LEFT);
     }
 
     async connectRight(address: string): Promise<void> {
-        await this.connectDevice(address, 'R');
+        await this.connectDevice(address, DeviceSide.RIGHT);
     }
 
     async connect(address: string): Promise<void> {
@@ -64,23 +178,47 @@ class BluetoothService {
     }
 
     async disconnect(): Promise<void> {
-        this.heartbeatManager.stop();
+        this.stopHeartbeat();
         this.statusManager.stopBatteryMonitoring();
         await this.deviceManager.disconnectAll();
         this.statusManager.reset();
+        this.connectionState = { left: false, right: false };
+        this.connectionStateCallback?.(this.connectionState);
     }
 
     // Device Status Methods
     isConnected(): boolean {
-        return this.deviceManager.isConnected();
+        return this.connectionState.left || this.connectionState.right;
     }
 
     isLeftConnected(): boolean {
-        return this.deviceManager.isLeftConnected();
+        return this.connectionState.left;
     }
 
     isRightConnected(): boolean {
-        return this.deviceManager.isRightConnected();
+        return this.connectionState.right;
+    }
+
+    // Get current connection state from heartbeat
+    getConnectionState(): { left: boolean; right: boolean } {
+        return { ...this.connectionState };
+    }
+
+        // Subscribe to connection state changes
+    onConnectionStateChange(callback: (state: { left: boolean; right: boolean }) => void): () => void {
+        console.log('[BluetoothService] onConnectionStateChange called with callback');
+        // Call immediately with current state
+        callback(this.connectionState);
+        
+        // Set the callback
+        this.connectionStateCallback = callback;
+        console.log('[BluetoothService] Callback set, current state:', this.connectionState);
+        
+        // Return unsubscribe function
+        return () => {
+            console.log('[BluetoothService] Unsubscribing from connection state changes');
+            this.connectionStateCallback = null;
+        };
     }
 
     // Battery and Status Methods
@@ -103,7 +241,7 @@ class BluetoothService {
     }
 
     async getDeviceUptime(): Promise<number> {
-        const targetDevice = this.deviceManager.getDevice('L') || this.deviceManager.getDevice('R');
+        const targetDevice = this.deviceManager.getDevice(DeviceSide.LEFT) || this.deviceManager.getDevice(DeviceSide.RIGHT);
         if (!targetDevice) {
             console.warn('[BluetoothService] No device available for uptime query');
             return -1;
@@ -112,9 +250,9 @@ class BluetoothService {
     }
 
     private getTargetDevice(side: DeviceSide) {
-        return side === DeviceSide.LEFT ? this.deviceManager.getDevice('L') :
-               side === DeviceSide.RIGHT ? this.deviceManager.getDevice('R') :
-               this.deviceManager.getDevice('L') || this.deviceManager.getDevice('R');
+        return side === DeviceSide.LEFT ? this.deviceManager.getDevice(DeviceSide.LEFT) :
+               side === DeviceSide.RIGHT ? this.deviceManager.getDevice(DeviceSide.RIGHT) :
+               this.deviceManager.getDevice(DeviceSide.LEFT) || this.deviceManager.getDevice(DeviceSide.RIGHT);
     }
 
     getCurrentBatteryInfo(): BatteryInfo {
@@ -212,16 +350,8 @@ class BluetoothService {
     }
 
     // Heartbeat Methods
-    onHeartbeatStatus(callback: (status: { left: boolean; right: boolean; timestamp: Date }) => void): () => void {
-        return this.heartbeatManager.onHeartbeatStatus(callback);
-    }
-
-    async triggerHeartbeat(): Promise<void> {
-        await this.heartbeatManager.trigger(this.deviceManager.getDeviceInfo());
-    }
-
     isHeartbeatRunning(): boolean {
-        return this.heartbeatManager.isRunning();
+        return this.heartbeatInterval !== null;
     }
 
     // Battery Monitoring Methods
@@ -293,7 +423,7 @@ class BluetoothService {
     // Helper Methods
     private async executeForDevices<T>(
         side: DeviceSide, 
-        operation: (device: any, deviceSide: "L" | "R") => Promise<T>
+        operation: (device: any, deviceSide: DeviceSide.LEFT | DeviceSide.RIGHT) => Promise<T>
     ): Promise<T[]> {
         const devices = this.deviceManager.getDevicesForSide(side);
         const results: T[] = [];
