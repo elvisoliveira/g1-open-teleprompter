@@ -320,7 +320,10 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
         <View style={ContainerStyles.screen}>
             <View style={ContainerStyles.content}>
                 <View style={[ContainerStyles.row, { marginBottom: MaterialSpacing.lg }]}>
-                    <Text style={[MaterialTypography.headlineSmall, { flex: 1 }]}>
+                    <Text style={[MaterialTypography.headlineSmall, {
+                        flex: 1,
+                        color: MaterialColors.onSurface
+                    }]}>
                         Presentations
                     </Text>
                     <TouchableOpacity

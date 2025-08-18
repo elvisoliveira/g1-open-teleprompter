@@ -9,7 +9,7 @@ const TopAppBar: React.FC = () => {
             <View style={topAppBarStyles.content}>
                 <Text>
                     <Text style={topAppBarStyles.title}>G1 OpenTeleprompter</Text>
-                    <Text style={topAppBarStyles.version}>{'\t'}{version}</Text>
+                    <Text style={topAppBarStyles.version}>&nbsp;v{version}</Text>
                 </Text>
             </View>
         </View>

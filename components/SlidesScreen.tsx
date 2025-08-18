@@ -3,7 +3,7 @@ import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import BluetoothService from '../services/BluetoothService';
-import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
+import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles, InputStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 
 interface Slide {
@@ -370,14 +370,20 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             }}
                             renderItem={({ item, index }) => (
                                 <View style={{
-                                    backgroundColor: presentingSlideId === item.id ? MaterialColors.primaryContainer : MaterialColors.surfaceVariant,
+                                    backgroundColor: presentingSlideId === item.id ? MaterialColors.primaryContainer : MaterialColors.surfaceContainer,
                                     borderRadius: MaterialBorderRadius.lg,
                                     marginBottom: MaterialSpacing.md,
                                 }}>
                                     {editingSlideId === item.id ? (
                                         <View style={{ padding: MaterialSpacing.lg }}>
                                             <TextInput
-                                                style={[MaterialTypography.bodyLarge, { marginBottom: MaterialSpacing.md, minHeight: 60 }]}
+                                                style={[
+                                                    MaterialTypography.bodyLarge,
+                                                    InputStyles.textInputMultiline,
+                                                    {
+                                                        marginBottom: MaterialSpacing.md,
+                                                    }
+                                                ]}
                                                 value={editText}
                                                 onChangeText={setEditText}
                                                 placeholder="Enter slide text..."
@@ -570,7 +576,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                 setPresentingSlideId(null);
                                 presentingSlideRef.current = null; // Clear ref since we manually stopped
                             }}
-                            style={[ActionButtonStyles.stopButton, { flex: 2 }]}
+                            style={[ActionButtonStyles.stopButton, { flex: 1 }]}
                         >
                             <MaterialIcons
                                 name="stop"

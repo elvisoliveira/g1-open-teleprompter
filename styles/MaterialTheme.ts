@@ -1,31 +1,34 @@
+import { Appearance } from 'react-native';
+
 // Material Design 3 Color Palette
 // Modern color system following Material Design 3 specifications
 
-export const MaterialColors = {
+// Light palette (existing)
+export const MaterialColorsLight = {
     // Primary colors
     primary: '#6750A4',
     onPrimary: '#FFFFFF',
     primaryContainer: '#EADDFF',
     onPrimaryContainer: '#21005D',
-    
+
     // Secondary colors
     secondary: '#625B71',
     onSecondary: '#FFFFFF',
     secondaryContainer: '#E8DEF8',
     onSecondaryContainer: '#1D192B',
-    
+
     // Tertiary colors
     tertiary: '#7D5260',
     onTertiary: '#FFFFFF',
     tertiaryContainer: '#FFD8E4',
     onTertiaryContainer: '#31111D',
-    
+
     // Error colors
     error: '#BA1A1A',
     onError: '#FFFFFF',
     errorContainer: '#FFDAD6',
     onErrorContainer: '#410002',
-    
+
     // Background colors
     background: '#FFFBFE',
     onBackground: '#1C1B1F',
@@ -36,29 +39,29 @@ export const MaterialColors = {
     surfaceContainer: '#F3EDF7',
     surfaceContainerHigh: '#ECE6F0',
     surfaceContainerHighest: '#E6E0E9',
-    
+
     // Outline colors
     outline: '#79747E',
     outlineVariant: '#CAC4D0',
-    
+
     // Success colors (custom addition)
     success: '#146C2E',
     onSuccess: '#FFFFFF',
     successContainer: '#B7F397',
     onSuccessContainer: '#002106',
-    
+
     // Warning colors (custom addition)
     warning: '#825500',
     onWarning: '#FFFFFF',
     warningContainer: '#FFDDB3',
     onWarningContainer: '#291800',
-    
+
     // Info colors (custom addition for better button differentiation)
     info: '#0B57D0',
     onInfo: '#FFFFFF',
     infoContainer: '#D3E3FD',
     onInfoContainer: '#001C3B',
-    
+
     // Legacy colors for compatibility
     text: '#1C1B1F', // Same as onBackground
     textSecondary: '#49454F', // Same as onSurfaceVariant
@@ -68,6 +71,82 @@ export const MaterialColors = {
     primaryLight: '#EADDFF', // Same as primaryContainer
     backgroundSecondary: '#F7F2FA', // Light variant of surface
 };
+
+// Dark palette (new)
+export const MaterialColorsDark = {
+    // Primary colors - Enhanced pastel purple
+    primary: '#D4C4FF',
+    onPrimary: '#341A6B',
+    primaryContainer: '#4A3785',
+    onPrimaryContainer: '#EADDFF',
+
+    // Secondary colors - Cleaner pastel neutrals
+    secondary: '#D0C7DC',
+    onSecondary: '#322D40',
+    secondaryContainer: '#453F53',
+    onSecondaryContainer: '#E8DEF8',
+
+    // Tertiary colors - Softer pastel pink
+    tertiary: '#F2C2D0',
+    onTertiary: '#472531',
+    tertiaryContainer: '#5D3A45',
+    onTertiaryContainer: '#FFD8E4',
+
+    // Error colors - Maintained for accessibility
+    error: '#F2B8B5',
+    onError: '#601410',
+    errorContainer: '#8C1D18',
+    onErrorContainer: '#F9DEDC',
+
+    // Background colors - Better hierarchy and cleaner look
+    background: '#1A1A1F',
+    onBackground: '#E8E3E7',
+    surface: '#1A1A1F',
+    onSurface: '#E8E3E7',
+    surfaceVariant: '#4A454F',
+    onSurfaceVariant: '#CCC4D0',
+    surfaceContainer: '#242428',
+    surfaceContainerHigh: '#2A2A2F',
+    surfaceContainerHighest: '#323237',
+
+    // Outline colors - Better contrast
+    outline: '#958F99',
+    outlineVariant: '#453F53',
+
+    // Success colors - Softer pastel green
+    success: '#85D894',
+    onSuccess: '#003919',
+    successContainer: '#0F3D26',
+    onSuccessContainer: '#B7F397',
+
+    // Warning colors - Warmer pastel orange
+    warning: '#FFB866',
+    onWarning: '#3A2500',
+    warningContainer: '#4A2F00',
+    onWarningContainer: '#FFDDB3',
+
+    // Info colors - Softer pastel blue
+    info: '#A4CFFF',
+    onInfo: '#002C6B',
+    infoContainer: '#0E3A7C',
+    onInfoContainer: '#D3E3FD',
+
+    // Legacy colors for compatibility - Updated for consistency
+    text: '#E8E3E7',
+    textSecondary: '#CCC4D0',
+    textDisabled: '#958F99',
+    border: '#453F53',
+    borderLight: '#4A454F',
+    primaryLight: '#4A3785',
+    backgroundSecondary: '#1F1D24',
+};
+
+// Resolve current system theme (Android/iOS)
+const systemScheme = Appearance.getColorScheme();
+export const isDarkMode = systemScheme === 'dark';
+
+// Backward-compatible export name
+export const MaterialColors = isDarkMode ? MaterialColorsDark : MaterialColorsLight;
 
 export const MaterialSpacing = {
     xs: 4,
@@ -105,7 +184,7 @@ export const MaterialTypography = {
         lineHeight: 44,
         letterSpacing: 0,
     },
-    
+
     // Headline typography
     headlineLarge: {
         fontSize: 32,
@@ -125,7 +204,7 @@ export const MaterialTypography = {
         lineHeight: 32,
         letterSpacing: 0,
     },
-    
+
     // Title typography
     titleLarge: {
         fontSize: 22,
@@ -145,7 +224,7 @@ export const MaterialTypography = {
         lineHeight: 20,
         letterSpacing: 0.1,
     },
-    
+
     // Body typography
     bodyLarge: {
         fontSize: 16,
@@ -165,7 +244,7 @@ export const MaterialTypography = {
         lineHeight: 16,
         letterSpacing: 0.4,
     },
-    
+
     // Label typography
     labelLarge: {
         fontSize: 14,
@@ -185,7 +264,7 @@ export const MaterialTypography = {
         lineHeight: 16,
         letterSpacing: 0.5,
     },
-    
+
     // Legacy typography for backward compatibility
     h1: {
         fontSize: 32,
