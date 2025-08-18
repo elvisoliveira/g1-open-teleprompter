@@ -1,18 +1,25 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import BluetoothService from '../services/BluetoothService';
 import { BatteryInfo, DeviceStatus } from '../services/types';
+import { ButtonStyles } from '../styles/CommonStyles';
 import { connectionStatusStyles as styles } from '../styles/ConnectionStatusStyles';
+import { MaterialColors, MaterialSpacing } from '../styles/MaterialTheme';
 import DeviceStatusCard from './DeviceStatusCard';
 
 interface ConnectionStatusProps {
     leftConnected: boolean;
     rightConnected: boolean;
+    onReconnect?: () => void;
+    isRetrying?: boolean;
 }
 
 const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     leftConnected,
-    rightConnected
+    rightConnected,
+    onReconnect,
+    isRetrying
 }) => {
     const [batteryInfo, setBatteryInfo] = useState<BatteryInfo>({ left: -1, right: -1, lastUpdated: null });
     const [deviceStatus, setDeviceStatus] = useState<{ left: DeviceStatus; right: DeviceStatus }>();
@@ -116,6 +123,28 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                 ]}>
                     {getDeviceStatus()}
                 </Text>
+
+                {/* Reconnect CTA when offline */}
+                {(!bothConnected) && (
+                    <TouchableOpacity
+                        onPress={() => onReconnect?.()}
+                        disabled={!onReconnect || isRetrying}
+                        style={[
+                            ButtonStyles.primaryButton,
+                            { marginTop: MaterialSpacing.md },
+                            (!onReconnect || isRetrying) && ButtonStyles.primaryButtonDisabled
+                        ]}
+                    >
+                        <MaterialIcons
+                            name={isRetrying ? 'sync' : 'refresh'}
+                            size={20}
+                            color={MaterialColors.onPrimary}
+                        />
+                        <Text style={ButtonStyles.primaryButtonText}>
+                            {isRetrying ? 'Reconnecting…' : 'Try Reconnect'}
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             {/* Device Status Cards */}

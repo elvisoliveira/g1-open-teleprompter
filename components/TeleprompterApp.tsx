@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
+import { useAppInitialization } from '../hooks/useAppInitialization';
+import { useBluetoothConnection } from '../hooks/useBluetoothConnection';
+import { useDeviceStorage } from '../hooks/useDeviceStorage';
 import { defaultBitmapGenerator } from '../services/BitmapGenerator';
 import BluetoothService from '../services/BluetoothService';
 import { teleprompterAppStyles } from '../styles/AppStyles';
 import { OutputMode } from '../types/OutputMode';
-import { useAppInitialization } from '../hooks/useAppInitialization';
-import { useBluetoothConnection } from '../hooks/useBluetoothConnection';
-import { useDeviceStorage } from '../hooks/useDeviceStorage';
 import AppBottomNavigation from './AppBottomNavigation';
+import ConnectionStatus from './ConnectionStatus';
 import DeviceConnection from './DeviceConnection';
-import DeviceScreen from './DeviceScreen';
 import HomeScreen from './HomeScreen';
 import PresentationsScreen from './PresentationsScreen';
 import ReconnectionScreen from './ReconnectionScreen';
@@ -181,7 +181,14 @@ const TeleprompterApp: React.FC = () => {
                     );
 
                 case 'device':
-                    return <DeviceScreen leftConnected={leftConnected} rightConnected={rightConnected} />;
+                    return (
+                        <ConnectionStatus
+                            leftConnected={leftConnected}
+                            rightConnected={rightConnected}
+                            onReconnect={handleRetryConnection}
+                            isRetrying={isAutoConnecting}
+                        />
+                    );
 
                 case 'presentations':
                     return <PresentationsScreen />;
