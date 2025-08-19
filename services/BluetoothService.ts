@@ -1,22 +1,22 @@
 import { Buffer } from 'buffer';
 import { NativeModules, Platform } from 'react-native';
-import { BleManager } from 'react-native-ble-plx';
+import { BleManager, Device } from 'react-native-ble-plx';
 import { CommunicationManager } from './CommunicationManager';
 import {
-    EXIT_CMD,
-    HEARTBEAT_CMD,
     HEARTBEAT_INTERVAL_MS
 } from './constants';
-import { DeviceManager } from './DeviceManager';
-import { DeviceStatusManager } from './DeviceStatusManager';
 import { PermissionManager } from './PermissionManager';
-import { BatteryInfo, DeviceSide, DeviceStatus } from './types';
+import { BatteryInfo, DeviceInfo, DeviceSide, DeviceStatus, FirmwareInfo } from './types';
 import { Utils } from './utils';
 
 class BluetoothService {
     private manager: BleManager;
-    private deviceManager: DeviceManager;
-    private statusManager: DeviceStatusManager;
+    private devices: DeviceInfo = { left: null, right: null };
+    private batteryInfo: BatteryInfo = { left: -1, right: -1, lastUpdated: null };
+    private deviceUptime: number = -1;
+    private firmwareInfo: FirmwareInfo = { left: null, right: null };
+    private batteryMonitoringInterval: NodeJS.Timeout | null = null;
+    private batteryListeners: Array<(battery: BatteryInfo) => void> = [];
     private heartbeatInterval: NodeJS.Timeout | null = null;
     private heartbeatSeq: number = 0;
     private connectionState: { left: boolean; right: boolean } = { left: false, right: false };
@@ -24,26 +24,215 @@ class BluetoothService {
 
     constructor() {
         this.manager = new BleManager();
-        this.deviceManager = new DeviceManager(this.manager);
-        this.statusManager = new DeviceStatusManager();
+    }
+
+    // Inlined DeviceManager functionality
+    private updateBatteryInfoInternal(side: DeviceSide, batteryLevel: number): void {
+        if (side === DeviceSide.LEFT || side === DeviceSide.BOTH) {
+            this.batteryInfo.left = batteryLevel;
+        }
+        if (side === DeviceSide.RIGHT || side === DeviceSide.BOTH) {
+            this.batteryInfo.right = batteryLevel;
+        }
+    }
+
+    private updateFirmwareInfoInternal(side: DeviceSide, firmwareText: string): void {
+        if (side === DeviceSide.LEFT || side === DeviceSide.BOTH) {
+            this.firmwareInfo.left = firmwareText;
+        }
+        if (side === DeviceSide.RIGHT || side === DeviceSide.BOTH) {
+            this.firmwareInfo.right = firmwareText;
+        }
+    }
+
+    getDevice(side: DeviceSide.LEFT | DeviceSide.RIGHT): Device | null {
+        return side === DeviceSide.LEFT ? this.devices.left : this.devices.right;
+    }
+
+    setDevice(side: DeviceSide.LEFT | DeviceSide.RIGHT, device: Device | null): void {
+        if (side === DeviceSide.LEFT) {
+            this.devices.left = device;
+        } else {
+            this.devices.right = device;
+        }
+    }
+
+    getDevicesForSide(side: DeviceSide): Array<{ device: Device | null; side: DeviceSide.LEFT | DeviceSide.RIGHT }> {
+        const devices: Array<{ device: Device | null; side: DeviceSide.LEFT | DeviceSide.RIGHT }> = [];
+        if (side === DeviceSide.BOTH || side === DeviceSide.LEFT) {
+            devices.push({ device: this.devices.left, side: DeviceSide.LEFT });
+        }
+        if (side === DeviceSide.BOTH || side === DeviceSide.RIGHT) {
+            devices.push({ device: this.devices.right, side: DeviceSide.RIGHT });
+        }
+        return devices;
+    }
+
+    getDeviceInfo(): DeviceInfo {
+        return this.devices;
+    }
+
+    private async connectToDevice(address: string): Promise<Device> {
+        if (!await PermissionManager.requestBluetoothConnectPermission()) {
+            throw new Error('Bluetooth permission not granted');
+        }
+
+        const device = await this.manager.connectToDevice(address, {
+            autoConnect: false,
+            timeout: 10000
+        });
+
+        await device.discoverAllServicesAndCharacteristics();
+
+        try {
+            const mtuResult = await device.requestMTU(247);
+            const mtu = typeof mtuResult === 'object' ? mtuResult.mtu || 23 : (mtuResult || 23);
+            console.log(`[BluetoothService] MTU negotiated: ${mtu} bytes for device ${address}`);
+        } catch (error) {
+            console.warn(`[BluetoothService] MTU request failed for device ${address}:`, error);
+        }
+
+        return device;
+    }
+
+    async disconnectAll(): Promise<void> {
+        const disconnectPromises: Promise<Device>[] = [];
+
+        if (this.devices.left) {
+            disconnectPromises.push(this.devices.left.cancelConnection());
+            this.devices.left = null;
+        }
+        if (this.devices.right) {
+            disconnectPromises.push(this.devices.right.cancelConnection());
+            this.devices.right = null;
+        }
+
+        if (disconnectPromises.length > 0) {
+            await Promise.all(disconnectPromises);
+        }
+    }
+
+    async readBatteryInfo(device: Device, side: DeviceSide = DeviceSide.BOTH): Promise<number> {
+        const batteryLevel = await CommunicationManager.requestBatteryLevel(device);
+        if (batteryLevel !== null) {
+            this.updateBatteryInfoInternal(side, batteryLevel);
+            this.batteryInfo.lastUpdated = new Date();
+            this.batteryListeners.forEach(listener => {
+                try { listener(this.batteryInfo); } catch { /* ignore */ }
+            });
+            return batteryLevel;
+        }
+        return -1;
+    }
+
+    async readFirmwareInfo(device: Device, side: DeviceSide = DeviceSide.LEFT): Promise<string | null> {
+        const firmwareText = await CommunicationManager.requestFirmwareInfo(device);
+        if (firmwareText) {
+            this.updateFirmwareInfoInternal(side, firmwareText);
+            return firmwareText;
+        }
+        return null;
+    }
+
+    async readDeviceUptime(device: Device): Promise<number> {
+        const uptimeSeconds = await CommunicationManager.requestUptime(device);
+        if (uptimeSeconds !== null) {
+            this.deviceUptime = uptimeSeconds;
+            return uptimeSeconds;
+        }
+        this.deviceUptime = -1;
+        return -1;
+    }
+
+    async sendFirmwareRequest(devices: { left: Device | null; right: Device | null }): Promise<boolean> {
+        let success = true;
+        if (devices.left) {
+            success = await CommunicationManager.sendFirmwareRequest(devices.left) && success;
+        }
+        if (devices.right) {
+            success = await CommunicationManager.sendFirmwareRequest(devices.right) && success;
+        }
+        return success;
+    }
+
+    async initializeDevices(): Promise<boolean> {
+        const success = await this.sendFirmwareRequest(this.devices);
+        if (!success) {
+            return false;
+        }
+        try {
+            await this.updateFirmwareInfo(this.devices);
+        } catch {
+            // Ignore firmware info errors
+        }
+        return true;
+    }
+
+    async updateFirmwareInfo(devices: { left: Device | null; right: Device | null }): Promise<void> {
+        const updates = [] as Promise<any>[];
+        if (devices.left) {
+            updates.push(this.readFirmwareInfo(devices.left, DeviceSide.LEFT));
+        }
+        if (devices.right) {
+            updates.push(this.readFirmwareInfo(devices.right, DeviceSide.RIGHT));
+        }
+        await Promise.all(updates);
+    }
+
+    async updateBatteryInfo(devices: { left: Device | null; right: Device | null }): Promise<void> {
+        if (devices.left || devices.right) {
+            await this.readBatteryInfo(devices.left || devices.right!, DeviceSide.BOTH);
+        }
+    }
+
+    startBatteryMonitoring(intervalMinutes: number = 5): void {
+        this.stopBatteryMonitoring();
+        this.batteryMonitoringInterval = setInterval(() => {
+            this.updateBatteryInfo(this.devices);
+        }, intervalMinutes * 60 * 1000);
+    }
+
+    stopBatteryMonitoring(): void {
+        if (this.batteryMonitoringInterval) {
+            clearInterval(this.batteryMonitoringInterval);
+            this.batteryMonitoringInterval = null;
+        }
+    }
+
+    onBatteryUpdate(callback: (battery: BatteryInfo) => void): () => void {
+        this.batteryListeners.push(callback);
+        return () => {
+            const index = this.batteryListeners.indexOf(callback);
+            if (index > -1) {
+                this.batteryListeners.splice(index, 1);
+            }
+        };
+    }
+
+    getCurrentBatteryInfo(): BatteryInfo {
+        return { ...this.batteryInfo };
+    }
+
+    getCurrentFirmwareInfo(): FirmwareInfo {
+        return { ...this.firmwareInfo };
+    }
+
+    getCurrentUptimeStatus(): number {
+        return this.deviceUptime;
+    }
+
+    resetStatus(): void {
+        this.batteryInfo = { left: -1, right: -1, lastUpdated: null };
+        this.deviceUptime = -1;
+        this.firmwareInfo = { left: null, right: null };
+        this.stopBatteryMonitoring();
+        this.batteryListeners = [];
     }
 
     // Simple heartbeat management
-    private constructHeartbeat(): Uint8Array {
-        const seq = this.heartbeatSeq++ & 0xFF;
-        return new Uint8Array([
-            HEARTBEAT_CMD,  // 0x25
-            6,               // Length
-            0,               // Length MSB (always 0)
-            seq,             // Sequence number
-            0x04,            // Fixed value
-            seq              // Sequence number (duplicate)
-        ]);
-    }
-
     private async performHeartbeat(): Promise<void> {
-        const devices = this.deviceManager.getDeviceInfo();
-        const heartbeatData = this.constructHeartbeat();
+        const devices = this.getDeviceInfo();
+        const seq = this.heartbeatSeq++ & 0xFF;
 
         // Always send to left first, then right (G1 protocol requirement)
         let leftSuccess = false;
@@ -52,16 +241,7 @@ class BluetoothService {
         if (devices.left) {
             console.log('[BluetoothService] Performing heartbeat for left device:', devices.left);
             try {
-                const leftResponse = await CommunicationManager.sendCommandWithResponse(
-                    devices.left,
-                    heartbeatData,
-                    new Uint8Array([HEARTBEAT_CMD]),
-                    1500
-                );
-                leftSuccess = !!leftResponse &&
-                    leftResponse.length > 5 &&    
-                    leftResponse[0] === HEARTBEAT_CMD &&
-                    leftResponse[4] === 0x04;
+                leftSuccess = await CommunicationManager.sendHeartbeat(devices.left, seq);
                 console.log('[BluetoothService] Left heartbeat success:', leftSuccess);
             } catch (error) {
                 leftSuccess = false;
@@ -72,16 +252,7 @@ class BluetoothService {
         if (devices.right && leftSuccess) {
             console.log('[BluetoothService] Performing heartbeat for right device:', devices.right);
             try {
-                const rightResponse = await CommunicationManager.sendCommandWithResponse(
-                    devices.right,
-                    heartbeatData,
-                    new Uint8Array([HEARTBEAT_CMD]),
-                    1500
-                );
-                rightSuccess = !!rightResponse &&
-                    rightResponse.length > 5 &&    
-                    rightResponse[0] === HEARTBEAT_CMD &&
-                    rightResponse[4] === 0x04;
+                rightSuccess = await CommunicationManager.sendHeartbeat(devices.right, seq);
                 console.log('[BluetoothService] Right heartbeat success:', rightSuccess);
             } catch (error) {
                 rightSuccess = false;
@@ -134,8 +305,8 @@ class BluetoothService {
         try {
             console.log(`[BluetoothService] Connecting to ${side === DeviceSide.LEFT ? 'left' : 'right'} device:`, address);
             
-            const device = await this.deviceManager.connectDevice(address);
-            this.deviceManager.setDevice(side, device);
+            const device = await this.connectToDevice(address);
+            this.setDevice(side, device);
             
             console.log(`[BluetoothService] ${side === DeviceSide.LEFT ? 'Left' : 'Right'} device connected successfully`);
             
@@ -150,7 +321,7 @@ class BluetoothService {
             this.connectionStateCallback?.(this.connectionState);
             
             // Initialize devices after connection
-            const initResult = await this.statusManager.initializeDevices(this.deviceManager.getDeviceInfo());
+            const initResult = await this.initializeDevices();
             if (!initResult) {
                 console.warn('[BluetoothService] Device initialization failed, but connection established');
             }
@@ -179,9 +350,9 @@ class BluetoothService {
 
     async disconnect(): Promise<void> {
         this.stopHeartbeat();
-        this.statusManager.stopBatteryMonitoring();
-        await this.deviceManager.disconnectAll();
-        this.statusManager.reset();
+        this.stopBatteryMonitoring();
+        await this.disconnectAll();
+        this.resetStatus();
         this.connectionState = { left: false, right: false };
         this.connectionStateCallback?.(this.connectionState);
     }
@@ -228,7 +399,7 @@ class BluetoothService {
             console.warn('[BluetoothService] No device available for battery query');
             return -1;
         }
-        return await this.statusManager.getBatteryInfo(targetDevice, side);
+        return await this.readBatteryInfo(targetDevice, side);
     }
 
     async getFirmwareInfo(side: DeviceSide = DeviceSide.LEFT): Promise<string | null> {
@@ -237,50 +408,38 @@ class BluetoothService {
             console.warn('[BluetoothService] No device available for firmware query');
             return null;
         }
-        return await this.statusManager.getFirmwareInfo(targetDevice, side);
+        return await this.readFirmwareInfo(targetDevice, side);
     }
 
     async getDeviceUptime(): Promise<number> {
-        const targetDevice = this.deviceManager.getDevice(DeviceSide.LEFT) || this.deviceManager.getDevice(DeviceSide.RIGHT);
+        const targetDevice = this.getDevice(DeviceSide.LEFT) || this.getDevice(DeviceSide.RIGHT);
         if (!targetDevice) {
             console.warn('[BluetoothService] No device available for uptime query');
             return -1;
         }
-        return await this.statusManager.getDeviceUptime(targetDevice);
+        return await this.readDeviceUptime(targetDevice);
     }
 
     private getTargetDevice(side: DeviceSide) {
-        return side === DeviceSide.LEFT ? this.deviceManager.getDevice(DeviceSide.LEFT) :
-               side === DeviceSide.RIGHT ? this.deviceManager.getDevice(DeviceSide.RIGHT) :
-               this.deviceManager.getDevice(DeviceSide.LEFT) || this.deviceManager.getDevice(DeviceSide.RIGHT);
-    }
-
-    getCurrentBatteryInfo(): BatteryInfo {
-        return this.statusManager.getCurrentBatteryInfo();
-    }
-
-    getCurrentFirmwareInfo(): { left: string | null; right: string | null } {
-        return this.statusManager.getCurrentFirmwareInfo();
-    }
-
-    getCurrentUptimeStatus(): number {
-        return this.statusManager.getCurrentUptimeStatus();
+        return side === DeviceSide.LEFT ? this.getDevice(DeviceSide.LEFT) :
+               side === DeviceSide.RIGHT ? this.getDevice(DeviceSide.RIGHT) :
+               this.getDevice(DeviceSide.LEFT) || this.getDevice(DeviceSide.RIGHT);
     }
 
     getDeviceStatus(): { left: DeviceStatus; right: DeviceStatus; } {
-        const batteryInfo = this.statusManager.getCurrentBatteryInfo();
-        const firmwareInfo = this.statusManager.getCurrentFirmwareInfo();
-        const uptime = this.statusManager.getCurrentUptimeStatus();
+        const batteryInfo = this.getCurrentBatteryInfo();
+        const firmwareInfo = this.getCurrentFirmwareInfo();
+        const uptime = this.getCurrentUptimeStatus();
 
         return {
             left: {
-                connected: this.deviceManager.isLeftConnected(),
+                connected: this.isLeftConnected(),
                 battery: batteryInfo.left,
                 uptime: uptime,
                 firmware: firmwareInfo.left
             },
             right: {
-                connected: this.deviceManager.isRightConnected(),
+                connected: this.isRightConnected(),
                 battery: batteryInfo.right,
                 uptime: uptime,
                 firmware: firmwareInfo.right
@@ -290,7 +449,7 @@ class BluetoothService {
 
     // Communication Methods
     async sendText(text: string): Promise<boolean> {
-        if (!this.deviceManager.isConnected()) {
+        if (!this.isConnected()) {
             throw new Error('No devices connected');
         }
 
@@ -299,20 +458,14 @@ class BluetoothService {
         );
 
         const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
-            for (const packet of packets) {
-                if (!await CommunicationManager.writeToDevice(device, packet, false)) {
-                    return false;
-                }
-                await Utils.sleep(5);
-            }
-            return true;
+            return await CommunicationManager.sendPacketsToDevice(device, packets, 5);
         });
 
         return results.every(Boolean);
     }
 
     async sendImage(base64ImageData: string): Promise<boolean> {
-        if (!this.deviceManager.isConnected()) {
+        if (!this.isConnected()) {
             throw new Error('No devices connected');
         }
 
@@ -338,13 +491,12 @@ class BluetoothService {
     }
 
     async exitToDashboard(): Promise<boolean> {
-        if (!this.deviceManager.isConnected()) {
+        if (!this.isConnected()) {
             throw new Error('No devices connected');
         }
 
-        const command = new Uint8Array([EXIT_CMD]);
         const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
-            return await CommunicationManager.writeToDevice(device, command, false);
+            return await CommunicationManager.sendExitCommand(device);
         });
         return results.every(Boolean);
     }
@@ -355,25 +507,13 @@ class BluetoothService {
     }
 
     // Battery Monitoring Methods
-    onBatteryUpdate(callback: (battery: BatteryInfo) => void): () => void {
-        return this.statusManager.onBatteryUpdate(callback);
-    }
-
     async refreshBatteryInfo(): Promise<void> {
-        await this.statusManager.updateBatteryInfo(this.deviceManager.getDeviceInfo());
-    }
-
-    startBatteryMonitoring(intervalMinutes: number = 5): void {
-        this.statusManager.startBatteryMonitoring(this.deviceManager.getDeviceInfo(), intervalMinutes);
-    }
-
-    stopBatteryMonitoring(): void {
-        this.statusManager.stopBatteryMonitoring();
+        await this.updateBatteryInfo(this.getDeviceInfo());
     }
 
     // Device Initialization
     async triggerDeviceInitialization(): Promise<boolean> {
-        return await this.statusManager.initializeDevices(this.deviceManager.getDeviceInfo());
+        return await this.initializeDevices();
     }
 
     // Paired Devices
@@ -425,7 +565,7 @@ class BluetoothService {
         side: DeviceSide, 
         operation: (device: any, deviceSide: DeviceSide.LEFT | DeviceSide.RIGHT) => Promise<T>
     ): Promise<T[]> {
-        const devices = this.deviceManager.getDevicesForSide(side);
+        const devices = this.getDevicesForSide(side);
         const results: T[] = [];
         
         for (const { device, side: deviceSide } of devices) {

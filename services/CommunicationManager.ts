@@ -1,6 +1,7 @@
 import { Buffer } from 'buffer';
 import { Device } from 'react-native-ble-plx';
 import {
+    BATTERY_CMD,
     BMP_CHUNK_SIZE,
     BMP_DATA_CMD,
     BMP_END_CMD,
@@ -13,11 +14,15 @@ import {
     DEFAULT_PAGE_NUM,
     DEFAULT_POS,
     ENABLE_TRANSFER_LOGGING,
-    EVENAI_CMD,
+    EXIT_CMD,
+    FIRMWARE_REQUEST_CMD,
+    HEARTBEAT_CMD,
     NEW_SCREEN_FLAG,
     PACKET_DELAY,
     READ_CHARACTERISTIC_UUID,
     SERVICE_UUID,
+    TEXT_COMMAND,
+    UPTIME_CMD,
     WRITE_CHARACTERISTIC_UUID
 } from './constants';
 import { Utils } from './utils';
@@ -28,9 +33,9 @@ export class CommunicationManager {
     /**
      * Write data to a specific device
      */
-    static async writeToDevice(
-        device: Device, 
-        data: Uint8Array, 
+    private static async writeToDevice(
+        device: Device,
+        data: Uint8Array,
         requireResponse: boolean = false
     ): Promise<boolean> {
         try {
@@ -69,10 +74,10 @@ export class CommunicationManager {
     /**
      * Send command with response and handle notifications
      */
-    static async sendCommandWithResponse(
+    private static async sendCommandWithResponse(
         device: Device,
-        requestBytes: Uint8Array, 
-        expectedHeader: Uint8Array, 
+        requestBytes: Uint8Array,
+        expectedHeader: Uint8Array,
         waitTimeMs: number = 250
     ): Promise<Uint8Array | null> {
         console.log(`[CommunicationManager] Command: ${Utils.arrayToHex(requestBytes)}, expecting header: ${Utils.arrayToHex(expectedHeader)}`);
@@ -147,6 +152,76 @@ export class CommunicationManager {
     }
 
     /**
+     * Request battery level from device
+     */
+    static async requestBatteryLevel(device: Device): Promise<number | null> {
+        const requestBytes = new Uint8Array([BATTERY_CMD, 0x01]);
+        const response = await this.sendCommandWithResponse(device, requestBytes, new Uint8Array([BATTERY_CMD]), 250);
+        if (response && response.length > 2) {
+            return response[2] & 0xff;
+        }
+        return null;
+    }
+
+    /**
+     * Request firmware information from device
+     */
+    static async requestFirmwareInfo(device: Device): Promise<string | null> {
+        const response = await this.sendCommandWithResponse(device, new Uint8Array(FIRMWARE_REQUEST_CMD), new Uint8Array([]), 500);
+        if (response && response.length > 0) {
+            try {
+                return new TextDecoder('utf-8').decode(response).trim();
+            } catch {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Request device uptime
+     */
+    static async requestUptime(device: Device): Promise<number | null> {
+        const response = await this.sendCommandWithResponse(device, new Uint8Array([UPTIME_CMD]), new Uint8Array([UPTIME_CMD]), 250);
+        if (response && response.length >= 4) {
+            return (response[1] | (response[2] << 8) | (response[3] << 16));
+        }
+        return null;
+    }
+
+    /**
+     * Send firmware request command
+     */
+    static async sendFirmwareRequest(device: Device): Promise<boolean> {
+        const firmwareCmd = new Uint8Array(FIRMWARE_REQUEST_CMD);
+        return await this.writeToDevice(device, firmwareCmd, false);
+    }
+
+    /**
+     * Send exit command
+     */
+    static async sendExitCommand(device: Device): Promise<boolean> {
+        const command = new Uint8Array([EXIT_CMD]);
+        return await this.writeToDevice(device, command, false);
+    }
+
+    /**
+     * Send heartbeat and verify response
+     */
+    static async sendHeartbeat(device: Device, seq: number): Promise<boolean> {
+        const heartbeatData = new Uint8Array([
+            HEARTBEAT_CMD,
+            6,
+            0,
+            seq & 0xff,
+            0x04,
+            seq & 0xff
+        ]);
+        const response = await this.sendCommandWithResponse(device, heartbeatData, new Uint8Array([HEARTBEAT_CMD]), 1500);
+        return !!response && response.length > 5 && response[0] === HEARTBEAT_CMD && response[4] === 0x04;
+    }
+
+    /**
      * Create text packets for transmission
      */
     static createTextPackets(text: string): Uint8Array[] {
@@ -162,7 +237,7 @@ export class CommunicationManager {
             const chunk = data.slice(start, end);
 
             const header = [
-                EVENAI_CMD,
+                TEXT_COMMAND,
                 syncSeq,
                 totalPackets,
                 i,

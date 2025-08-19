@@ -4,7 +4,7 @@ export const WRITE_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
 export const READ_CHARACTERISTIC_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
 // Protocol Commands
-export const EVENAI_CMD = 0x4E;
+export const TEXT_COMMAND = 0x4E;
 export const EXIT_CMD = 0x18;
 export const HEARTBEAT_CMD = 0x25;
 export const BMP_DATA_CMD = 0x15;
