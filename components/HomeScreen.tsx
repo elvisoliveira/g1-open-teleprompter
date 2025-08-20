@@ -1,10 +1,9 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
+import { ButtonStyles, CardStyles, ContainerStyles } from '../styles/CommonStyles';
 import { MaterialColors, MaterialElevation, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 import { OutputMode } from '../types/OutputMode';
-import OutputModeSelector from './OutputModeSelector';
 import TextInputField from './TextInputField';
 
 interface HomeScreenProps {
@@ -13,7 +12,7 @@ interface HomeScreenProps {
     outputMode: OutputMode;
     onOutputModeChange: (mode: OutputMode) => void;
     onSend: () => void;
-    onExitToDashboard: () => void;
+    onExit: () => void;
     leftConnected: boolean;
     rightConnected: boolean;
     isSending?: boolean;
@@ -25,7 +24,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     outputMode,
     onOutputModeChange,
     onSend,
-    onExitToDashboard,
+    onExit,
     leftConnected,
     rightConnected,
     isSending = false
@@ -53,18 +52,116 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
     const getSendButtonText = () => {
         if (isSending) return 'Sending...';
-        if (bothConnected) return 'Send to Both Devices';
-        if (leftConnected) return 'Send to Left Device';
-        if (rightConnected) return 'Send to Right Device';
+
+        if (bothConnected) return `Send`;
+        if (leftConnected) return `Send to Left`;
+        if (rightConnected) return `Send to Right`;
+
         return 'No Devices Connected';
+    };
+
+    // Output Mode Selector (integrated)
+    const renderOutputModeSelector = () => {
+        const modes: { value: OutputMode; label: string; description: string }[] = [
+            {
+                value: 'text',
+                label: 'Text Mode',
+                description: 'Send text directly to glasses'
+            },
+            {
+                value: 'image',
+                label: 'Image Mode',
+                description: 'Convert text to 1-bit bitmap (576×136px)'
+            },
+            {
+                value: 'official',
+                label: 'Official Teleprompter',
+                description: 'Use the official teleprompter protocol (0x09)'
+            },
+        ];
+
+        return (
+            <View style={ContainerStyles.section}>
+                <Text style={[
+                    MaterialTypography.titleLarge,
+                    { color: MaterialColors.onSurface, marginBottom: MaterialSpacing.md }
+                ]}>
+                    Output Mode
+                </Text>
+                <View style={[ContainerStyles.column, { gap: MaterialSpacing.sm }]}>
+                    {modes.map((mode) => (
+                        <TouchableOpacity
+                            key={mode.value}
+                            style={[
+                                CardStyles.cardOutlined,
+                                { padding: MaterialSpacing.lg, marginVertical: 0 },
+                                outputMode === mode.value && {
+                                    backgroundColor: MaterialColors.primaryContainer,
+                                    borderColor: MaterialColors.primary,
+                                    borderWidth: 2,
+                                }
+                            ]}
+                            onPress={() => onOutputModeChange(mode.value)}
+                            accessibilityRole="radio"
+                            accessibilityState={{ checked: outputMode === mode.value }}
+                        >
+                            <View style={[ContainerStyles.row, { alignItems: 'center' }]}>
+                                <View style={[
+                                    {
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        borderWidth: 2,
+                                        borderColor: MaterialColors.outline,
+                                        backgroundColor: MaterialColors.surface,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginRight: MaterialSpacing.md,
+                                    },
+                                    outputMode === mode.value && {
+                                        borderColor: MaterialColors.primary,
+                                    }
+                                ]}>
+                                    {outputMode === mode.value && (
+                                        <View style={{
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: 5,
+                                            backgroundColor: MaterialColors.primary,
+                                        }} />
+                                    )}
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={[
+                                        MaterialTypography.bodyLarge,
+                                        { fontWeight: '500', marginBottom: MaterialSpacing.xs },
+                                        outputMode === mode.value 
+                                            ? { color: MaterialColors.primary }
+                                            : { color: MaterialColors.onSurface }
+                                    ]}>
+                                        {mode.label}
+                                    </Text>
+                                    <Text style={[
+                                        MaterialTypography.bodyMedium,
+                                        { lineHeight: 20 },
+                                        outputMode === mode.value 
+                                            ? { color: MaterialColors.onSurface }
+                                            : { color: MaterialColors.onSurfaceVariant }
+                                    ]}>
+                                        {mode.description}
+                                    </Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+        );
     };
 
     return (
         <View style={[ContainerStyles.screen, ContainerStyles.content]}>
-            <OutputModeSelector
-                selectedMode={outputMode}
-                onModeChange={onOutputModeChange}
-            />
+            {renderOutputModeSelector()}
 
             <TextInputField
                 label="Your Message"
@@ -74,60 +171,71 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                 onInsertLoremIpsum={insertRandomLoremIpsum}
             />
 
-            {/* Send Button */}
-            <TouchableOpacity
-                style={[
-                    {
-                        ...ButtonStyles.primaryButton,
-                        elevation: MaterialElevation.level1,
-                        shadowColor: MaterialColors.primary,
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 4,
-                        marginVertical: MaterialSpacing.lg,
-                    },
-                    !canSend && {
-                        ...ButtonStyles.primaryButtonDisabled,
-                        elevation: 0,
-                        shadowOpacity: 0,
-                    }
-                ]}
-                onPress={onSend}
-                disabled={!canSend}
-                activeOpacity={0.8}
-            >
-                <MaterialIcons 
-                    name="send" 
-                    size={20} 
-                    color={canSend ? MaterialColors.onPrimary : MaterialColors.onSurfaceVariant} 
-                />
-                <Text style={[
-                    {
-                        ...ButtonStyles.primaryButtonText,
-                        ...MaterialTypography.labelLarge,
-                    },
-                    !canSend && ButtonStyles.primaryButtonTextDisabled
-                ]}>
-                    {getSendButtonText()}
-                </Text>
-            </TouchableOpacity>
+            {/* Send and Exit Buttons Row */}
+            <View style={[ContainerStyles.row, { gap: MaterialSpacing.md, marginVertical: MaterialSpacing.lg }]}>
+                {/* Send Button */}
+                <TouchableOpacity
+                    style={[
+                        {
+                            ...ButtonStyles.primaryButton,
+                            elevation: MaterialElevation.level1,
+                            shadowColor: MaterialColors.primary,
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 4,
+                            flex: 1
+                        },
+                        !canSend && {
+                            ...ButtonStyles.primaryButtonDisabled,
+                            elevation: 0,
+                            shadowOpacity: 0,
+                        }
+                    ]}
+                    onPress={onSend}
+                    disabled={!canSend}
+                    activeOpacity={0.8}
+                >
+                    <MaterialIcons 
+                        name="send" 
+                        size={20} 
+                        color={canSend ? MaterialColors.onPrimary : MaterialColors.onSurfaceVariant} 
+                    />
+                    <Text style={[
+                        {
+                            ...ButtonStyles.primaryButtonText,
+                            ...MaterialTypography.labelLarge,
+                        },
+                        !canSend && ButtonStyles.primaryButtonTextDisabled
+                    ]}>
+                        {getSendButtonText()}
+                    </Text>
+                </TouchableOpacity>
 
-            {/* Exit to Dashboard Button */}
-            <TouchableOpacity
-                onPress={onExitToDashboard}
-                style={[ButtonStyles.secondaryButton, {
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: MaterialSpacing.sm,
-                }]}
-                activeOpacity={0.8}
-            >
-                <MaterialIcons name="dashboard" size={18} color={MaterialColors.onSurface} />
-                <Text style={[ButtonStyles.secondaryButtonText, MaterialTypography.labelMedium]}>
-                    Exit to Dashboard
-                </Text>
-            </TouchableOpacity>
+                {/* Exit Button */}
+                <TouchableOpacity
+                    onPress={onExit}
+                    style={[
+                        ButtonStyles.secondaryButton, 
+                        { 
+                            flex: 1, // Takes up less space
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: MaterialSpacing.sm,
+                        }
+                    ]}
+                    activeOpacity={0.8}
+                >
+                    <MaterialIcons 
+                        name={outputMode === 'official' ? 'stop' : 'dashboard'} 
+                        size={18} 
+                        color={MaterialColors.onSurface} 
+                    />
+                    <Text style={[ButtonStyles.secondaryButtonText, MaterialTypography.labelMedium]}>
+                        {outputMode === 'official' ? 'Stop' : 'Exit'}
+                    </Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 };

@@ -24,7 +24,7 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
     onInsertLoremIpsum
 }) => {
     return (
-        <View style={styles.container}>
+        <>
             <View style={styles.headerRow}>
                 <Text style={styles.title}>{label}</Text>
                 {onInsertLoremIpsum && (
@@ -47,7 +47,7 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
                 numberOfLines={numberOfLines}
                 placeholderTextColor={MaterialColors.onSurfaceVariant}
             />
-        </View>
+        </>
     );
 };
 

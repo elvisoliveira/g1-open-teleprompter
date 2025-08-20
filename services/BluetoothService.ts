@@ -490,7 +490,107 @@ class BluetoothService {
         }
     }
 
-    async exitToDashboard(): Promise<boolean> {
+    // Official Teleprompter Methods
+    private teleprompterSeq: number = 0;
+
+    /**
+     * Send text using the official teleprompter protocol (0x09)
+     * @param text The text to send
+     * @param options Configuration options for the teleprompter
+     * @returns Promise<boolean> indicating success
+     */
+    async sendOfficialTeleprompter(
+        text: string, 
+        options: {
+            showNext?: boolean;
+            startDelaySeconds?: number;
+            manual?: boolean;
+        } = {}
+    ): Promise<boolean> {
+        if (!this.isConnected()) {
+            throw new Error('No devices connected');
+        }
+
+        const {
+            showNext = false,
+            startDelaySeconds = 0, // No delay for stopwatch start
+            manual = false
+        } = options;
+
+        try {
+            // Split text into visible and next parts if needed
+            const textParts = this.splitTextForTeleprompter(text, showNext);
+
+            console.log('[BluetoothService] Text parts:', textParts);
+            console.log('[BluetoothService] Teleprompter sequence:', this.teleprompterSeq);
+            console.log('[BluetoothService] Show next:', showNext);
+            console.log('[BluetoothService] Start delay:', startDelaySeconds);
+            console.log('[BluetoothService] Manual:', manual);
+
+            // Build teleprompter packets using CommunicationManager
+            const packets = CommunicationManager.buildTeleprompterPackets(
+                textParts.visible,
+                textParts.next,
+                startDelaySeconds,
+                manual,
+                this.teleprompterSeq
+            );
+
+            // Send to all connected devices
+            const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
+                return await CommunicationManager.sendTeleprompterPackets(device, packets);
+            });
+
+            // Increment sequence for next use
+            this.teleprompterSeq = (this.teleprompterSeq + packets.length) & 0xFF;
+
+            return results.every(Boolean);
+        } catch (error) {
+            console.error('[BluetoothService] Error sending official teleprompter:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Exit the official teleprompter mode
+     * @returns Promise<boolean> indicating success
+     */
+    async exitOfficialTeleprompter(): Promise<boolean> {
+        if (!this.isConnected()) {
+            throw new Error('No devices connected');
+        }
+
+        try {
+            const endPacket = CommunicationManager.buildTeleprompterEndPacket(this.teleprompterSeq);
+            
+            const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
+                return await CommunicationManager.sendTeleprompterEndPacket(device, endPacket);
+            });
+
+            return results.every(Boolean);
+        } catch (error) {
+            console.error('[BluetoothService] Error exiting official teleprompter:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Split text into visible and next parts for teleprompter
+     */
+    private splitTextForTeleprompter(text: string, showNext: boolean): { visible: string; next: string } {
+        if (!showNext) {
+            return { visible: text, next: '' };
+        }
+
+        // Simple split: first 2/3 visible, last 1/3 as next
+        const splitIndex = Math.floor(text.length * 0.50);
+        return {
+            visible: text.substring(0, splitIndex),
+            next: text.substring(splitIndex)
+        };
+    }
+
+    async exit(): Promise<boolean> {
         if (!this.isConnected()) {
             throw new Error('No devices connected');
         }

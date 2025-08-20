@@ -356,16 +356,10 @@ export class BitmapGenerator {
     }
 
     /**
-     * Gets the bitmap dimensions
-     */
-    getDimensions(): BitmapDimensions {
-        return { ...this.dimensions };
-    }
-
-    /**
      * Validates if the generated BMP has the correct format
      */
     validateBmpFormat(bmpBuffer: Buffer): boolean {
+        const { width, height } = this.dimensions;
         try {
             // Quick signature check
             if (bmpBuffer.length < 2 || bmpBuffer.toString('ascii', 0, 2) !== 'BM') {
@@ -378,11 +372,11 @@ export class BitmapGenerator {
                 return false;
             }
             
-            // Quick dimensions check - G1 expects 576 width, height 135 or 136
-            const width = bmpBuffer.readInt32LE(18);
-            const height = Math.abs(bmpBuffer.readInt32LE(22));
-            
-            return width === 576 && (height === 135 || height === 136);
+            const bmpWidth = bmpBuffer.readInt32LE(18);
+            const bmpHeight = Math.abs(bmpBuffer.readInt32LE(22));
+
+            // Quick dimensions check
+            return bmpWidth === width && bmpHeight === height;
         } catch (error) {
             return false;
         }

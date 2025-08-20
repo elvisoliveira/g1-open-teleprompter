@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
+import { OutputMode } from '../types/OutputMode';
 import SlidesScreen from './SlidesScreen';
 
 interface Slide {
@@ -22,9 +23,10 @@ interface Presentation {
 const STORAGE_KEY = 'presentations_data';
 
 interface PresentationsScreenProps {
+    outputMode: OutputMode;
 }
 
-const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
+const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ outputMode }) => {
     const [presentations, setPresentations] = useState<Presentation[]>([]);
     const [selectedPresentation, setSelectedPresentation] = useState<Presentation | null>(null);
     const [newPresentationName, setNewPresentationName] = useState('');
@@ -312,6 +314,7 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = () => {
                 presentation={selectedPresentation}
                 onGoBack={() => setSelectedPresentation(null)}
                 onUpdatePresentation={handleUpdatePresentation}
+                outputMode={outputMode}
             />
         );
     }

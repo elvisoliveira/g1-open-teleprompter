@@ -5,6 +5,7 @@ import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-
 import BluetoothService from '../services/BluetoothService';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles, InputStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
+import { OutputMode } from '../types/OutputMode';
 
 interface Slide {
     id: string;
@@ -21,12 +22,14 @@ interface SlidesScreenProps {
     presentation: Presentation;
     onGoBack: () => void;
     onUpdatePresentation: (updatedPresentation: Presentation) => void;
+    outputMode: OutputMode;
 }
 
 const SlidesScreen: React.FC<SlidesScreenProps> = ({
     presentation,
     onGoBack,
-    onUpdatePresentation
+    onUpdatePresentation,
+    outputMode
 }) => {
     const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
@@ -225,11 +228,35 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         if (newPresentingSlideId) {
             const slide = presentation.slides.find(s => s.id === slideId);
             if (slide) {
-                // Send the slide text to the glasses
+                // Send the slide text to the glasses based on output mode
                 try {
-                    await BluetoothService.sendText(slide.text);
+                    switch (outputMode) {
+                        case 'text':
+                            await BluetoothService.sendText(slide.text);
+                            break;
+                        case 'image':
+                            // Convert text to bitmap and send
+                            const { defaultBitmapGenerator } = await import('../services/BitmapGenerator');
+                            const bmpBuffer = await defaultBitmapGenerator.textToBitmap(slide.text);
+                            if (!defaultBitmapGenerator.validateBmpFormat(bmpBuffer)) {
+                                throw new Error('Generated BMP format is invalid');
+                            }
+                            const base64Image = defaultBitmapGenerator.bufferToBase64(bmpBuffer);
+                            await BluetoothService.sendImage(base64Image);
+                            break;
+                        case 'official':
+                            // Send using official teleprompter protocol
+                            await BluetoothService.sendOfficialTeleprompter(slide.text, {
+                                showNext: true,
+                                manual: false
+                            });
+                            break;
+                        default:
+                            await BluetoothService.sendText(slide.text);
+                            break;
+                    }
                 } catch (error) {
-                    console.error('Failed to send slide text to glasses:', error);
+                    console.error('Failed to send slide to glasses:', error);
                     // Continue with presentation mode even if sending fails
                 }
             }
@@ -245,11 +272,15 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 }, 50); // Small delay to ensure state update has processed
             }
         } else {
-            // We're stopping presentation, call exitToDashboard
+            // We're stopping presentation, call appropriate exit method based on output mode
             try {
-                await BluetoothService.exitToDashboard();
+                if (outputMode === 'official') {
+                    await BluetoothService.exitOfficialTeleprompter();
+                } else {
+                    await BluetoothService.exit();
+                }
             } catch (error) {
-                console.error('Failed to exit dashboard when stopping presentation:', error);
+                console.error('Failed to exit when stopping presentation:', error);
             }
         }
     };
@@ -259,21 +290,31 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         return () => {
             // Component is unmounting, stop any active presentation
             if (presentingSlideRef.current) {
-                BluetoothService.exitToDashboard().catch((error: any) => {
-                    console.error('Failed to exit dashboard on component unmount:', error);
-                });
+                if (outputMode === 'official') {
+                    BluetoothService.exitOfficialTeleprompter().catch((error: any) => {
+                        console.error('Failed to exit official teleprompter on component unmount:', error);
+                    });
+                } else {
+                    BluetoothService.exit().catch((error: any) => {
+                        console.error('Failed to exit on component unmount:', error);
+                    });
+                }
             }
         };
-    }, []); // Empty dependency array - only run on mount/unmount
+    }, [outputMode]); // Include outputMode in dependencies
 
     // Handle going back with active presentation cleanup
     const handleGoBack = async () => {
         if (presentingSlideId) {
             try {
-                await BluetoothService.exitToDashboard();
+                if (outputMode === 'official') {
+                    await BluetoothService.exitOfficialTeleprompter();
+                } else {
+                    await BluetoothService.exit();
+                }
                 presentingSlideRef.current = null; // Clear ref since we manually stopped
             } catch (error) {
-                console.error('Failed to exit dashboard on going back:', error);
+                console.error('Failed to exit on going back:', error);
             }
         }
         onGoBack();
@@ -575,7 +616,11 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                         <View style={{ flex: 2 }}>
                             <TouchableOpacity
                                 onPress={async () => {
-                                    await BluetoothService.exitToDashboard();
+                                    if (outputMode === 'official') {
+                                        await BluetoothService.exitOfficialTeleprompter();
+                                    } else {
+                                        await BluetoothService.exit();
+                                    }
                                     setPresentingSlideId(null);
                                     presentingSlideRef.current = null; // Clear ref since we manually stopped
                                 }}

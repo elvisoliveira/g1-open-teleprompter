@@ -21,6 +21,16 @@ import {
     PACKET_DELAY,
     READ_CHARACTERISTIC_UUID,
     SERVICE_UUID,
+    TELEPROMPTER_CMD,
+    TELEPROMPTER_END_CMD,
+    TELEPROMPTER_FINISH,
+    TELEPROMPTER_FLAGS_MANUAL,
+    TELEPROMPTER_FLAGS_NORMAL,
+    TELEPROMPTER_NEW_SCREEN_MANUAL,
+    TELEPROMPTER_NEW_SCREEN_NORMAL,
+    TELEPROMPTER_PACKET_DELAY,
+    TELEPROMPTER_RESERVED,
+    TELEPROMPTER_SUBCMD,
     TEXT_COMMAND,
     UPTIME_CMD,
     WRITE_CHARACTERISTIC_UUID
@@ -405,5 +415,166 @@ export class CommunicationManager {
         combinedData.set(bmpData, BMP_STORAGE_ADDRESS.length);
         
         return this.computeCrc32(combinedData);
+    }
+
+    // Teleprompter Methods
+    /**
+     * Send teleprompter packets to a device
+     */
+    static async sendTeleprompterPackets(device: Device, packets: Uint8Array[]): Promise<boolean> {
+        try {
+            for (const packet of packets) {
+                if (!await this.writeToDevice(device, packet, false)) {
+                    console.error('[CommunicationManager] Failed to send teleprompter packet');
+                    return false;
+                }
+                // Small delay between packets to ensure proper transmission
+                if (packets.length > 1) {
+                    await Utils.sleep(TELEPROMPTER_PACKET_DELAY);
+                }
+            }
+            return true;
+        } catch (error) {
+            console.error('[CommunicationManager] Failed to send teleprompter packets:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Send teleprompter end packet to a device
+     */
+    static async sendTeleprompterEndPacket(device: Device, endPacket: Uint8Array): Promise<boolean> {
+        try {
+            return await this.writeToDevice(device, endPacket, false);
+        } catch (error) {
+            console.error('[CommunicationManager] Failed to send teleprompter end packet:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Build a single teleprompter value packet
+     */
+    static buildTeleprompterValue(params: {
+        seq: number;
+        newScreen: number;
+        numPackets: number;
+        partIdx: number;
+        startDelaySeconds: number;
+        flags: number;
+        payload: Uint8Array;
+    }): Uint8Array {
+        const { seq, newScreen, numPackets, partIdx, startDelaySeconds, flags, payload } = params;
+
+        // Build control array (10 bytes)
+        const control = new Uint8Array([
+            TELEPROMPTER_RESERVED,           // reserved0
+            seq & 0xFF,                      // seq
+            newScreen & 0xFF,                // newScreen
+            numPackets & 0xFF,               // numPackets
+            TELEPROMPTER_RESERVED,           // reserved1
+            partIdx & 0xFF,                  // partIdx
+            TELEPROMPTER_RESERVED,           // reserved2
+            startDelaySeconds & 0xFF,        // startDelaySeconds (stopwatch delay)
+            flags & 0xFF,                    // flags
+            TELEPROMPTER_RESERVED            // reserved3
+        ]);
+
+        // Calculate total length
+        const len = 12 + payload.length; // cmd(1) + len(1) + control(10) + payload
+        if (len > 255) {
+            throw new Error(`Teleprompter value too large: ${len} > 255 bytes`);
+        }
+
+        // Build the complete packet
+        const packet = new Uint8Array(2 + control.length + payload.length);
+        packet[0] = TELEPROMPTER_CMD;        // Cmd.Teleprompter
+        packet[1] = len;                     // total length
+        packet.set(control, 2);              // control array
+        packet.set(payload, 12);             // payload
+
+        return packet;
+    }
+
+    /**
+     * Build teleprompter packets for visible and next text
+     */
+    static buildTeleprompterPackets(
+        visibleText: string,
+        nextText: string,
+        startDelaySeconds: number,
+        manual: boolean,
+        sequence: number
+    ): Uint8Array[] {
+        const packets: Uint8Array[] = [];
+        const mode = manual ? TELEPROMPTER_NEW_SCREEN_MANUAL : TELEPROMPTER_NEW_SCREEN_NORMAL;
+        const flags = manual ? TELEPROMPTER_FLAGS_MANUAL : TELEPROMPTER_FLAGS_NORMAL;
+        const numPackets = nextText ? 2 : 1;
+
+        // Build visible text packet (part 1)
+        const visiblePayload = this.formatTeleprompterPayload(visibleText);
+        packets.push(this.buildTeleprompterValue({
+            seq: sequence,
+            newScreen: mode,
+            numPackets,
+            partIdx: 1,
+            startDelaySeconds,
+            flags,
+            payload: visiblePayload
+        }));
+
+        // Build next text packet (part 2) if needed
+        if (nextText) {
+            const nextSequence = (sequence + 1) & 0xFF;
+            const nextPayload = this.formatTeleprompterPayload(nextText);
+            packets.push(this.buildTeleprompterValue({
+                seq: nextSequence,
+                newScreen: mode,
+                numPackets: 2,
+                partIdx: 2,
+                startDelaySeconds,
+                flags,
+                payload: nextPayload
+            }));
+        }
+
+        return packets;
+    }
+
+    /**
+     * Build the end packet for teleprompter
+     */
+    static buildTeleprompterEndPacket(sequence: number): Uint8Array {
+        // Tiny "end" control packet: [0x09, 0x06, 0x00, seq, 0x05, 0x01]
+        return new Uint8Array([
+            TELEPROMPTER_CMD,                // Cmd.Teleprompter
+            TELEPROMPTER_END_CMD,            // cmd = End
+            TELEPROMPTER_RESERVED,           // reserved
+            sequence & 0xFF,                 // current seq (don't increment)
+            TELEPROMPTER_SUBCMD,             // subCmd
+            TELEPROMPTER_FINISH              // finish
+        ]);
+    }
+
+    /**
+     * Format text payload for teleprompter with common formatting
+     */
+    static formatTeleprompterPayload(
+        text: string, 
+        leftPadSpaces: number = 0
+    ): Uint8Array {
+        const parts: number[] = [];
+        
+        // Add left padding spaces
+        for (let i = 0; i < leftPadSpaces; i++) {
+            parts.push(0x20);
+        }
+        
+        // Add text as UTF-8 bytes
+        const textEncoder = new TextEncoder();
+        const textBytes = textEncoder.encode(text);
+        parts.push(...textBytes);
+        
+        return new Uint8Array(parts);
     }
 } 

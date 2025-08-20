@@ -85,7 +85,7 @@ const TeleprompterApp: React.FC = () => {
 
             if (outputMode === 'text') {
                 success = await BluetoothService.sendText(messageText);
-            } else {
+            } else if (outputMode === 'image') {
                 try {
                     const bmpBuffer = await defaultBitmapGenerator.textToBitmap(messageText);
 
@@ -100,34 +100,62 @@ const TeleprompterApp: React.FC = () => {
                     Alert.alert('Error', 'Failed to generate image from text');
                     return;
                 }
+            } else if (outputMode === 'official') {
+                success = await BluetoothService.sendOfficialTeleprompter(messageText, {
+                    showNext: true,
+                    manual: false
+                });
             }
 
             if (success) {
                 setInputText('');
 
                 // Show success message with mode info
-                const modeText = outputMode === 'text' ? 'text' : 'image (BMP)';
+                let modeText = '';
+                if (outputMode === 'text') modeText = 'text';
+                else if (outputMode === 'image') modeText = 'image (BMP)';
+                else if (outputMode === 'official') modeText = 'official teleprompter';
+                
                 console.log(`Successfully sent ${modeText} to glasses`);
             } else {
-                Alert.alert('Error', `Failed to send ${outputMode === 'text' ? 'message' : 'image'}`);
+                let modeText = '';
+                if (outputMode === 'text') modeText = 'message';
+                else if (outputMode === 'image') modeText = 'image';
+                else if (outputMode === 'official') modeText = 'official teleprompter';
+                
+                Alert.alert('Error', `Failed to send ${modeText}`);
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            Alert.alert('Error', `Failed to send ${outputMode === 'text' ? 'message' : 'image'}`);
+            let modeText = '';
+            if (outputMode === 'text') modeText = 'message';
+            else if (outputMode === 'image') modeText = 'image';
+            else if (outputMode === 'official') modeText = 'official teleprompter';
+            
+            Alert.alert('Error', `Failed to send ${modeText}`);
         } finally {
             setIsSending(false);
         }
     };
 
-    const handleExitToDashboard = async () => {
+    const handleExit = async () => {
         try {
-            const success = await BluetoothService.exitToDashboard();
+            let success = false;
+            
+            if (outputMode === 'official') {
+                success = await BluetoothService.exitOfficialTeleprompter();
+            } else {
+                success = await BluetoothService.exit();
+            }
+            
             if (!success) {
-                Alert.alert('Error', 'Failed to exit to dashboard');
+                const modeText = outputMode === 'official' ? 'official teleprompter' : 'dashboard';
+                Alert.alert('Error', `Failed to exit ${modeText}`);
             }
         } catch (error) {
-            console.error('Error exiting to dashboard:', error);
-            Alert.alert('Error', 'Failed to exit to dashboard');
+            console.error('Error exiting:', error);
+            const modeText = outputMode === 'official' ? 'official teleprompter' : 'dashboard';
+            Alert.alert('Error', `Failed to exit ${modeText}`);
         }
     };
 
@@ -173,7 +201,7 @@ const TeleprompterApp: React.FC = () => {
                             outputMode={outputMode}
                             onOutputModeChange={setOutputMode}
                             onSend={handleSendMessage}
-                            onExitToDashboard={handleExitToDashboard}
+                            onExit={handleExit}
                             leftConnected={leftConnected}
                             rightConnected={rightConnected}
                             isSending={isSending}
@@ -191,7 +219,7 @@ const TeleprompterApp: React.FC = () => {
                     );
 
                 case 'presentations':
-                    return <PresentationsScreen />;
+                    return <PresentationsScreen outputMode={outputMode} />;
 
                 case 'reconnection':
                     return (
