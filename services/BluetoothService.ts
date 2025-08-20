@@ -282,12 +282,12 @@ class BluetoothService {
     private startHeartbeat(): void {
         console.log('[BluetoothService] Starting heartbeat...');
         this.stopHeartbeat();
-        
+
         this.heartbeatInterval = setInterval(async () => {
             console.log('[BluetoothService] Heartbeat interval triggered');
             await this.performHeartbeat();
         }, HEARTBEAT_INTERVAL_MS);
-        
+
         // Perform initial heartbeat
         console.log('[BluetoothService] Performing initial heartbeat...');
         this.performHeartbeat();
@@ -304,28 +304,28 @@ class BluetoothService {
     private async connectDevice(address: string, side: DeviceSide.LEFT | DeviceSide.RIGHT): Promise<void> {
         try {
             console.log(`[BluetoothService] Connecting to ${side === DeviceSide.LEFT ? 'left' : 'right'} device:`, address);
-            
+
             const device = await this.connectToDevice(address);
             this.setDevice(side, device);
-            
+
             console.log(`[BluetoothService] ${side === DeviceSide.LEFT ? 'Left' : 'Right'} device connected successfully`);
-            
+
             // Update connection state immediately for UI responsiveness
             if (side === DeviceSide.LEFT) {
                 this.connectionState.left = true;
             } else {
                 this.connectionState.right = true;
             }
-            
+
             // Notify UI of connection state change
             this.connectionStateCallback?.(this.connectionState);
-            
+
             // Initialize devices after connection
             const initResult = await this.initializeDevices();
             if (!initResult) {
                 console.warn('[BluetoothService] Device initialization failed, but connection established');
             }
-            
+
             // Start heartbeat if this is the first device connected
             if (!this.isConnected() || (side === DeviceSide.LEFT && !this.isRightConnected()) || (side === DeviceSide.RIGHT && !this.isLeftConnected())) {
                 this.startHeartbeat();
@@ -375,16 +375,16 @@ class BluetoothService {
         return { ...this.connectionState };
     }
 
-        // Subscribe to connection state changes
+    // Subscribe to connection state changes
     onConnectionStateChange(callback: (state: { left: boolean; right: boolean }) => void): () => void {
         console.log('[BluetoothService] onConnectionStateChange called with callback');
         // Call immediately with current state
         callback(this.connectionState);
-        
+
         // Set the callback
         this.connectionStateCallback = callback;
         console.log('[BluetoothService] Callback set, current state:', this.connectionState);
-        
+
         // Return unsubscribe function
         return () => {
             console.log('[BluetoothService] Unsubscribing from connection state changes');
@@ -422,8 +422,8 @@ class BluetoothService {
 
     private getTargetDevice(side: DeviceSide) {
         return side === DeviceSide.LEFT ? this.getDevice(DeviceSide.LEFT) :
-               side === DeviceSide.RIGHT ? this.getDevice(DeviceSide.RIGHT) :
-               this.getDevice(DeviceSide.LEFT) || this.getDevice(DeviceSide.RIGHT);
+            side === DeviceSide.RIGHT ? this.getDevice(DeviceSide.RIGHT) :
+                this.getDevice(DeviceSide.LEFT) || this.getDevice(DeviceSide.RIGHT);
     }
 
     getDeviceStatus(): { left: DeviceStatus; right: DeviceStatus; } {
@@ -475,15 +475,15 @@ class BluetoothService {
 
             const results = await this.executeForDevices(DeviceSide.BOTH, async (device, deviceSide) => {
                 return await CommunicationManager.sendBmpToDevice(device, bmpData, packets);
-            });
-            
+            }, true);
+
             if (results.some(result => !result)) {
                 console.error('[BluetoothService] One or more BMP transfers failed');
                 return false;
             }
 
             return true;
-            
+
         } catch (error) {
             console.error('[BluetoothService] Error sending BMP image:', error);
             return false;
@@ -530,7 +530,7 @@ class BluetoothService {
                 console.error('[BluetoothService] BluetoothAdapter native module not available');
                 return [];
             }
-            
+
             if (!BluetoothAdapter.getPairedDevices) {
                 console.error('[BluetoothService] BluetoothAdapter.getPairedDevices method not available');
                 return [];
@@ -538,7 +538,7 @@ class BluetoothService {
 
             const pairedDevices = await BluetoothAdapter.getPairedDevices();
             console.log('[BluetoothService] Raw paired devices from native module:', pairedDevices);
-            
+
             const bondedDevices = pairedDevices.map((device: { name: string; address: string; connected?: boolean }) => ({
                 id: device.address,
                 name: device.name || null,
@@ -548,7 +548,7 @@ class BluetoothService {
             if (showAllDevices) {
                 return bondedDevices;
             } else {
-                const filteredDevices = bondedDevices.filter((device: { id: string; name: string | null; isConnected: boolean }) => 
+                const filteredDevices = bondedDevices.filter((device: { id: string; name: string | null; isConnected: boolean }) =>
                     device.name && device.name.startsWith("Even G1")
                 );
                 console.log('[BluetoothService] Filtered Even G1 devices:', filteredDevices);
@@ -562,24 +562,34 @@ class BluetoothService {
 
     // Helper Methods
     private async executeForDevices<T>(
-        side: DeviceSide, 
-        operation: (device: any, deviceSide: DeviceSide.LEFT | DeviceSide.RIGHT) => Promise<T>
+        side: DeviceSide,
+        operation: (device: any, deviceSide: DeviceSide.LEFT | DeviceSide.RIGHT) => Promise<T>,
+        parallel: boolean = false
     ): Promise<T[]> {
-        const devices = this.getDevicesForSide(side);
-        const results: T[] = [];
-        
-        for (const { device, side: deviceSide } of devices) {
-            if (device) {
-                try {
-                    const result = await operation(device, deviceSide);
-                    results.push(result);
-                } catch (error) {
-                    console.error(`[BluetoothService] Operation failed for ${deviceSide} device:`, error);
-                }
+        const entries = this.getDevicesForSide(side).filter(({ device }) => !!device);
+
+        const run = async (entry: { device: any; side: DeviceSide.LEFT | DeviceSide.RIGHT }) => {
+            try {
+                return await operation(entry.device, entry.side);
+            } catch (error) {
+                console.error(`[BluetoothService] Operation failed for ${entry.side} device:`, error);
+                return undefined;
             }
+        };
+
+        if (parallel) {
+            const results = await Promise.all(entries.map(run));
+            // Just filter out undefined, but don't use a type predicate that causes a lint error
+            return results.filter((v) => v !== undefined) as T[];
         }
-        
-        return results;
+
+        // sequential (default)
+        const out: T[] = [];
+        for (const entry of entries) {
+            const res = await run(entry);
+            if (res !== undefined) out.push(res);
+        }
+        return out;
     }
 
 }
