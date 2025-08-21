@@ -1,10 +1,10 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
-import { ButtonStyles, CardStyles, ContainerStyles } from '../styles/CommonStyles';
-import { MaterialColors, MaterialElevation, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
+import { homeScreenStyles as styles } from '../styles/HomeScreenStyles';
+import { MaterialColors, MaterialTypography } from '../styles/MaterialTheme';
 import { OutputMode } from '../types/OutputMode';
-import TextInputField from './TextInputField';
 
 interface HomeScreenProps {
     inputText: string;
@@ -62,7 +62,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
     // Output Mode Selector (integrated)
     const renderOutputModeSelector = () => {
-        const modes: { value: OutputMode; label: string; description: string }[] = [
+        const modes: { value: OutputMode; label: string; description: string; showPerformanceWarning?: boolean }[] = [
             {
                 value: 'text',
                 label: 'Text Mode',
@@ -71,85 +71,71 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             {
                 value: 'image',
                 label: 'Image Mode',
-                description: 'Convert text to 1-bit bitmap (576×136px)'
+                description: 'Convert text to 1-bit bitmap (576×136px)',
+                showPerformanceWarning: true
             },
             {
                 value: 'official',
                 label: 'Official Teleprompter',
-                description: 'Use the official teleprompter protocol (0x09)'
+                description: 'Use the official teleprompter protocol'
             },
         ];
 
         return (
             <View style={ContainerStyles.section}>
-                <Text style={[
-                    MaterialTypography.titleLarge,
-                    { color: MaterialColors.onSurface, marginBottom: MaterialSpacing.md }
-                ]}>
+                <Text style={styles.sectionTitle}>
                     Output Mode
                 </Text>
-                <View style={[ContainerStyles.column, { gap: MaterialSpacing.sm }]}>
+                <View style={styles.modesContainer}>
                     {modes.map((mode) => (
                         <TouchableOpacity
                             key={mode.value}
                             style={[
-                                CardStyles.cardOutlined,
-                                { padding: MaterialSpacing.lg, marginVertical: 0 },
-                                outputMode === mode.value && {
-                                    backgroundColor: MaterialColors.primaryContainer,
-                                    borderColor: MaterialColors.primary,
-                                    borderWidth: 2,
-                                }
+                                styles.modeOption,
+                                outputMode === mode.value && styles.modeOptionSelected
                             ]}
                             onPress={() => onOutputModeChange(mode.value)}
                             accessibilityRole="radio"
                             accessibilityState={{ checked: outputMode === mode.value }}
                         >
-                            <View style={[ContainerStyles.row, { alignItems: 'center' }]}>
+                            <View style={styles.modeContent}>
                                 <View style={[
-                                    {
-                                        width: 20,
-                                        height: 20,
-                                        borderRadius: 10,
-                                        borderWidth: 2,
-                                        borderColor: MaterialColors.outline,
-                                        backgroundColor: MaterialColors.surface,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: MaterialSpacing.md,
-                                    },
-                                    outputMode === mode.value && {
-                                        borderColor: MaterialColors.primary,
-                                    }
+                                    styles.radioButton,
+                                    outputMode === mode.value && styles.radioButtonSelected
                                 ]}>
                                     {outputMode === mode.value && (
-                                        <View style={{
-                                            width: 10,
-                                            height: 10,
-                                            borderRadius: 5,
-                                            backgroundColor: MaterialColors.primary,
-                                        }} />
+                                        <View style={styles.radioButtonInner} />
                                     )}
                                 </View>
-                                <View style={{ flex: 1 }}>
+                                <View style={styles.modeTextContainer}>
                                     <Text style={[
-                                        MaterialTypography.bodyLarge,
-                                        { fontWeight: '500', marginBottom: MaterialSpacing.xs },
+                                        styles.modeLabel,
                                         outputMode === mode.value 
-                                            ? { color: MaterialColors.primary }
+                                            ? styles.modeLabelSelected
                                             : { color: MaterialColors.onSurface }
                                     ]}>
                                         {mode.label}
                                     </Text>
                                     <Text style={[
-                                        MaterialTypography.bodyMedium,
-                                        { lineHeight: 20 },
+                                        styles.modeDescription,
                                         outputMode === mode.value 
-                                            ? { color: MaterialColors.onSurface }
-                                            : { color: MaterialColors.onSurfaceVariant }
+                                            ? styles.modeDescriptionSelected
+                                            : styles.modeDescriptionDefault
                                     ]}>
                                         {mode.description}
                                     </Text>
+                                    {mode.showPerformanceWarning && outputMode === 'image' && (
+                                        <View style={styles.performanceWarning}>
+                                            <MaterialIcons 
+                                                name="timer" 
+                                                size={16} 
+                                                style={styles.performanceIcon} 
+                                            />
+                                            <Text style={styles.performanceWarningText}>
+                                                Slower than other modes
+                                            </Text>
+                                        </View>
+                                    )}
                                 </View>
                             </View>
                         </TouchableOpacity>
@@ -159,37 +145,48 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         );
     };
 
+    // Text Input Section (integrated)
+    const renderTextInputSection = () => {
+        return (
+            <View style={styles.textInputSection}>
+                <View style={styles.textInputHeader}>
+                    <Text style={styles.textInputTitle}>Your Message</Text>
+                    <TouchableOpacity
+                        onPress={insertRandomLoremIpsum}
+                        style={styles.loremButton}
+                        activeOpacity={0.8}
+                    >
+                        <MaterialIcons name="edit-note" size={16} color={MaterialColors.primary} />
+                        <Text style={styles.loremButtonText}>Lorem Ipsum</Text>
+                    </TouchableOpacity>
+                </View>
+                <TextInput
+                    style={styles.textInput}
+                    value={inputText}
+                    onChangeText={onTextChange}
+                    placeholder="Type your message here..."
+                    placeholderTextColor={MaterialColors.onSurfaceVariant}
+                    multiline={true}
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                />
+            </View>
+        );
+    };
+
     return (
         <View style={[ContainerStyles.screen, ContainerStyles.content]}>
             {renderOutputModeSelector()}
-
-            <TextInputField
-                label="Your Message"
-                value={inputText}
-                onChangeText={onTextChange}
-                placeholder="Type your message here..."
-                onInsertLoremIpsum={insertRandomLoremIpsum}
-            />
+            {renderTextInputSection()}
 
             {/* Send and Exit Buttons Row */}
-            <View style={[ContainerStyles.row, { gap: MaterialSpacing.md, marginVertical: MaterialSpacing.lg }]}>
+            <View style={styles.buttonRow}>
                 {/* Send Button */}
                 <TouchableOpacity
                     style={[
-                        {
-                            ...ButtonStyles.primaryButton,
-                            elevation: MaterialElevation.level1,
-                            shadowColor: MaterialColors.primary,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.2,
-                            shadowRadius: 4,
-                            flex: 1
-                        },
-                        !canSend && {
-                            ...ButtonStyles.primaryButtonDisabled,
-                            elevation: 0,
-                            shadowOpacity: 0,
-                        }
+                        ButtonStyles.primaryButton,
+                        styles.sendButton,
+                        !canSend && styles.sendButtonDisabled
                     ]}
                     onPress={onSend}
                     disabled={!canSend}
@@ -201,10 +198,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                         color={canSend ? MaterialColors.onPrimary : MaterialColors.onSurfaceVariant} 
                     />
                     <Text style={[
-                        {
-                            ...ButtonStyles.primaryButtonText,
-                            ...MaterialTypography.labelLarge,
-                        },
+                        ButtonStyles.primaryButtonText,
+                        MaterialTypography.labelLarge,
                         !canSend && ButtonStyles.primaryButtonTextDisabled
                     ]}>
                         {getSendButtonText()}
@@ -216,13 +211,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                     onPress={onExit}
                     style={[
                         ButtonStyles.secondaryButton, 
-                        { 
-                            flex: 1, // Takes up less space
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: MaterialSpacing.sm,
-                        }
+                        styles.exitButton
                     ]}
                     activeOpacity={0.8}
                 >

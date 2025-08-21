@@ -21,8 +21,8 @@ export const ButtonStyles = StyleSheet.create({
     minHeight: 48,
   },
   primaryButtonDisabled: {
-    backgroundColor: MaterialColors.onSurface,
-    opacity: 0.12,
+    backgroundColor: MaterialColors.surfaceVariant,
+    opacity: 0.6,
   },
   primaryButtonText: {
     ...MaterialTypography.body,
@@ -30,8 +30,8 @@ export const ButtonStyles = StyleSheet.create({
     fontWeight: '600',
   },
   primaryButtonTextDisabled: {
-    color: MaterialColors.onSurface,
-    opacity: 0.38,
+    color: MaterialColors.onSurfaceVariant,
+    fontWeight: '600',
   },
 
   // Secondary outlined button
@@ -49,8 +49,8 @@ export const ButtonStyles = StyleSheet.create({
     minHeight: 48,
   },
   secondaryButtonDisabled: {
-    borderColor: MaterialColors.onSurface,
-    opacity: 0.12,
+    borderColor: MaterialColors.surfaceVariant,
+    opacity: 0.6,
   },
   secondaryButtonText: {
     ...MaterialTypography.body,
@@ -58,8 +58,8 @@ export const ButtonStyles = StyleSheet.create({
     fontWeight: '600',
   },
   secondaryButtonTextDisabled: {
-    color: MaterialColors.onSurface,
-    opacity: 0.38,
+    color: MaterialColors.onSurfaceVariant,
+    fontWeight: '600',
   },
 
   // Tertiary text button
@@ -80,8 +80,8 @@ export const ButtonStyles = StyleSheet.create({
     fontWeight: '600',
   },
   tertiaryButtonTextDisabled: {
-    color: MaterialColors.onSurface,
-    opacity: 0.38,
+    color: MaterialColors.onSurfaceVariant,
+    fontWeight: '600',
   },
 
   // Icon button
