@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { defaultBitmapGenerator } from '../services/BitmapGenerator';
 import BluetoothService from '../services/BluetoothService';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles, InputStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
@@ -236,11 +237,12 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             break;
                         case 'image':
                             // Convert text to bitmap and send
-                            const { defaultBitmapGenerator } = await import('../services/BitmapGenerator');
                             const bmpBuffer = await defaultBitmapGenerator.textToBitmap(slide.text);
+
                             if (!defaultBitmapGenerator.validateBmpFormat(bmpBuffer)) {
                                 throw new Error('Generated BMP format is invalid');
                             }
+
                             const base64Image = defaultBitmapGenerator.bufferToBase64(bmpBuffer);
                             await BluetoothService.sendImage(base64Image);
                             break;

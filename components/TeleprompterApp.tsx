@@ -75,6 +75,13 @@ const TeleprompterApp: React.FC = () => {
         await loadPairedDevices(true);
     };
 
+    const getModeText = (mode: OutputMode, forSuccess: boolean) => {
+        if (mode === 'text') return forSuccess ? 'text' : 'message';
+        if (mode === 'image') return forSuccess ? 'image (BMP)' : 'image';
+        if (mode === 'official') return 'official teleprompter';
+        return '';
+    };
+
     const handleSendMessage = async () => {
         const messageText = inputText.trim();
         if (!messageText) return;
@@ -109,28 +116,15 @@ const TeleprompterApp: React.FC = () => {
 
             if (success) {
                 setInputText('');
-
-                // Show success message with mode info
-                let modeText = '';
-                if (outputMode === 'text') modeText = 'text';
-                else if (outputMode === 'image') modeText = 'image (BMP)';
-                else if (outputMode === 'official') modeText = 'official teleprompter';
-                
+                const modeText = getModeText(outputMode, true);
                 console.log(`Successfully sent ${modeText} to glasses`);
             } else {
-                let modeText = '';
-                if (outputMode === 'text') modeText = 'message';
-                else if (outputMode === 'image') modeText = 'image';
-                else if (outputMode === 'official') modeText = 'official teleprompter';
-                
+                const modeText = getModeText(outputMode, false);
                 Alert.alert('Error', `Failed to send ${modeText}`);
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            let modeText = '';
-            if (outputMode === 'text') modeText = 'message';
-            else if (outputMode === 'image') modeText = 'image';
-            else if (outputMode === 'official') modeText = 'official teleprompter';
+            const modeText = getModeText(outputMode, false);
             
             Alert.alert('Error', `Failed to send ${modeText}`);
         } finally {
