@@ -6,7 +6,6 @@ import { deviceStatusCardStyles as styles } from '../styles/DeviceStatusCardStyl
 interface DeviceStatusCardProps {
     side: 'left' | 'right';
     connected: boolean;
-    batteryLevel: number;
     deviceStatus?: DeviceStatus;
     isCompact?: boolean;
 }
@@ -14,7 +13,6 @@ interface DeviceStatusCardProps {
 const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
     side,
     connected,
-    batteryLevel,
     deviceStatus,
     isCompact = false
 }) => {
@@ -85,18 +83,18 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
             {connected && (
                 <View style={styles.content}>
                     {/* Battery Reading - Label in light gray, Large bold percentage in black */}
-                    {batteryLevel >= 0 && (
+                    {deviceStatus?.battery !== undefined && deviceStatus.battery >= 0 && (
                         <View style={styles.infoRow}>
                             <Text style={styles.labelText}>Battery</Text>
-                            <Text style={styles.valueTextBattery}>{batteryLevel}%</Text>
+                            <Text style={styles.valueTextBattery}>{deviceStatus.battery}%</Text>
                         </View>
                     )}
 
                     {/* Uptime Reading - Label in light gray, Value with color coding */}
-                    <View style={styles.infoRow}>
+                    {/* <View style={styles.infoRow}>
                         <Text style={styles.labelText}>Uptime</Text>
                         <Text style={styles.valueTextUptime}>{uptime}</Text>
-                    </View>
+                    </View> */}
 
                     {/* Firmware Reading - Label in light gray, Value with color coding */}
                     <View style={styles.infoRow}>

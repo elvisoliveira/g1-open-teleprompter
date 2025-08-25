@@ -2,7 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import BluetoothService from '../services/BluetoothService';
-import { BatteryInfo, DeviceStatus } from '../services/types';
+import { DeviceStatus } from '../services/types';
 import { ButtonStyles } from '../styles/CommonStyles';
 import { connectionStatusStyles as styles } from '../styles/ConnectionStatusStyles';
 import { MaterialColors, MaterialSpacing } from '../styles/MaterialTheme';
@@ -21,28 +21,22 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     onReconnect,
     isRetrying
 }) => {
-    const [batteryInfo, setBatteryInfo] = useState<BatteryInfo>({ left: -1, right: -1, lastUpdated: null });
     const [deviceStatus, setDeviceStatus] = useState<{ left: DeviceStatus; right: DeviceStatus }>();
     const [isUpdatingBattery, setIsUpdatingBattery] = useState(false);
     const [isUpdatingUptime, setIsUpdatingUptime] = useState(false);
     const bothConnected = leftConnected && rightConnected;
 
     useEffect(() => {
-        let unsubscribe: (() => void) | null = null;
         let statusInterval: NodeJS.Timeout | null = null;
 
         // Subscribe to battery updates and get device status
         if (leftConnected || rightConnected) {
-            unsubscribe = BluetoothService.onBatteryUpdate((battery) => {
-                setBatteryInfo(battery);
-                // Update device status when battery changes
-                updateDeviceStatus();
-            });
-
-            // Get initial battery status and firmware info
+            // Get initial battery status and uptime info
             updateBatteryStatus();
-            // updateFirmwareInfo();
-            updateUptimeInfo();
+
+            // TODO: Uptime behavior is odd, so we're not updating it for now
+            // updateUptimeInfo();
+
             updateDeviceStatus();
 
             // Periodically update device status (every 30 seconds)
@@ -55,9 +49,6 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         }
 
         return () => {
-            if (unsubscribe) {
-                unsubscribe();
-            }
             if (statusInterval) {
                 clearInterval(statusInterval);
             }
@@ -82,13 +73,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
 
         setIsUpdatingUptime(true);
         try {
-            // Get uptime for both devices
-            if (leftConnected) {
-                await BluetoothService.getDeviceUptime();
-            }
-            if (rightConnected) {
-                await BluetoothService.getDeviceUptime();
-            }
+            await BluetoothService.refreshUptime();
         } catch (error) {
             console.warn('Failed to update uptime info:', error);
         } finally {
@@ -152,7 +137,6 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                 <DeviceStatusCard
                     side="left"
                     connected={leftConnected}
-                    batteryLevel={batteryInfo.left}
                     deviceStatus={deviceStatus?.left}
                     isCompact={true}
                 />
@@ -160,20 +144,10 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                 <DeviceStatusCard
                     side="right"
                     connected={rightConnected}
-                    batteryLevel={batteryInfo.right}
                     deviceStatus={deviceStatus?.right}
                     isCompact={true}
                 />
             </View>
-
-            {/* Last Update Info */}
-            {batteryInfo.lastUpdated && (
-                <View style={styles.lastUpdateContainer}>
-                    <Text style={styles.lastUpdateText}>
-                        Last updated: {new Date(batteryInfo.lastUpdated).toLocaleTimeString()}
-                    </Text>
-                </View>
-            )}
         </ScrollView>
     );
 };

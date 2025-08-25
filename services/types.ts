@@ -7,16 +7,15 @@ export enum DeviceSide {
 }
 
 export interface BatteryInfo {
-    left: number;   // -1 if not available
-    right: number;  // -1 if not available
-    lastUpdated: Date | null;
+    left: number;
+    right: number;
 }
 
 export interface DeviceStatus {
     connected: boolean;
-    battery: number; // -1 if not available
-    uptime: number; // uptime in seconds, -1 if not available
-    firmware: string | null; // Firmware information
+    battery: number;
+    uptime: number;
+    firmware: string | null;
 }
 
 export interface DeviceInfo {
@@ -27,4 +26,9 @@ export interface DeviceInfo {
 export interface FirmwareInfo {
     left: string | null;
     right: string | null;
+}
+
+export interface UptimeInfo {
+    left: number;
+    right: number;
 } 

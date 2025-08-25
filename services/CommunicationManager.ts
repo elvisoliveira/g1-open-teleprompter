@@ -51,7 +51,7 @@ export class CommunicationManager {
         try {
             const base64 = Buffer.from(data).toString('base64');
             console.log(`[CommunicationManager] Writing ${requireResponse ? 'with' : 'without'} response: ${Utils.arrayToHex(data)}`);
-            
+
             if (requireResponse) {
                 await device.writeCharacteristicWithResponseForService(
                     SERVICE_UUID,
@@ -91,7 +91,7 @@ export class CommunicationManager {
         waitTimeMs: number = 250
     ): Promise<Uint8Array | null> {
         console.log(`[CommunicationManager] Command: ${Utils.arrayToHex(requestBytes)}, expecting header: ${Utils.arrayToHex(expectedHeader)}`);
-        
+
         try {
             const responsePromise = new Promise<Uint8Array | null>((resolve) => {
                 const timeout = setTimeout(() => resolve(null), waitTimeMs + 1000);
@@ -193,18 +193,14 @@ export class CommunicationManager {
      */
     static async requestUptime(device: Device): Promise<number | null> {
         const response = await this.sendCommandWithResponse(device, new Uint8Array([UPTIME_CMD]), new Uint8Array([UPTIME_CMD]), 250);
+        console.log('uptime response');
+        console.log(response);
         if (response && response.length >= 4) {
-            return (response[1] | (response[2] << 8) | (response[3] << 16));
+            const low = response[2] & 0xFF;
+            const high = response[3] & 0xFF;
+            return (high << 8) | low; // seconds since boot
         }
         return null;
-    }
-
-    /**
-     * Send firmware request command
-     */
-    static async sendFirmwareRequest(device: Device): Promise<boolean> {
-        const firmwareCmd = new Uint8Array(FIRMWARE_REQUEST_CMD);
-        return await this.writeToDevice(device, firmwareCmd, false);
     }
 
     /**
@@ -238,7 +234,7 @@ export class CommunicationManager {
         const data = new TextEncoder().encode(text);
         const syncSeq = this.evenaiSeq++ & 0xFF;
         const packets: Uint8Array[] = [];
-        
+
         const totalPackets = Math.ceil(data.length / CHUNK_SIZE);
 
         for (let i = 0; i < totalPackets; i++) {
@@ -263,7 +259,7 @@ export class CommunicationManager {
             packet.set(chunk, header.length);
             packets.push(packet);
         }
-        
+
         return packets;
     }
 
@@ -273,13 +269,13 @@ export class CommunicationManager {
     static createBmpPackets(bmpData: Uint8Array): Uint8Array[] {
         const packets: Uint8Array[] = [];
         let syncId = 0;
-        
+
         console.log(`[CommunicationManager] Creating BMP packets with chunk size: ${BMP_CHUNK_SIZE} bytes`);
 
         for (let i = 0; i < bmpData.length; i += BMP_CHUNK_SIZE) {
             const end = Math.min(i + BMP_CHUNK_SIZE, bmpData.length);
             const chunk = bmpData.slice(i, end);
-            
+
             if (i === 0) {
                 // First packet: [0x15, syncId, storageAddress(4 bytes), data]
                 const packet = new Uint8Array(2 + BMP_STORAGE_ADDRESS.length + chunk.length);
@@ -296,7 +292,7 @@ export class CommunicationManager {
                 packet.set(chunk, 2);
                 packets.push(packet);
             }
-            
+
             syncId++;
         }
 
@@ -325,15 +321,15 @@ export class CommunicationManager {
         try {
             const startTime = Date.now();
             console.log(`[CommunicationManager] Starting BMP transfer: ${packets.length} packets, ${bmpData.length} bytes`);
-            
+
             // Send all BMP packets sequentially
             for (let i = 0; i < packets.length; i++) {
                 const packet = packets[i];
-                
+
                 if (ENABLE_TRANSFER_LOGGING) {
                     console.log(`[CommunicationManager] Sending packet ${i + 1}/${packets.length} (${packet.length} bytes)`);
                 }
-                
+
                 if (!await this.writeToDevice(device, packet, false)) {
                     console.error(`[CommunicationManager] Failed to send packet ${i + 1}`);
                     return false;
@@ -343,9 +339,9 @@ export class CommunicationManager {
                     await Utils.sleep(BMP_PACKET_DELAY);
                 }
             }
-            
+
             console.log('[CommunicationManager] All packets sent, sending end command');
-            
+
             // Send end command
             const endCommand = new Uint8Array(BMP_END_CMD);
             if (!await this.writeToDevice(device, endCommand, false)) {
@@ -358,7 +354,7 @@ export class CommunicationManager {
             // Send CRC verification
             const crcValue = this.computeBmpCrc32(bmpData);
             console.log(`[CommunicationManager] CRC computed: 0x${crcValue.toString(16)}`);
-            
+
             const crcBytes = new Uint8Array([
                 CRC_CMD,  // 0x16
                 (crcValue >> 24) & 0xFF,
@@ -366,7 +362,7 @@ export class CommunicationManager {
                 (crcValue >> 8) & 0xFF,
                 crcValue & 0xFF,
             ]);
-            
+
             if (!await this.writeToDevice(device, crcBytes, false)) {
                 console.error('[CommunicationManager] Failed to send CRC');
                 return false;
@@ -375,7 +371,7 @@ export class CommunicationManager {
             const totalTime = Date.now() - startTime;
             console.log(`[CommunicationManager] BMP transfer completed successfully in ${totalTime}ms`);
             return true;
-            
+
         } catch (error) {
             console.error('[CommunicationManager] Error during BMP transfer:', error);
             return false;
@@ -387,7 +383,7 @@ export class CommunicationManager {
      */
     static computeCrc32(data: Uint8Array): number {
         const CRC32_TABLE = new Uint32Array(256);
-        
+
         // Initialize CRC32 table
         for (let i = 0; i < 256; i++) {
             let crc = i;
@@ -413,7 +409,7 @@ export class CommunicationManager {
         const combinedData = new Uint8Array(BMP_STORAGE_ADDRESS.length + bmpData.length);
         combinedData.set(BMP_STORAGE_ADDRESS, 0);
         combinedData.set(bmpData, BMP_STORAGE_ADDRESS.length);
-        
+
         return this.computeCrc32(combinedData);
     }
 
@@ -560,21 +556,21 @@ export class CommunicationManager {
      * Format text payload for teleprompter with common formatting
      */
     static formatTeleprompterPayload(
-        text: string, 
+        text: string,
         leftPadSpaces: number = 0
     ): Uint8Array {
         const parts: number[] = [];
-        
+
         // Add left padding spaces
         for (let i = 0; i < leftPadSpaces; i++) {
             parts.push(0x20);
         }
-        
+
         // Add text as UTF-8 bytes
         const textEncoder = new TextEncoder();
         const textBytes = textEncoder.encode(text);
         parts.push(...textBytes);
-        
+
         return new Uint8Array(parts);
     }
 } 
