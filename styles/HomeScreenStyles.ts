@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { CardStyles, ContainerStyles } from './CommonStyles';
-import { MaterialColors, MaterialElevation, MaterialSpacing, MaterialTypography } from './MaterialTheme';
+import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
 export const homeScreenStyles = StyleSheet.create({
     // Output Mode Selector Styles
@@ -117,15 +117,22 @@ export const homeScreenStyles = StyleSheet.create({
     },
     sendButton: {
         flex: 2,
-        elevation: MaterialElevation.level1,
         shadowColor: MaterialColors.primary,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
         shadowRadius: 4,
     },
     sendButtonDisabled: {
-        elevation: 0,
-        shadowOpacity: 0,
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: MaterialColors.primary,
+        borderRadius: MaterialBorderRadius.lg,
+        paddingVertical: MaterialSpacing.md,
+        paddingHorizontal: MaterialSpacing.xl,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: MaterialSpacing.sm,
+        minHeight: 48,
     },
     exitButton: {
         flex: 1,

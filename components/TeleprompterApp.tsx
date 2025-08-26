@@ -34,6 +34,7 @@ const TeleprompterApp: React.FC = () => {
         pairedDevices,
         connectionStep,
         isAutoConnecting,
+        isBluetoothEnabled,
         loadPairedDevices,
         handleDeviceConnection,
         attemptAutoReconnection,
@@ -184,6 +185,8 @@ const TeleprompterApp: React.FC = () => {
                             onRefresh={() => loadPairedDevices()}
                             onShowAllDevices={handleShowAllDevices}
                             leftConnected={leftConnected}
+                            rightConnected={rightConnected}
+                            isBluetoothEnabled={isBluetoothEnabled}
                         />
                     );
 

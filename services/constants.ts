@@ -36,6 +36,7 @@ export const TELEPROMPTER_MAX_BACKTRACK_CHARS = 40;  // how far back we look for
 
 // Protocol Parameters
 export const CHUNK_SIZE = 200;
+export const MTU_SIZE = 247;
 export const BMP_CHUNK_SIZE = 194;
 export const BMP_STORAGE_ADDRESS = [0x00, 0x1c, 0x00, 0x00];
 export const NEW_SCREEN_FLAG = 0x71;
@@ -48,6 +49,7 @@ export const BMP_PACKET_DELAY = 5;    // Removed delay for maximum speed
 export const BMP_END_DELAY = 10;      // Reduced from 100ms to 50ms
 export const HEARTBEAT_INTERVAL_MS = 15000;
 export const TELEPROMPTER_PACKET_DELAY = 10; // Delay between teleprompter packets
+export const CONNECTION_TIMEOUT_MS = 10000;
 
 // Default Values
 export const DEFAULT_POS = 0;

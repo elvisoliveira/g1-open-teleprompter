@@ -1,10 +1,8 @@
 import { Buffer } from 'buffer';
 import { NativeModules, Platform } from 'react-native';
-import { BleManager, Device } from 'react-native-ble-plx';
+import { BleManager, Device, State } from 'react-native-ble-plx';
 import { CommunicationManager } from './CommunicationManager';
-import {
-    HEARTBEAT_INTERVAL_MS
-} from './constants';
+import { CONNECTION_TIMEOUT_MS, HEARTBEAT_INTERVAL_MS, MTU_SIZE } from './constants';
 import { PermissionManager } from './PermissionManager';
 import { BatteryInfo, DeviceInfo, DeviceSide, DeviceStatus, FirmwareInfo, UptimeInfo } from './types';
 import { Utils } from './utils';
@@ -20,6 +18,7 @@ class BluetoothService {
     private heartbeatSeq: number = 0;
     private connectionState: { left: boolean; right: boolean } = { left: false, right: false };
     private connectionStateCallback: ((state: { left: boolean; right: boolean }) => void) | null = null;
+    // Sequence number for teleprompter packets to ensure proper ordering
     private teleprompterSeq: number = 0;
 
     constructor() {
@@ -41,30 +40,23 @@ class BluetoothService {
 
     async disconnect(): Promise<void> {
         this.stopHeartbeat();
-        await this.disconnectAll();
-        this.resetStatus();
+        await this.disconnectAllDevices();
+        this.resetDeviceStatus();
         this.connectionState = { left: false, right: false };
         this.connectionStateCallback?.(this.connectionState);
     }
 
-    async disconnectAll(): Promise<void> {
-        const disconnectPromises: Promise<Device>[] = [];
-
-        if (this.devices.left) {
-            disconnectPromises.push(this.devices.left.cancelConnection());
-            this.devices.left = null;
-        }
-        if (this.devices.right) {
-            disconnectPromises.push(this.devices.right.cancelConnection());
-            this.devices.right = null;
-        }
-
-        if (disconnectPromises.length > 0) {
-            await Promise.all(disconnectPromises);
+    // Device Status Methods
+    async isBluetoothEnabled(): Promise<boolean> {
+        try {
+            const state = await this.manager.state();
+            return state === State.PoweredOn;
+        } catch (error) {
+            console.warn('[BluetoothService] Failed to check Bluetooth state:', error);
+            return false;
         }
     }
 
-    // Device Status Methods
     isConnected(): boolean {
         return this.connectionState.left || this.connectionState.right;
     }
@@ -205,21 +197,6 @@ class BluetoothService {
         }
     }
 
-    private async getFirmwareInfo(): Promise<void> {
-        if (this.isLeftConnected() && this.firmwareInfo.left === null) {
-            const leftFirmwareInfo = await CommunicationManager.requestFirmwareInfo(this.devices.left!);
-            if (leftFirmwareInfo !== null) {
-                this.firmwareInfo.left = leftFirmwareInfo;
-            }
-        }
-        if (this.isRightConnected() && this.firmwareInfo.right === null) {
-            const rightFirmwareInfo = await CommunicationManager.requestFirmwareInfo(this.devices.right!);
-            if (rightFirmwareInfo !== null) {
-                this.firmwareInfo.right = rightFirmwareInfo;
-            }
-        }
-    }
-
     async refreshBatteryInfo(): Promise<void> {
         if (this.isLeftConnected()) {
             const leftBatteryLevel = await CommunicationManager.requestBatteryLevel(this.devices.left!);
@@ -272,13 +249,9 @@ class BluetoothService {
                 isConnected: Boolean(device.connected)
             }));
 
-            if (showAllDevices) {
-                return bondedDevices;
-            } else {
-                return bondedDevices.filter((device: { id: string; name: string | null; isConnected: boolean }) =>
-                    device.name && device.name.startsWith("Even G1")
-                );
-            }
+            return showAllDevices
+                ? bondedDevices
+                : bondedDevices.filter((device: { name: string; }) => device.name?.startsWith("Even G1"));
         } catch (error) {
             console.warn('[BluetoothService] Failed to get paired devices:', error);
             return [];
@@ -286,22 +259,30 @@ class BluetoothService {
     }
 
     // Private Helper Methods
+    // Connects a device to the specified side (left or right)
     private async connectDevice(address: string, side: DeviceSide.LEFT | DeviceSide.RIGHT): Promise<void> {
         try {
-            const device = await this.connectToDevice(address);
-            this.setDevice(side, device);
+            // Establishes BLE connection, requests permissions, discovers services, and sets MTU
+            const device = await this.establishBleConnection(address);
 
+            // Store device reference and update connection state
             if (side === DeviceSide.LEFT) {
+                this.devices.left = device;
                 this.connectionState.left = true;
             } else {
+                this.devices.right = device;
                 this.connectionState.right = true;
             }
 
             this.connectionStateCallback?.(this.connectionState);
 
-            await this.getFirmwareInfo();
+            await this.getFirmwareInfo(side);
 
-            if (!this.isConnected() || (side === DeviceSide.LEFT && !this.isRightConnected()) || (side === DeviceSide.RIGHT && !this.isLeftConnected())) {
+            // Initialize device info and heartbeat only for the first connected device
+            const isFirstConnection = (side === DeviceSide.LEFT && !this.isRightConnected()) ||
+                (side === DeviceSide.RIGHT && !this.isLeftConnected());
+
+            if (isFirstConnection) {
                 this.startHeartbeat();
             }
         } catch (error: any) {
@@ -309,20 +290,24 @@ class BluetoothService {
         }
     }
 
-    private async connectToDevice(address: string): Promise<Device> {
+    // Establishes complete BLE connection: permissions, connection, service discovery, and MTU setup
+    private async establishBleConnection(address: string): Promise<Device> {
         if (!await PermissionManager.requestBluetoothConnectPermission()) {
             throw new Error('Bluetooth permission not granted');
         }
 
+        // Connect to device with timeout to prevent hanging connections
         const device = await this.manager.connectToDevice(address, {
             autoConnect: false,
-            timeout: 10000
+            timeout: CONNECTION_TIMEOUT_MS
         });
 
+        // Service discovery is required to access device characteristics for communication
         await device.discoverAllServicesAndCharacteristics();
 
+        // Request larger MTU for better data throughput (optional, won't fail connection if unsupported)
         try {
-            await device.requestMTU(247);
+            await device.requestMTU(MTU_SIZE);
         } catch (error) {
             console.warn(`[BluetoothService] MTU request failed for device ${address}:`, error);
         }
@@ -330,36 +315,30 @@ class BluetoothService {
         return device;
     }
 
-    private setDevice(side: DeviceSide.LEFT | DeviceSide.RIGHT, device: Device | null): void {
-        if (side === DeviceSide.LEFT) {
-            this.devices.left = device;
-        } else {
-            this.devices.right = device;
+    private async getFirmwareInfo(side: DeviceSide.LEFT | DeviceSide.RIGHT): Promise<void> {
+        const device = side === DeviceSide.LEFT ? this.devices.left : this.devices.right;
+        const currentFirmware = side === DeviceSide.LEFT ? this.firmwareInfo.left : this.firmwareInfo.right;
+        
+        if (device && currentFirmware === null) {
+            const firmwareInfo = await CommunicationManager.requestFirmwareInfo(device);
+            if (firmwareInfo !== null) {
+                if (side === DeviceSide.LEFT) {
+                    this.firmwareInfo.left = firmwareInfo;
+                } else {
+                    this.firmwareInfo.right = firmwareInfo;
+                }
+            }
         }
     }
 
     private async performHeartbeat(): Promise<void> {
         const seq = this.heartbeatSeq++ & 0xFF;
 
-        let leftSuccess = false;
-        let rightSuccess = false;
+        // Send heartbeat to connected devices and track success
+        const leftSuccess = await this.sendHeartbeatToDevice(this.devices.left, this.isLeftConnected(), seq);
+        const rightSuccess = await this.sendHeartbeatToDevice(this.devices.right, this.isRightConnected() && leftSuccess, seq);
 
-        if (this.isLeftConnected()) {
-            try {
-                leftSuccess = await CommunicationManager.sendHeartbeat(this.devices.left!, seq);
-            } catch (error) {
-                leftSuccess = false;
-            }
-        }
-
-        if (this.isRightConnected() && leftSuccess) {
-            try {
-                rightSuccess = await CommunicationManager.sendHeartbeat(this.devices.right!, seq);
-            } catch (error) {
-                rightSuccess = false;
-            }
-        }
-
+        // Update connection state if it changed
         const newState = {
             left: leftSuccess && this.isLeftConnected(),
             right: rightSuccess && this.isRightConnected()
@@ -368,6 +347,16 @@ class BluetoothService {
         if (this.connectionState.left !== newState.left || this.connectionState.right !== newState.right) {
             this.connectionState = newState;
             this.connectionStateCallback?.(this.connectionState);
+        }
+    }
+
+    private async sendHeartbeatToDevice(device: Device | null, shouldSend: boolean, seq: number): Promise<boolean> {
+        if (!shouldSend || !device) return false;
+
+        try {
+            return await CommunicationManager.sendHeartbeat(device, seq);
+        } catch (error) {
+            return false;
         }
     }
 
@@ -426,6 +415,7 @@ class BluetoothService {
         return devices;
     }
 
+    // Splits text for teleprompter display: 50% visible now, 50% for next screen
     private splitTextForTeleprompter(text: string, showNext: boolean): { visible: string; next: string } {
         if (!showNext) {
             return { visible: text, next: '' };
@@ -437,7 +427,25 @@ class BluetoothService {
         };
     }
 
-    private resetStatus(): void {
+    private async disconnectAllDevices(): Promise<void> {
+        const disconnectPromises: Promise<Device>[] = [];
+
+        if (this.devices.left) {
+            disconnectPromises.push(this.devices.left.cancelConnection());
+            this.devices.left = null;
+        }
+        if (this.devices.right) {
+            disconnectPromises.push(this.devices.right.cancelConnection());
+            this.devices.right = null;
+        }
+
+        if (disconnectPromises.length > 0) {
+            await Promise.all(disconnectPromises);
+        }
+    }
+
+    // Resets all device status information to initial state
+    private resetDeviceStatus(): void {
         this.batteryInfo = { left: -1, right: -1 };
         this.deviceUptime = { left: -1, right: -1 };
         this.firmwareInfo = { left: null, right: null };

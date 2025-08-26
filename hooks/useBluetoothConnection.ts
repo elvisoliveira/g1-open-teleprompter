@@ -17,6 +17,7 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
     const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
     const [connectionStep, setConnectionStep] = useState<ConnectionStep>('left');
     const [isAutoConnecting, setIsAutoConnecting] = useState(false);
+    const [isBluetoothEnabled, setIsBluetoothEnabled] = useState(true);
 
     useEffect(() => {
         // Subscribe to connection state changes from BluetoothService
@@ -24,6 +25,9 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
             setLeftConnected(state.left);
             setRightConnected(state.right);
         });
+
+        // Check initial Bluetooth status
+        checkBluetoothStatus();
 
         return () => {
             unsubscribe();
@@ -38,9 +42,29 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
         }
     }, [leftConnected, rightConnected, connectionStep]);
 
+    const checkBluetoothStatus = async () => {
+        try {
+            const enabled = await BluetoothService.isBluetoothEnabled();
+            setIsBluetoothEnabled(enabled);
+            return enabled;
+        } catch (error) {
+            console.error('Failed to check Bluetooth status:', error);
+            setIsBluetoothEnabled(false);
+            return false;
+        }
+    };
+
     const loadPairedDevices = async (showAllDevices = false) => {
         try {
             setIsScanning(true);
+            
+            // Check Bluetooth status first
+            const bluetoothEnabled = await checkBluetoothStatus();
+            if (!bluetoothEnabled) {
+                setPairedDevices([]);
+                return;
+            }
+            
             const devices = await BluetoothService.getPairedDevices(showAllDevices);
             setPairedDevices(devices);
         } catch (error) {
@@ -97,9 +121,11 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
         pairedDevices,
         connectionStep,
         isAutoConnecting,
+        isBluetoothEnabled,
         loadPairedDevices,
         handleDeviceConnection,
         attemptAutoReconnection,
         resetConnection,
+        checkBluetoothStatus,
     };
 };

@@ -18,6 +18,8 @@ interface DeviceConnectionProps {
     onRefresh: () => void;
     onShowAllDevices: () => void;
     leftConnected: boolean;
+    rightConnected: boolean;
+    isBluetoothEnabled: boolean;
 }
 
 const DeviceConnection: React.FC<DeviceConnectionProps> = ({
@@ -27,7 +29,9 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
     onDeviceSelect,
     onRefresh,
     onShowAllDevices,
-    leftConnected
+    leftConnected,
+    rightConnected,
+    isBluetoothEnabled
 }) => {
     const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
     const getStepInfo = () => {
@@ -57,7 +61,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                         <MaterialIcons
                             name="arrow-back"
                             size={11}
-                            color='#49454F'
+                            color={leftConnected ? '#1C1B1F' : '#49454F'}
                         />
                     </Text>
                 </View>
@@ -67,16 +71,16 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                 ]} />
                 <View style={[
                     styles.step,
-                    (connectionStep === 'left' || !leftConnected) && styles.stepInactive
+                    !rightConnected && styles.stepInactive
                 ]}>
                     <Text style={[
                         styles.stepNumber,
-                        (connectionStep === 'left' || !leftConnected) && styles.stepNumberInactive
+                        !rightConnected && styles.stepNumberInactive
                     ]}>
                         <MaterialIcons
                             name="arrow-forward"
                             size={11}
-                            color='#49454F'
+                            color={rightConnected ? '#1C1B1F' : '#49454F'}
                         />
                     </Text>
                 </View>
@@ -88,7 +92,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                 ]}>Left Glass</Text>
                 <Text style={[
                     styles.stepLabel,
-                    connectionStep === 'right' && leftConnected && styles.stepLabelActive
+                    rightConnected && styles.stepLabelActive
                 ]}>Right Glass</Text>
             </View>
         </View>
@@ -169,6 +173,28 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
         );
     };
 
+    const renderBluetoothDisabledState = () => (
+        <View style={styles.emptyState}>
+            <MaterialIcons name="bluetooth-disabled" size={48} color={MaterialColors.onSurfaceVariant} />
+            <Text style={styles.emptyTitle}>Bluetooth is Disabled</Text>
+            <Text style={styles.emptySubtitle}>
+                Bluetooth must be enabled to connect to your Even G1 glasses.
+                Please enable Bluetooth in your device settings and try again.
+            </Text>
+
+            <View style={styles.actionButtonGroup}>
+                <TouchableOpacity
+                    onPress={onRefresh}
+                    style={[styles.actionButton, styles.primaryActionButton]}
+                    activeOpacity={0.8}
+                >
+                    <MaterialIcons name="refresh" size={20} color={MaterialColors.onPrimary} />
+                    <Text style={styles.primaryActionText}>Check Bluetooth Status</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+
     const renderEmptyState = () => (
         <View style={styles.emptyState}>
             <MaterialIcons name="search-off" size={48} color={MaterialColors.onSurfaceVariant} />
@@ -227,6 +253,8 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
             <View style={styles.deviceList}>
                 {isScanning ? (
                     renderLoadingState()
+                ) : !isBluetoothEnabled ? (
+                    renderBluetoothDisabledState()
                 ) : devices.length === 0 ? (
                     renderEmptyState()
                 ) : (
