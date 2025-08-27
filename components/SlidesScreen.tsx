@@ -182,6 +182,18 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
     const startEditingSlide = (slide: Slide) => {
         setEditingSlideId(slide.id);
         setEditText(slide.text);
+
+        // Scroll to center the editing slide
+        const slideIndex = presentation.slides.findIndex(s => s.id === slide.id);
+        if (slideIndex !== -1) {
+            setTimeout(() => {
+                flatListRef.current?.scrollToIndex({
+                    index: slideIndex,
+                    animated: true,
+                    viewPosition: 0.5 // Center the item in the viewport
+                });
+            }, 100);
+        }
     };
 
     const saveEditSlide = () => {
@@ -189,6 +201,10 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
 
         if (!editText.trim()) {
             deleteSlideWithoutPrompt(editingSlideId);
+
+            setEditingSlideId(null);
+            setEditText('');
+
             return;
         }
 
@@ -204,6 +220,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         };
 
         onUpdatePresentation(updatedPresentation);
+
         setEditingSlideId(null);
         setEditText('');
     };
@@ -213,7 +230,6 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
 
         if (!editText.trim()) {
             deleteSlideWithoutPrompt(editingSlideId);
-            return;
         }
 
         setEditingSlideId(null);
@@ -247,11 +263,12 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             await BluetoothService.sendImage(base64Image);
                             break;
                         case 'official':
-                            // Send using official teleprompter protocol
-                            await BluetoothService.sendOfficialTeleprompter(slide.text, {
-                                showNext: true,
-                                manual: false
-                            });
+                            // Send using official teleprompter protocol with slide position
+                            const slideIndex = presentation.slides.findIndex(s => s.id === slideId);
+                            const slidePercentage = presentation.slides.length > 1
+                                ? (slideIndex / (presentation.slides.length - 1)) * 100
+                                : 0;
+                            await BluetoothService.sendOfficialTeleprompter(slide.text, slidePercentage);
                             break;
                         default:
                             await BluetoothService.sendText(slide.text);
@@ -658,7 +675,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             </TouchableOpacity>
                         </View>
                     </View>
-                ) : (
+                ) : !editingSlideId ? (
                     <View style={[ContainerStyles.row]}>
                         <TouchableOpacity
                             onPress={addSlide}
@@ -707,7 +724,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             </TouchableOpacity>
                         )}
                     </View>
-                )}
+                ) : null}
             </View>
         </View>
     );

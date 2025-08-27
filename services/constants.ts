@@ -30,6 +30,19 @@ export const TELEPROMPTER_FLAGS_NORMAL = 0x81;
 export const TELEPROMPTER_FLAGS_MANUAL = 0x00;
 export const TELEPROMPTER_START_DELAY = 0x00; // No delay for stopwatch start
 
+// Teleprompter Default Options
+export const TELEPROMPTER_DEFAULT_SHOW_NEXT = false;
+export const TELEPROMPTER_TEXT_SPLIT_RATIO = 0.5; // 50% visible, 50% next
+export const TELEPROMPTER_CONTROL_SIZE = 10; // Size of control array in bytes
+export const TELEPROMPTER_HEADER_SIZE = 2; // cmd + len bytes
+
+// Teleprompter Fixed Values (can be enhanced in UI later)
+export const TELEPROMPTER_COUNTDOWN = 1; // No countdown delay - can be made configurable later
+export const TELEPROMPTER_MANUAL_MODE = false; // Always use automatic mode - can be made configurable later
+
+// Teleprompter Scrollbar Position
+export const TELEPROMPTER_DEFAULT_SCROLL_POSITION = 0; // Default position at start
+
 // Teleprompter Text Splitting Constants
 export const TELEPROMPTER_DEFAULT_PAYLOAD_MAX = 154; // bytes of text per packet for current MTU
 export const TELEPROMPTER_MAX_BACKTRACK_CHARS = 40;  // how far back we look for a nice break

@@ -4,6 +4,7 @@ import { BleManager, Device, State } from 'react-native-ble-plx';
 import { CommunicationManager } from './CommunicationManager';
 import { CONNECTION_TIMEOUT_MS, HEARTBEAT_INTERVAL_MS, MTU_SIZE } from './constants';
 import { PermissionManager } from './PermissionManager';
+import { TeleprompterUtils } from './TeleprompterUtils';
 import { BatteryInfo, DeviceInfo, DeviceSide, DeviceStatus, FirmwareInfo, UptimeInfo } from './types';
 import { Utils } from './utils';
 
@@ -114,32 +115,29 @@ class BluetoothService {
         }
     }
 
+    /**
+     * Send text using official teleprompter protocol
+     * @param text - Text to display
+     * @param scrollPosition - Scrollbar position (0-100%), useful for showing slide progress
+     */
     async sendOfficialTeleprompter(
         text: string,
-        options: {
-            showNext?: boolean;
-            startDelaySeconds?: number;
-            manual?: boolean;
-        } = {}
+        slidePercentage?: number
     ): Promise<boolean> {
         if (!this.isConnected()) {
             throw new Error('No devices connected');
         }
 
-        const {
-            showNext = false,
-            startDelaySeconds = 0,
-            manual = false
-        } = options;
+        // Add line breaks based on character widths
+        text = TeleprompterUtils.addLineBreaks(text, 180);
 
         try {
-            const textParts = this.splitTextForTeleprompter(text, showNext);
+            const textParts = TeleprompterUtils.splitTextForTeleprompter(text);
             const packets = CommunicationManager.buildTeleprompterPackets(
                 textParts.visible,
                 textParts.next,
-                startDelaySeconds,
-                manual,
-                this.teleprompterSeq
+                this.teleprompterSeq,
+                slidePercentage
             );
 
             const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
@@ -318,7 +316,7 @@ class BluetoothService {
     private async getFirmwareInfo(side: DeviceSide.LEFT | DeviceSide.RIGHT): Promise<void> {
         const device = side === DeviceSide.LEFT ? this.devices.left : this.devices.right;
         const currentFirmware = side === DeviceSide.LEFT ? this.firmwareInfo.left : this.firmwareInfo.right;
-        
+
         if (device && currentFirmware === null) {
             const firmwareInfo = await CommunicationManager.requestFirmwareInfo(device);
             if (firmwareInfo !== null) {
@@ -415,17 +413,7 @@ class BluetoothService {
         return devices;
     }
 
-    // Splits text for teleprompter display: 50% visible now, 50% for next screen
-    private splitTextForTeleprompter(text: string, showNext: boolean): { visible: string; next: string } {
-        if (!showNext) {
-            return { visible: text, next: '' };
-        }
-        const splitIndex = Math.floor(text.length * 0.50);
-        return {
-            visible: text.substring(0, splitIndex),
-            next: text.substring(splitIndex)
-        };
-    }
+
 
     private async disconnectAllDevices(): Promise<void> {
         const disconnectPromises: Promise<Device>[] = [];

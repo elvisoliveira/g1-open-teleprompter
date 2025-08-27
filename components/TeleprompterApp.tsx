@@ -109,10 +109,7 @@ const TeleprompterApp: React.FC = () => {
                     return;
                 }
             } else if (outputMode === 'official') {
-                success = await BluetoothService.sendOfficialTeleprompter(messageText, {
-                    showNext: true,
-                    manual: false
-                });
+                success = await BluetoothService.sendOfficialTeleprompter(messageText);
             }
 
             if (success) {

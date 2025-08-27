@@ -22,10 +22,15 @@ import {
     READ_CHARACTERISTIC_UUID,
     SERVICE_UUID,
     TELEPROMPTER_CMD,
+    TELEPROMPTER_CONTROL_SIZE,
+    TELEPROMPTER_COUNTDOWN,
+    TELEPROMPTER_DEFAULT_SCROLL_POSITION,
     TELEPROMPTER_END_CMD,
     TELEPROMPTER_FINISH,
     TELEPROMPTER_FLAGS_MANUAL,
     TELEPROMPTER_FLAGS_NORMAL,
+    TELEPROMPTER_HEADER_SIZE,
+    TELEPROMPTER_MANUAL_MODE,
     TELEPROMPTER_NEW_SCREEN_MANUAL,
     TELEPROMPTER_NEW_SCREEN_NORMAL,
     TELEPROMPTER_PACKET_DELAY,
@@ -451,18 +456,17 @@ export class CommunicationManager {
     /**
      * Build a single teleprompter value packet
      */
-    static buildTeleprompterValue(params: {
-        seq: number;
-        newScreen: number;
-        numPackets: number;
-        partIdx: number;
-        startDelaySeconds: number;
-        flags: number;
-        payload: Uint8Array;
-    }): Uint8Array {
-        const { seq, newScreen, numPackets, partIdx, startDelaySeconds, flags, payload } = params;
+    static buildTeleprompterValue(
+        seq: number,
+        numPackets: number,
+        partIdx: number,
+        payload: Uint8Array,
+        slidePercentage: number = TELEPROMPTER_DEFAULT_SCROLL_POSITION
+    ): Uint8Array {
+        const newScreen = TELEPROMPTER_MANUAL_MODE ? TELEPROMPTER_NEW_SCREEN_MANUAL : TELEPROMPTER_NEW_SCREEN_NORMAL;
+        const flags = TELEPROMPTER_MANUAL_MODE ? TELEPROMPTER_FLAGS_MANUAL : TELEPROMPTER_FLAGS_NORMAL;
 
-        // Build control array (10 bytes)
+        // Build control array
         const control = new Uint8Array([
             TELEPROMPTER_RESERVED,           // reserved0
             seq & 0xFF,                      // seq
@@ -471,23 +475,23 @@ export class CommunicationManager {
             TELEPROMPTER_RESERVED,           // reserved1
             partIdx & 0xFF,                  // partIdx
             TELEPROMPTER_RESERVED,           // reserved2
-            startDelaySeconds & 0xFF,        // startDelaySeconds (stopwatch delay)
+            TELEPROMPTER_COUNTDOWN & 0xFF,   // countdown (stopwatch delay)
             flags & 0xFF,                    // flags
-            TELEPROMPTER_RESERVED            // reserved3
+            slidePercentage & 0xFF           // scrollbar position (0-100)
         ]);
 
         // Calculate total length
-        const len = 12 + payload.length; // cmd(1) + len(1) + control(10) + payload
+        const len = TELEPROMPTER_HEADER_SIZE + TELEPROMPTER_CONTROL_SIZE + payload.length;
         if (len > 255) {
             throw new Error(`Teleprompter value too large: ${len} > 255 bytes`);
         }
 
         // Build the complete packet
-        const packet = new Uint8Array(2 + control.length + payload.length);
+        const packet = new Uint8Array(TELEPROMPTER_HEADER_SIZE + TELEPROMPTER_CONTROL_SIZE + payload.length);
         packet[0] = TELEPROMPTER_CMD;        // Cmd.Teleprompter
         packet[1] = len;                     // total length
-        packet.set(control, 2);              // control array
-        packet.set(payload, 12);             // payload
+        packet.set(control, TELEPROMPTER_HEADER_SIZE);              // control array
+        packet.set(payload, TELEPROMPTER_HEADER_SIZE + TELEPROMPTER_CONTROL_SIZE);             // payload
 
         return packet;
     }
@@ -498,40 +502,30 @@ export class CommunicationManager {
     static buildTeleprompterPackets(
         visibleText: string,
         nextText: string,
-        startDelaySeconds: number,
-        manual: boolean,
-        sequence: number
+        sequence: number,
+        slidePercentage?: number
     ): Uint8Array[] {
         const packets: Uint8Array[] = [];
-        const mode = manual ? TELEPROMPTER_NEW_SCREEN_MANUAL : TELEPROMPTER_NEW_SCREEN_NORMAL;
-        const flags = manual ? TELEPROMPTER_FLAGS_MANUAL : TELEPROMPTER_FLAGS_NORMAL;
         const numPackets = nextText ? 2 : 1;
 
         // Build visible text packet (part 1)
-        const visiblePayload = this.formatTeleprompterPayload(visibleText);
-        packets.push(this.buildTeleprompterValue({
-            seq: sequence,
-            newScreen: mode,
+        packets.push(this.buildTeleprompterValue(
+            sequence,
             numPackets,
-            partIdx: 1,
-            startDelaySeconds,
-            flags,
-            payload: visiblePayload
-        }));
+            1,
+            this.formatTeleprompterPayload(visibleText),
+            slidePercentage
+        ));
 
         // Build next text packet (part 2) if needed
         if (nextText) {
-            const nextSequence = (sequence + 1) & 0xFF;
-            const nextPayload = this.formatTeleprompterPayload(nextText);
-            packets.push(this.buildTeleprompterValue({
-                seq: nextSequence,
-                newScreen: mode,
-                numPackets: 2,
-                partIdx: 2,
-                startDelaySeconds,
-                flags,
-                payload: nextPayload
-            }));
+            packets.push(this.buildTeleprompterValue(
+                (sequence + 1) & 0xFF,
+                2,
+                2,
+                this.formatTeleprompterPayload(nextText),
+                slidePercentage
+            ));
         }
 
         return packets;
@@ -553,24 +547,9 @@ export class CommunicationManager {
     }
 
     /**
-     * Format text payload for teleprompter with common formatting
+     * Format text payload for teleprompter
      */
-    static formatTeleprompterPayload(
-        text: string,
-        leftPadSpaces: number = 0
-    ): Uint8Array {
-        const parts: number[] = [];
-
-        // Add left padding spaces
-        for (let i = 0; i < leftPadSpaces; i++) {
-            parts.push(0x20);
-        }
-
-        // Add text as UTF-8 bytes
-        const textEncoder = new TextEncoder();
-        const textBytes = textEncoder.encode(text);
-        parts.push(...textBytes);
-
-        return new Uint8Array(parts);
+    static formatTeleprompterPayload(text: string): Uint8Array {
+        return new TextEncoder().encode(text);
     }
 } 
