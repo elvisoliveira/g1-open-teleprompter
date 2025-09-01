@@ -57,9 +57,9 @@ export const MAX_LINE_LENGTH = 60;
 export const MAX_DISPLAY_LINES = 5;
 
 // Timing Configuration
-export const PACKET_DELAY = 5;        // Reduced from 10ms to 5ms
-export const BMP_PACKET_DELAY = 5;    // Removed delay for maximum speed
-export const BMP_END_DELAY = 10;      // Reduced from 100ms to 50ms
+export const PACKET_DELAY = 5; // Reduced from 10ms to 5ms
+export const BMP_PACKET_DELAY = 5; // Removed delay for maximum speed
+export const BMP_END_DELAY = 10; // Reduced from 100ms to 50ms
 export const HEARTBEAT_INTERVAL_MS = 15000;
 export const TELEPROMPTER_PACKET_DELAY = 10; // Delay between teleprompter packets
 export const CONNECTION_TIMEOUT_MS = 10000;

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
-import { useAppInitialization } from '../hooks/useAppInitialization';
 import { useBluetoothConnection } from '../hooks/useBluetoothConnection';
 import { useDeviceStorage } from '../hooks/useDeviceStorage';
 import { defaultBitmapGenerator } from '../services/BitmapGenerator';
@@ -10,20 +9,18 @@ import { OutputMode } from '../types/OutputMode';
 import AppBottomNavigation from './AppBottomNavigation';
 import ConnectionStatus from './ConnectionStatus';
 import DeviceConnection from './DeviceConnection';
-import HomeScreen from './HomeScreen';
 import PresentationsScreen from './PresentationsScreen';
-import ReconnectionScreen from './ReconnectionScreen';
-import SplashScreen from './SplashScreen';
+import Settings from './Settings';
 import TopAppBar from './TopAppBar';
 
-type AppView = 'splash' | 'connection' | 'home' | 'device' | 'reconnection' | 'presentations';
+type AppView = 'connection' | 'settings' | 'device' | 'presentations';
 
 const TeleprompterApp: React.FC = () => {
-    // Core view state
-    const [currentView, setCurrentView] = useState<AppView>('splash');
+    // Core view state - start directly with device connection view
+    const [currentView, setCurrentView] = useState<AppView>('device');
 
     // Storage hook
-    const { savedLeftMac, savedRightMac, saveMacAddress, loadSavedMacAddresses, clearSavedMacAddresses } =
+    const { savedLeftMac, savedRightMac, saveMacAddress, loadSavedMacAddresses } =
         useDeviceStorage();
 
     // Bluetooth connection hook
@@ -38,16 +35,8 @@ const TeleprompterApp: React.FC = () => {
         loadPairedDevices,
         handleDeviceConnection,
         attemptAutoReconnection,
-        resetConnection,
     } = useBluetoothConnection((side, deviceId) => {
         saveMacAddress(side, deviceId);
-    });
-
-    // App initialization hook
-    const { currentView: initView, splashMessage } = useAppInitialization({
-        loadSavedMacAddresses,
-        attemptAutoReconnection,
-        loadPairedDevices,
     });
 
     // Message state
@@ -55,19 +44,19 @@ const TeleprompterApp: React.FC = () => {
     const [outputMode, setOutputMode] = useState<OutputMode>('text');
     const [isSending, setIsSending] = useState(false);
 
-    // Map initialization view to app view
+    // Initialize app by loading saved addresses and paired devices
     useEffect(() => {
-        if (initView === 'composer') {
-            setCurrentView('home');
-        } else {
-            setCurrentView(initView as AppView);
-        }
-    }, [initView]);
+        const initializeApp = async () => {
+            await loadSavedMacAddresses();
+            await loadPairedDevices();
+        };
+        initializeApp();
+    }, []);
 
-    // Navigate to home when both devices connected
+    // Navigate to settings when both devices connected
     useEffect(() => {
         if (connectionStep === 'complete') {
-            setCurrentView('home');
+            setCurrentView('settings');
         }
     }, [connectionStep]);
 
@@ -123,7 +112,7 @@ const TeleprompterApp: React.FC = () => {
         } catch (error) {
             console.error('Error sending message:', error);
             const modeText = getModeText(outputMode, false);
-            
+
             Alert.alert('Error', `Failed to send ${modeText}`);
         } finally {
             setIsSending(false);
@@ -133,13 +122,13 @@ const TeleprompterApp: React.FC = () => {
     const handleExit = async () => {
         try {
             let success = false;
-            
+
             if (outputMode === 'official') {
                 success = await BluetoothService.exitOfficialTeleprompter();
             } else {
                 success = await BluetoothService.exit();
             }
-            
+
             if (!success) {
                 const modeText = outputMode === 'official' ? 'official teleprompter' : 'dashboard';
                 Alert.alert('Error', `Failed to exit ${modeText}`);
@@ -151,7 +140,7 @@ const TeleprompterApp: React.FC = () => {
         }
     };
 
-    // Reconnection handlers
+    // Connection handlers
     const handleRetryConnection = async () => {
         const reconnected = await attemptAutoReconnection(savedLeftMac, savedRightMac);
         if (!reconnected) {
@@ -159,9 +148,7 @@ const TeleprompterApp: React.FC = () => {
         }
     };
 
-    const handleConnectAgain = async () => {
-        await clearSavedMacAddresses();
-        resetConnection();
+    const handleSetupDevices = async () => {
         setCurrentView('connection');
         await loadPairedDevices();
     };
@@ -169,9 +156,6 @@ const TeleprompterApp: React.FC = () => {
     const renderCurrentView = () => {
         const view = (() => {
             switch (currentView) {
-                case 'splash':
-                    return <SplashScreen message={splashMessage} />;
-
                 case 'connection':
                     return (
                         <DeviceConnection
@@ -187,9 +171,9 @@ const TeleprompterApp: React.FC = () => {
                         />
                     );
 
-                case 'home':
+                case 'settings':
                     return (
-                        <HomeScreen
+                        <Settings
                             inputText={inputText}
                             onTextChange={setInputText}
                             outputMode={outputMode}
@@ -208,19 +192,18 @@ const TeleprompterApp: React.FC = () => {
                             leftConnected={leftConnected}
                             rightConnected={rightConnected}
                             onReconnect={handleRetryConnection}
-                            isRetrying={isAutoConnecting}
+                            onSetupDevices={handleSetupDevices}
+                            isReconnecting={isAutoConnecting}
+                            hasConfiguredDevices={!!(savedLeftMac && savedRightMac)}
                         />
                     );
 
                 case 'presentations':
-                    return <PresentationsScreen outputMode={outputMode} />;
-
-                case 'reconnection':
                     return (
-                        <ReconnectionScreen
-                            isRetrying={isAutoConnecting}
-                            onRetry={handleRetryConnection}
-                            onConnectAgain={handleConnectAgain}
+                        <PresentationsScreen
+                            leftConnected={leftConnected}
+                            rightConnected={rightConnected}
+                            outputMode={outputMode}
                         />
                     );
 
@@ -229,11 +212,13 @@ const TeleprompterApp: React.FC = () => {
             }
         })();
 
-        // Show bottom navigation for home and device views
-        const showBottomNav = currentView === 'home' || currentView === 'device' || currentView === 'presentations';
+        // Show bottom navigation for all main views
+        // const showBottomNav = currentView === 'settings' || currentView === 'device' || currentView === 'presentations';
+        const showBottomNav = true;
 
-        // Show top app bar for main app views (not splash, connection, or reconnection)
-        const showTopAppBar = currentView === 'home' || currentView === 'device' || currentView === 'presentations';
+        // Show top app bar for all main views (not connection)
+        // const showTopAppBar = currentView === 'settings' || currentView === 'device' || currentView === 'presentations';
+        const showTopAppBar = true;
 
         return (
             <>

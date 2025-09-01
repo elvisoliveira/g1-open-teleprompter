@@ -12,18 +12,22 @@ interface ConnectionStatusProps {
     leftConnected: boolean;
     rightConnected: boolean;
     onReconnect?: () => void;
-    isRetrying?: boolean;
+    onSetupDevices?: () => void;
+    isReconnecting?: boolean;
+    hasConfiguredDevices?: boolean;
 }
 
 const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     leftConnected,
     rightConnected,
     onReconnect,
-    isRetrying
+    onSetupDevices,
+    isReconnecting = false,
+    hasConfiguredDevices = false
 }) => {
     const [deviceStatus, setDeviceStatus] = useState<{ left: DeviceStatus; right: DeviceStatus }>();
     const [isUpdatingBattery, setIsUpdatingBattery] = useState(false);
-    const [isUpdatingUptime, setIsUpdatingUptime] = useState(false);
+
     const bothConnected = leftConnected && rightConnected;
 
     useEffect(() => {
@@ -31,17 +35,13 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
 
         // Subscribe to battery updates and get device status
         if (leftConnected || rightConnected) {
-            // Get initial battery status and uptime info
-            updateBatteryStatus();
-
-            // TODO: Uptime behavior is odd, so we're not updating it for now
-            // updateUptimeInfo();
-
-            updateDeviceStatus();
+            // Get initial battery status and device info
+            refreshBatteryInfo();
+            refreshDeviceStatus();
 
             // Periodically update device status (every 30 seconds)
             statusInterval = setInterval(() => {
-                updateDeviceStatus();
+                refreshDeviceStatus();
             }, 30000);
         } else {
             // Clear device status when disconnected
@@ -55,7 +55,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         };
     }, [leftConnected, rightConnected]);
 
-    const updateBatteryStatus = async () => {
+    const refreshBatteryInfo = async () => {
         if (isUpdatingBattery) return;
 
         setIsUpdatingBattery(true);
@@ -68,20 +68,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         }
     };
 
-    const updateUptimeInfo = async () => {
-        if (isUpdatingUptime) return;
-
-        setIsUpdatingUptime(true);
-        try {
-            await BluetoothService.refreshUptime();
-        } catch (error) {
-            console.warn('Failed to update uptime info:', error);
-        } finally {
-            setIsUpdatingUptime(false);
-        }
-    };
-
-    const updateDeviceStatus = () => {
+    const refreshDeviceStatus = () => {
         try {
             const status = BluetoothService.getDeviceStatus();
             setDeviceStatus(status);
@@ -90,64 +77,129 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         }
     };
 
-    const getDeviceStatus = () => {
-        if (!leftConnected && !rightConnected) return 'All Devices Offline';
+    const getConnectionStatus = () => {
+        if (!hasConfiguredDevices) return 'No Devices Configured';
         if (bothConnected) return 'All Devices Online';
         if (leftConnected || rightConnected) return 'Partial Connection';
         return 'All Devices Offline';
     };
 
-    return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            {/* Overall Status Header */}
-            <View style={styles.overallStatusCard}>
-                <Text style={styles.overallStatusTitle}>System Status</Text>
-                <Text style={[
-                    styles.overallStatusSubtitle,
-                    leftConnected && rightConnected ? styles.statusTextConnected : styles.statusTextDisconnected
-                ]}>
-                    {getDeviceStatus()}
-                </Text>
+    const getStatusDescription = () => {
+        if (!hasConfiguredDevices) {
+            return 'Connect your Even G1 glasses to get started';
+        }
+        return getConnectionStatus();
+    };
 
-                {/* Reconnect CTA when offline */}
-                {(!bothConnected) && (
+    const renderConnectionActions = () => {
+        if (!hasConfiguredDevices) {
+            // First-time setup: single primary button
+            return (
+                <TouchableOpacity
+                    onPress={() => onSetupDevices?.()}
+                    disabled={!onSetupDevices}
+                    style={[
+                        ButtonStyles.primaryButton,
+                        !onSetupDevices && ButtonStyles.primaryButtonDisabled
+                    ]}
+                >
+                    <MaterialIcons
+                        name="bluetooth-searching"
+                        size={20}
+                        color={MaterialColors.onPrimary}
+                    />
+                    <Text style={ButtonStyles.primaryButtonText}>
+                        Connect Devices
+                    </Text>
+                </TouchableOpacity>
+            );
+        }
+
+        // Configured devices: show reconnect + manual options when not fully connected
+        if (!bothConnected) {
+            return (
+                <>
                     <TouchableOpacity
                         onPress={() => onReconnect?.()}
-                        disabled={!onReconnect || isRetrying}
+                        disabled={!onReconnect || isReconnecting}
                         style={[
                             ButtonStyles.primaryButton,
-                            { marginTop: MaterialSpacing.md },
-                            (!onReconnect || isRetrying) && ButtonStyles.primaryButtonDisabled
+                            { marginBottom: MaterialSpacing.sm },
+                            (!onReconnect || isReconnecting) && ButtonStyles.primaryButtonDisabled
                         ]}
                     >
                         <MaterialIcons
-                            name={isRetrying ? 'sync' : 'refresh'}
+                            name={isReconnecting ? 'sync' : 'refresh'}
                             size={20}
                             color={MaterialColors.onPrimary}
                         />
                         <Text style={ButtonStyles.primaryButtonText}>
-                            {isRetrying ? 'Reconnecting…' : 'Try Reconnect'}
+                            {isReconnecting ? 'Reconnecting…' : 'Try Reconnect'}
                         </Text>
                     </TouchableOpacity>
-                )}
+
+                    <TouchableOpacity
+                        onPress={() => onSetupDevices?.()}
+                        disabled={!onSetupDevices}
+                        style={[
+                            ButtonStyles.secondaryButton,
+                            !onSetupDevices && ButtonStyles.secondaryButtonDisabled
+                        ]}
+                    >
+                        <MaterialIcons
+                            name="bluetooth-searching"
+                            size={20}
+                            color={MaterialColors.primary}
+                        />
+                        <Text style={ButtonStyles.secondaryButtonText}>
+                            Connect Manually
+                        </Text>
+                    </TouchableOpacity>
+                </>
+            );
+        }
+
+        return null;
+    };
+
+    return (
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            {/* Status Header */}
+            <View style={styles.overallStatusCard}>
+                <Text style={styles.overallStatusTitle}>
+                    {hasConfiguredDevices ? 'System Status' : 'Device Setup'}
+                </Text>
+                <Text style={[
+                    styles.overallStatusSubtitle,
+                    bothConnected ? styles.statusTextConnected : styles.statusTextDisconnected
+                ]}>
+                    {getStatusDescription()}
+                </Text>
+
+                {/* Connection Actions */}
+                <View style={{ marginTop: MaterialSpacing.md }}>
+                    {renderConnectionActions()}
+                </View>
             </View>
 
             {/* Device Status Cards */}
-            <View style={styles.devicesContainer}>
-                <DeviceStatusCard
-                    side="left"
-                    connected={leftConnected}
-                    deviceStatus={deviceStatus?.left}
-                    isCompact={true}
-                />
+            {hasConfiguredDevices && (
+                <View style={styles.devicesContainer}>
+                    <DeviceStatusCard
+                        side="left"
+                        connected={leftConnected}
+                        deviceStatus={deviceStatus?.left}
+                        isCompact={true}
+                    />
 
-                <DeviceStatusCard
-                    side="right"
-                    connected={rightConnected}
-                    deviceStatus={deviceStatus?.right}
-                    isCompact={true}
-                />
-            </View>
+                    <DeviceStatusCard
+                        side="right"
+                        connected={rightConnected}
+                        deviceStatus={deviceStatus?.right}
+                        isCompact={true}
+                    />
+                </View>
+            )}
         </ScrollView>
     );
 };

@@ -19,6 +19,7 @@ class BluetoothService {
     private heartbeatSeq: number = 0;
     private connectionState: { left: boolean; right: boolean } = { left: false, right: false };
     private connectionStateCallback: ((state: { left: boolean; right: boolean }) => void) | null = null;
+
     // Sequence number for teleprompter packets to ensure proper ordering
     private teleprompterSeq: number = 0;
 

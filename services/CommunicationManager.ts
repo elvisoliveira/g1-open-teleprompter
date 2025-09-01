@@ -488,10 +488,10 @@ export class CommunicationManager {
 
         // Build the complete packet
         const packet = new Uint8Array(TELEPROMPTER_HEADER_SIZE + TELEPROMPTER_CONTROL_SIZE + payload.length);
-        packet[0] = TELEPROMPTER_CMD;        // Cmd.Teleprompter
-        packet[1] = len;                     // total length
-        packet.set(control, TELEPROMPTER_HEADER_SIZE);              // control array
-        packet.set(payload, TELEPROMPTER_HEADER_SIZE + TELEPROMPTER_CONTROL_SIZE);             // payload
+        packet[0] = TELEPROMPTER_CMD; // Cmd.Teleprompter
+        packet[1] = len; // total length
+        packet.set(control, TELEPROMPTER_HEADER_SIZE); // control array
+        packet.set(payload, TELEPROMPTER_HEADER_SIZE + TELEPROMPTER_CONTROL_SIZE); // payload
 
         return packet;
     }

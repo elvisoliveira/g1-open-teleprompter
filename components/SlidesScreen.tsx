@@ -24,13 +24,17 @@ interface SlidesScreenProps {
     onGoBack: () => void;
     onUpdatePresentation: (updatedPresentation: Presentation) => void;
     outputMode: OutputMode;
+    leftConnected: boolean;
+    rightConnected: boolean;
 }
 
 const SlidesScreen: React.FC<SlidesScreenProps> = ({
     presentation,
     onGoBack,
     onUpdatePresentation,
-    outputMode
+    outputMode,
+    leftConnected,
+    rightConnected
 }) => {
     const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
@@ -237,6 +241,11 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
     };
 
     const togglePresenting = async (slideId: string) => {
+        // Return early if no devices are connected
+        if (!leftConnected && !rightConnected) {
+            return;
+        }
+
         const newPresentingSlideId = presentingSlideId === slideId ? null : slideId;
         setPresentingSlideId(newPresentingSlideId);
         presentingSlideRef.current = newPresentingSlideId; // Keep ref in sync
@@ -574,20 +583,22 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                                             </>
                                                         )}
 
-                                                        {/* Present Slide */}
-                                                        <TouchableOpacity
-                                                            onPress={(e) => {
-                                                                e.stopPropagation();
-                                                                togglePresenting(item.id);
-                                                            }}
-                                                            style={presentingSlideId === item.id ? ActionButtonStyles.stopButton : ActionButtonStyles.presentButton}
-                                                        >
-                                                            <MaterialIcons
-                                                                name={presentingSlideId === item.id ? 'stop-screen-share' : 'play-arrow'}
-                                                                size={24}
-                                                                style={presentingSlideId === item.id ? ActionButtonStyles.stopIcon : ActionButtonStyles.presentIcon}
-                                                            />
-                                                        </TouchableOpacity>
+                                                        {/* Present Slide - only show when devices are connected */}
+                                                        {(leftConnected || rightConnected) && (
+                                                            <TouchableOpacity
+                                                                onPress={(e) => {
+                                                                    e.stopPropagation();
+                                                                    togglePresenting(item.id);
+                                                                }}
+                                                                style={presentingSlideId === item.id ? ActionButtonStyles.stopButton : ActionButtonStyles.presentButton}
+                                                            >
+                                                                <MaterialIcons
+                                                                    name={presentingSlideId === item.id ? 'stop-screen-share' : 'play-arrow'}
+                                                                    size={24}
+                                                                    style={presentingSlideId === item.id ? ActionButtonStyles.stopIcon : ActionButtonStyles.presentIcon}
+                                                                />
+                                                            </TouchableOpacity>
+                                                        )}
                                                     </View>
                                                 </View>
                                             </View>

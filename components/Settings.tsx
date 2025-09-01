@@ -1,12 +1,12 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
-import { homeScreenStyles as styles } from '../styles/HomeScreenStyles';
-import { MaterialColors, MaterialTypography } from '../styles/MaterialTheme';
+import { MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
+import { settingsStyles as styles } from '../styles/SettingsStyles';
 import { OutputMode } from '../types/OutputMode';
 
-interface HomeScreenProps {
+interface SettingsProps {
     inputText: string;
     onTextChange: (text: string) => void;
     outputMode: OutputMode;
@@ -18,7 +18,7 @@ interface HomeScreenProps {
     isSending?: boolean;
 }
 
-const HomeScreen: React.FC<HomeScreenProps> = ({
+const Settings: React.FC<SettingsProps> = ({
     inputText,
     onTextChange,
     outputMode,
@@ -31,18 +31,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
     const canSend = inputText.trim().length > 0 && (leftConnected || rightConnected) && !isSending;
     const bothConnected = leftConnected && rightConnected;
+    const anyDeviceConnected = leftConnected || rightConnected;
 
     const loremIpsumTexts = [
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla consequat consequat elit, sed feugiat arcu sollicitudin vel. Etiam lobortis eu eros quis convallis. Donec cursus justo a porta iaculis. Fusce vulputate tincidunt odio eu venenatis. Vivamus ac feugiat tortor. Mauris ac velit tortor.",
         "Vestibulum volutpat, tortor a vestibulum vehicula, eros ligula mollis massa, a tristique dui purus quis sem. Etiam commodo, ante non porta ornare, lacus massa varius dui, et suscipit quam erat quis ante. In bibendum nisl ut quam rutrum tempus eget at lacus. Sed cursus odio justo, a pellentesque arcu luctus at.",
         "Nam porttitor luctus sodales. Aenean varius commodo tortor. Nulla vitae lacus sed purus dapibus pretium. Curabitur sit amet nunc at mauris tempor hendrerit non sit amet lectus. Phasellus interdum justo nulla, eget maximus orci rhoncus sed. Maecenas et lacus diam. Proin id euismod massa, luctus porttitor purus.",
         "Proin a congue nulla. In suscipit consequat consequat. Etiam quis auctor lorem. Duis mattis risus at eros pulvinar, et fringilla erat imperdiet. Pellentesque ligula libero, cursus a placerat sit amet, congue id ante. Morbi semper et velit ut vestibulum. Maecenas imperdiet arcu sollicitudin urna semper laoreet.",
-        "In sit amet commodo ligula. Integer eleifend, nisl quis interdum blandit, mi risus ultrices lacus, et porttitor mauris nisl vitae nisi. Ut laoreet turpis id est rhoncus, non gravida libero placerat. Cras sollicitudin lectus tempor dictum aliquam. Suspendisse vitae tristique neque.",
-        "Nullam non sem quis ligula feugiat aliquam. Nam pharetra dui erat, et ullamcorper sapien semper sed. Nulla pretium neque at scelerisque tristique. Etiam a porta quam. Etiam in pellentesque orci. Ut convallis tempus eros ut hendrerit. Vivamus tincidunt posuere accumsan.",
-        "Donec nec pharetra dolor, id fermentum nisi. Maecenas eleifend vestibulum mi, in tempus eros fringilla semper. Vestibulum ut ligula erat. Maecenas facilisis viverra semper. Etiam ac metus tincidunt mi dignissim posuere egestas id neque. In tempor euismod sodales. Nulla facilisi.",
-        "Nullam metus turpis, tempus nec turpis id, maximus imperdiet elit. In justo nulla, vulputate id ante at, pretium volutpat purus. Nulla id risus risus. Mauris imperdiet commodo lacus, vel sollicitudin leo scelerisque non. Curabitur aliquet felis in gravida commodo. Sed in tempus ligula.",
-        "Quisque laoreet elit viverra convallis tincidunt. Nam id magna ac turpis sollicitudin volutpat. Aenean eu maximus ante. Praesent ut gravida lectus, eu accumsan dolor. Vivamus mollis purus eu tellus fringilla, nec sollicitudin mauris sagittis.",
-        "Nulla vehicula elit ut urna porta fringilla. Proin vel libero magna. Sed volutpat elit nec commodo viverra. Sed pulvinar cursus efficitur. Ut consequat, quam quis ullamcorper lacinia, metus mi congue erat, in consequat nulla enim vel urna.",
+        "In sit amet commodo ligula. Integer eleifend, nisl quis interdum blandit, mi risus ultrices lacus, et porttitor mauris nisl vitae nisi. Ut laoreet turpis id est rhoncus, non gravida libero placerat. Cras sollicitudin lectus tempor dictum aliquam. Suspendisse vitae tristique neque."
     ];
 
     const insertRandomLoremIpsum = () => {
@@ -51,16 +47,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     };
 
     const getSendButtonText = () => {
-        if (isSending) return 'Sending...';
+        if (isSending) return 'Testing...';
 
-        if (bothConnected) return `Send`;
-        if (leftConnected) return `Send to Left`;
-        if (rightConnected) return `Send to Right`;
+        if (bothConnected) return `Test Settings`;
+        if (leftConnected) return `Test on Left`;
+        if (rightConnected) return `Test on Right`;
 
         return 'No Devices Connected';
     };
 
-    // Output Mode Selector (integrated)
+    // Output Mode Selector
     const renderOutputModeSelector = () => {
         const modes: { value: OutputMode; label: string; description: string; showPerformanceWarning?: boolean }[] = [
             {
@@ -110,7 +106,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                                 <View style={styles.modeTextContainer}>
                                     <Text style={[
                                         styles.modeLabel,
-                                        outputMode === mode.value 
+                                        outputMode === mode.value
                                             ? styles.modeLabelSelected
                                             : { color: MaterialColors.onSurface }
                                     ]}>
@@ -118,7 +114,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                                     </Text>
                                     <Text style={[
                                         styles.modeDescription,
-                                        outputMode === mode.value 
+                                        outputMode === mode.value
                                             ? styles.modeDescriptionSelected
                                             : styles.modeDescriptionDefault
                                     ]}>
@@ -126,10 +122,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                                     </Text>
                                     {mode.showPerformanceWarning && outputMode === 'image' && (
                                         <View style={styles.performanceWarning}>
-                                            <MaterialIcons 
-                                                name="timer" 
-                                                size={16} 
-                                                style={styles.performanceIcon} 
+                                            <MaterialIcons
+                                                name="timer"
+                                                size={16}
+                                                style={styles.performanceIcon}
                                             />
                                             <Text style={styles.performanceWarningText}>
                                                 Slower than other modes
@@ -145,12 +141,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         );
     };
 
-    // Text Input Section (integrated)
-    const renderTextInputSection = () => {
+    // Test Message Section
+    const renderTestMessageSection = () => {
         return (
             <View style={styles.textInputSection}>
                 <View style={styles.textInputHeader}>
-                    <Text style={styles.textInputTitle}>Your Message</Text>
+                    <Text style={styles.textInputTitle}>Test Message</Text>
                     <TouchableOpacity
                         onPress={insertRandomLoremIpsum}
                         style={styles.loremButton}
@@ -160,11 +156,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                         <Text style={styles.loremButtonText}>Lorem Ipsum</Text>
                     </TouchableOpacity>
                 </View>
+                <Text style={styles.testDescription}>
+                    Enter a message to quickly preview how your selected settings will appear on the glasses
+                </Text>
                 <TextInput
                     style={styles.textInput}
                     value={inputText}
                     onChangeText={onTextChange}
-                    placeholder="Type your message here..."
+                    placeholder="Type your test message here..."
                     placeholderTextColor={MaterialColors.onSurfaceVariant}
                     multiline={true}
                     numberOfLines={4}
@@ -174,59 +173,88 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         );
     };
 
-    return (
-        <View style={[ContainerStyles.screen, ContainerStyles.content]}>
-            {renderOutputModeSelector()}
-            {renderTextInputSection()}
+    // Connection Required Message
+    const renderConnectionRequiredMessage = () => {
+        if (anyDeviceConnected) return null;
 
-            {/* Send and Exit Buttons Row */}
-            <View style={styles.buttonRow}>
-                {/* Send Button */}
-                <TouchableOpacity
-                    style={[
-                        ButtonStyles.primaryButton,
-                        styles.sendButton,
-                        !canSend && styles.sendButtonDisabled
-                    ]}
-                    onPress={onSend}
-                    disabled={!canSend}
-                    activeOpacity={0.8}
-                >
-                    <MaterialIcons 
-                        name="send" 
-                        size={20} 
-                        color={canSend ? MaterialColors.onPrimary : MaterialColors.onSurfaceVariant} 
-                    />
-                    <Text style={[
-                        ButtonStyles.primaryButtonText,
-                        MaterialTypography.labelLarge,
-                        !canSend && ButtonStyles.primaryButtonTextDisabled
-                    ]}>
-                        {getSendButtonText()}
-                    </Text>
-                </TouchableOpacity>
-
-                {/* Exit Button */}
-                <TouchableOpacity
-                    onPress={onExit}
-                    style={[
-                        ButtonStyles.secondaryButton, 
-                        styles.exitButton
-                    ]}
-                    activeOpacity={0.8}
-                >
-                    <MaterialIcons 
-                        name={outputMode === 'official' ? 'stop' : 'dashboard'} 
-                        size={18} 
-                        color={MaterialColors.onSurface} 
-                    />
-                    <Text style={[ButtonStyles.secondaryButtonText, MaterialTypography.labelMedium]}>
-                        {outputMode === 'official' ? 'Stop' : 'Exit'}
-                    </Text>
-                </TouchableOpacity>
+        return (
+            <View style={styles.connectionRequiredContainer}>
+                <MaterialIcons
+                    name="bluetooth-disabled"
+                    size={24}
+                    color={MaterialColors.onSurfaceVariant}
+                />
+                <Text style={styles.connectionRequiredText}>
+                    Connect your glasses to test the settings
+                </Text>
             </View>
-        </View>
+        );
+    };
+
+    return (
+        <ScrollView
+            style={ContainerStyles.screen}
+            contentContainerStyle={{
+                paddingHorizontal: MaterialSpacing.lg,
+                paddingTop: MaterialSpacing.lg,
+                paddingBottom: MaterialSpacing.lg,
+            }}
+            showsVerticalScrollIndicator={false}
+        >
+            {renderOutputModeSelector()}
+            {renderTestMessageSection()}
+            {renderConnectionRequiredMessage()}
+
+            {/* Test and Exit Buttons Row - only show when connected */}
+            {anyDeviceConnected && (
+                <View style={styles.buttonRow}>
+                    {/* Test Button */}
+                    <TouchableOpacity
+                        style={[
+                            ButtonStyles.primaryButton,
+                            styles.sendButton,
+                            !canSend && styles.sendButtonDisabled
+                        ]}
+                        onPress={onSend}
+                        disabled={!canSend}
+                        activeOpacity={0.8}
+                    >
+                        <MaterialIcons
+                            name="preview"
+                            size={20}
+                            color={canSend ? MaterialColors.onPrimary : MaterialColors.onSurfaceVariant}
+                        />
+                        <Text style={[
+                            ButtonStyles.primaryButtonText,
+                            MaterialTypography.labelLarge,
+                            !canSend && ButtonStyles.primaryButtonTextDisabled
+                        ]}>
+                            {getSendButtonText()}
+                        </Text>
+                    </TouchableOpacity>
+
+                    {/* Exit Button */}
+                    <TouchableOpacity
+                        onPress={onExit}
+                        style={[
+                            ButtonStyles.secondaryButton,
+                            styles.exitButton
+                        ]}
+                        activeOpacity={0.8}
+                    >
+                        <MaterialIcons
+                            name={outputMode === 'official' ? 'stop' : 'dashboard'}
+                            size={18}
+                            color={MaterialColors.onSurface}
+                        />
+                        <Text style={[ButtonStyles.secondaryButtonText, MaterialTypography.labelMedium]}>
+                            {outputMode === 'official' ? 'Stop' : 'Exit'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+        </ScrollView>
     );
 };
 
-export default HomeScreen;
+export default Settings;

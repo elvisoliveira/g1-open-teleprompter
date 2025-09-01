@@ -24,9 +24,11 @@ const STORAGE_KEY = 'presentations_data';
 
 interface PresentationsScreenProps {
     outputMode: OutputMode;
+    leftConnected: boolean;
+    rightConnected: boolean;
 }
 
-const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ outputMode }) => {
+const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ outputMode, leftConnected, rightConnected }) => {
     const [presentations, setPresentations] = useState<Presentation[]>([]);
     const [selectedPresentation, setSelectedPresentation] = useState<Presentation | null>(null);
     const [newPresentationName, setNewPresentationName] = useState('');
@@ -311,6 +313,8 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ outputMode })
     if (selectedPresentation) {
         return (
             <SlidesScreen
+                leftConnected={leftConnected}
+                rightConnected={rightConnected}
                 presentation={selectedPresentation}
                 onGoBack={() => setSelectedPresentation(null)}
                 onUpdatePresentation={handleUpdatePresentation}

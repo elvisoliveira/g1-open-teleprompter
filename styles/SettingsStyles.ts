@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { CardStyles, ContainerStyles } from './CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from './MaterialTheme';
 
-export const homeScreenStyles = StyleSheet.create({
+export const settingsStyles = StyleSheet.create({
     // Output Mode Selector Styles
     sectionTitle: {
         ...MaterialTypography.titleLarge,
@@ -109,11 +109,34 @@ export const homeScreenStyles = StyleSheet.create({
         textAlignVertical: 'top',
     },
 
+    // Test Description Styles
+    testDescription: {
+        ...MaterialTypography.bodyMedium,
+        color: MaterialColors.onSurfaceVariant,
+        marginBottom: MaterialSpacing.md,
+        lineHeight: 20,
+    },
+
+    // Connection Required Message Styles
+    connectionRequiredContainer: {
+        ...ContainerStyles.section,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: MaterialSpacing.xl,
+        backgroundColor: MaterialColors.surfaceVariant,
+        borderRadius: MaterialSpacing.md,
+        gap: MaterialSpacing.sm,
+    },
+    connectionRequiredText: {
+        ...MaterialTypography.bodyLarge,
+        color: MaterialColors.onSurfaceVariant,
+        textAlign: 'center',
+    },
+
     // Button Row Styles
     buttonRow: {
         ...ContainerStyles.row,
-        gap: MaterialSpacing.md,
-        marginVertical: MaterialSpacing.lg,
+        gap: MaterialSpacing.md
     },
     sendButton: {
         flex: 2,

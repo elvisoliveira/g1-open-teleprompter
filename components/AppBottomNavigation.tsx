@@ -5,12 +5,12 @@ import { bottomNavigationStyles as styles } from '../styles/BottomNavigationStyl
 import { MaterialColors } from '../styles/MaterialTheme';
 
 interface AppBottomNavigationProps {
-    currentView: 'home' | 'device' | 'presentations';
-    onNavigate: (view: 'home' | 'device' | 'presentations') => void;
+    currentView: 'settings' | 'device' | 'presentations' | 'connection';
+    onNavigate: (view: 'settings' | 'device' | 'presentations') => void;
 }
 
 const tabs = [
-    { key: 'home', icon: 'home', label: 'Home' },
+    { key: 'settings', icon: 'settings', label: 'Settings' },
     { key: 'device', icon: 'devices', label: 'Device' },
     { key: 'presentations', icon: 'slideshow', label: 'Presentations' },
 ] as const;
