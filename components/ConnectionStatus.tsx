@@ -39,10 +39,10 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
             refreshBatteryInfo();
             refreshDeviceStatus();
 
-            // Periodically update device status (every 30 seconds)
+            // Periodically update device status (every 5 seconds)
             statusInterval = setInterval(() => {
                 refreshDeviceStatus();
-            }, 30000);
+            }, 5000);
         } else {
             // Clear device status when disconnected
             setDeviceStatus(undefined);

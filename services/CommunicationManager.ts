@@ -92,28 +92,42 @@ export class CommunicationManager {
     private static async sendCommandWithResponse(
         device: Device,
         requestBytes: Uint8Array,
-        expectedHeader: Uint8Array,
-        waitTimeMs: number = 250
+        expectedHeader: Uint8Array
     ): Promise<Uint8Array | null> {
         console.log(`[CommunicationManager] Command: ${Utils.arrayToHex(requestBytes)}, expecting header: ${Utils.arrayToHex(expectedHeader)}`);
 
         try {
             const responsePromise = new Promise<Uint8Array | null>((resolve) => {
-                const timeout = setTimeout(() => resolve(null), waitTimeMs + 1000);
-                const subscription = device.monitorCharacteristicForService(
-                    SERVICE_UUID,
-                    READ_CHARACTERISTIC_UUID,
-                    (error, characteristic) => {
+                const timeout = setTimeout(() => {
+                    console.warn(`[CommunicationManager] Timeout`);
+                    resolve(null)
+                }, 3000);
+
+                let subscription: any;
+
+                const handleResponse = (error: any, characteristic: any) => {
+                    if (error || !characteristic?.value) {
+                        return; // Don't resolve yet, keep listening
+                    }
+
+                    const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
+                    console.log(`[CommunicationManager] Received notification: ${Utils.arrayToHex(data)}`);
+
+                    // Check if this response matches what we're expecting
+                    if (expectedHeader.length === 0 || this.headerMatches(data, expectedHeader)) {
                         clearTimeout(timeout);
                         subscription.remove();
-                        if (error || !characteristic?.value) {
-                            resolve(null);
-                            return;
-                        }
-                        const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
-                        console.log(`[CommunicationManager] Received notification: ${Utils.arrayToHex(data)}`);
                         resolve(data);
+                    } else {
+                        console.warn(`[CommunicationManager] Ignoring unexpected response, waiting for expected header: ${Utils.arrayToHex(expectedHeader)}`);
+                        // Keep listening for the correct response
                     }
+                };
+
+                subscription = device.monitorCharacteristicForService(
+                    SERVICE_UUID,
+                    READ_CHARACTERISTIC_UUID,
+                    handleResponse
                 );
             });
 
@@ -124,13 +138,12 @@ export class CommunicationManager {
             }
 
             const response = await responsePromise;
-            if (response && (expectedHeader.length === 0 || this.headerMatches(response, expectedHeader))) {
+            if (response) {
+                // Response already validated in the notification handler
                 return response;
             }
 
-            if (waitTimeMs > 0) {
-                await Utils.sleep(waitTimeMs);
-            }
+            console.warn('[CommunicationManager] First response detection method failed, trying the fallback');
 
             try {
                 const characteristic = await device.readCharacteristicForService(
@@ -171,7 +184,7 @@ export class CommunicationManager {
      */
     static async requestBatteryLevel(device: Device): Promise<number | null> {
         const requestBytes = new Uint8Array([BATTERY_CMD, 0x01]);
-        const response = await this.sendCommandWithResponse(device, requestBytes, new Uint8Array([BATTERY_CMD]), 250);
+        const response = await this.sendCommandWithResponse(device, requestBytes, new Uint8Array([BATTERY_CMD]));
         if (response && response.length > 2) {
             return response[2] & 0xff;
         }
@@ -182,7 +195,7 @@ export class CommunicationManager {
      * Request firmware information from device
      */
     static async requestFirmwareInfo(device: Device): Promise<string | null> {
-        const response = await this.sendCommandWithResponse(device, new Uint8Array(FIRMWARE_REQUEST_CMD), new Uint8Array([]), 500);
+        const response = await this.sendCommandWithResponse(device, new Uint8Array(FIRMWARE_REQUEST_CMD), new Uint8Array([]));
         if (response && response.length > 0) {
             try {
                 return new TextDecoder('utf-8').decode(response).trim();
@@ -197,7 +210,7 @@ export class CommunicationManager {
      * Request device uptime
      */
     static async requestUptime(device: Device): Promise<number | null> {
-        const response = await this.sendCommandWithResponse(device, new Uint8Array([UPTIME_CMD]), new Uint8Array([UPTIME_CMD]), 250);
+        const response = await this.sendCommandWithResponse(device, new Uint8Array([UPTIME_CMD]), new Uint8Array([UPTIME_CMD]));
         console.log('uptime response');
         console.log(response);
         if (response && response.length >= 4) {
@@ -228,7 +241,7 @@ export class CommunicationManager {
             0x04,
             seq & 0xff
         ]);
-        const response = await this.sendCommandWithResponse(device, heartbeatData, new Uint8Array([HEARTBEAT_CMD]), 1500);
+        const response = await this.sendCommandWithResponse(device, heartbeatData, new Uint8Array([HEARTBEAT_CMD]));
         return !!response && response.length > 5 && response[0] === HEARTBEAT_CMD && response[4] === 0x04;
     }
 

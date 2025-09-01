@@ -277,11 +277,8 @@ class BluetoothService {
 
             await this.getFirmwareInfo(side);
 
-            // Initialize device info and heartbeat only for the first connected device
-            const isFirstConnection = (side === DeviceSide.LEFT && !this.isRightConnected()) ||
-                (side === DeviceSide.RIGHT && !this.isLeftConnected());
-
-            if (isFirstConnection) {
+            // Start heartbeat only if it's not already running
+            if (!this.heartbeatInterval) {
                 this.startHeartbeat();
             }
         } catch (error: any) {
