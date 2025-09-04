@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { useBluetoothConnection } from '../hooks/useBluetoothConnection';
-import { useDeviceStorage } from '../hooks/useDeviceStorage';
-import { defaultBitmapGenerator } from '../services/BitmapGenerator';
-import BluetoothService from '../services/BluetoothService';
+import { useSavedDevices } from '../hooks/useSavedDevices';
 import { teleprompterAppStyles } from '../styles/AppStyles';
 import { OutputMode } from '../types/OutputMode';
 import AppBottomNavigation from './AppBottomNavigation';
@@ -13,178 +11,76 @@ import PresentationsScreen from './PresentationsScreen';
 import Settings from './Settings';
 import TopAppBar from './TopAppBar';
 
-/* @TODO: The connection app view actually represents the glasses connection (left and right sides), but since we need to add a controller ring
- * conection string as well, there is the need to enhance the naming of this view.
- */
-type AppView = 'connection' | 'settings' | 'device' | 'presentations';
+type AppView = 'glassesConnection' | 'settings' | 'device' | 'presentations';
 
 const TeleprompterApp: React.FC = () => {
     // Core view state - start directly with device connection view
     const [currentView, setCurrentView] = useState<AppView>('device');
 
-    // Storage hook
-    /* @TODO: This applied to useDeviceStorage and useBluetoothConnection.
-     * Currently useDeviceStorage is being used for storing the mac addreses of previously connected glasses (right and left side).
-     * Since we will need to add a controller ring as well, there is the need for enhancing the naming to something more related to
-     * left and right glasses side, and add the storing of the ring mac address as well.
-     * useBluetoothConnection is being used as a sort of bridge between the components and BluetoothService.
-     * Maybe useBluetoothConnection and useBluetoothConnection could be bundled toguether to make the project less verbose, but renaming everything to make clear that
-     * we are dealing specifically with the glasses and it's sides, so that it will be easier to implement the ring features afterwards.
-     */
-    const { savedLeftMac, savedRightMac, saveMacAddress, loadSavedMacAddresses } =
-        useDeviceStorage();
+    // Glasses pairing and connection hooks
+    const { savedLeftGlassMac, savedRightGlassMac, saveGlassMacAddress, loadSavedGlassMacAddresses } =
+        useSavedDevices();
 
-    // Bluetooth connection hook
+    // Glasses Bluetooth connection hook
     const {
-        leftConnected,
-        rightConnected,
+        leftGlassConnected,
+        rightGlassConnected,
         isScanning,
         pairedDevices,
         connectionStep,
         isAutoConnecting,
         isBluetoothEnabled,
         loadPairedDevices,
-        handleDeviceConnection,
-        attemptAutoReconnection,
+        handleGlassConnection,
+        attemptGlassAutoReconnection,
     } = useBluetoothConnection((side, deviceId) => {
-        saveMacAddress(side, deviceId);
+        saveGlassMacAddress(side, deviceId);
     });
 
+    // Output mode state (kept at app level as it affects multiple components)
     const [outputMode, setOutputMode] = useState<OutputMode>('text');
-
-    // Message state
-    /* @TODO: Evaluate if inputText and isSending could be inside the settings component for code clarity */
-    const [inputText, setInputText] = useState('');
-    const [isSending, setIsSending] = useState(false);
 
     // Initialize app by loading saved addresses and paired devices
     useEffect(() => {
         const initializeApp = async () => {
-            await loadSavedMacAddresses();
+            await loadSavedGlassMacAddresses();
             await loadPairedDevices();
         };
         initializeApp();
     }, []);
-
-    // Navigate to settings when both devices connected
-    useEffect(() => {
-        if (connectionStep === 'complete') {
-            setCurrentView('settings');
-        }
-    }, [connectionStep]);
 
     // Show all paired devices including non-Even G1
     const handleShowAllDevices = async () => {
         await loadPairedDevices(true);
     };
 
-    /* @TODO: Evaluate if this could be inside the settings component for code clarity */
-    const getModeText = (mode: OutputMode, forSuccess: boolean) => {
-        if (mode === 'text') return forSuccess ? 'text' : 'message';
-        if (mode === 'image') return forSuccess ? 'image (BMP)' : 'image';
-        if (mode === 'official') return 'official teleprompter';
-        return '';
-    };
-
-    /* @TODO: Evaluate if this could be inside the settings component for code clarity */
-    const handleSendMessage = async () => {
-        const messageText = inputText.trim();
-        if (!messageText) return;
-
-        setIsSending(true);
-        try {
-            let success = false;
-
-            if (outputMode === 'text') {
-                success = await BluetoothService.sendText(messageText);
-            } else if (outputMode === 'image') {
-                try {
-                    const bmpBuffer = await defaultBitmapGenerator.textToBitmap(messageText);
-
-                    if (!defaultBitmapGenerator.validateBmpFormat(bmpBuffer)) {
-                        throw new Error('Generated BMP format is invalid');
-                    }
-
-                    const base64Image = defaultBitmapGenerator.bufferToBase64(bmpBuffer);
-                    success = await BluetoothService.sendImage(base64Image);
-                } catch (bitmapError) {
-                    console.error('Error generating bitmap:', bitmapError);
-                    Alert.alert('Error', 'Failed to generate image from text');
-                    return;
-                }
-            } else if (outputMode === 'official') {
-                success = await BluetoothService.sendOfficialTeleprompter(messageText);
-            }
-
-            if (success) {
-                setInputText('');
-                const modeText = getModeText(outputMode, true);
-                console.log(`Successfully sent ${modeText} to glasses`);
-            } else {
-                const modeText = getModeText(outputMode, false);
-                Alert.alert('Error', `Failed to send ${modeText}`);
-            }
-        } catch (error) {
-            console.error('Error sending message:', error);
-            const modeText = getModeText(outputMode, false);
-
-            Alert.alert('Error', `Failed to send ${modeText}`);
-        } finally {
-            setIsSending(false);
-        }
-    };
-
-    /* @TODO: Evaluate if this could be inside the settings component */
-    const handleExit = async () => {
-        try {
-            let success = false;
-
-            if (outputMode === 'official') {
-                success = await BluetoothService.exitOfficialTeleprompter();
-            } else {
-                success = await BluetoothService.exit();
-            }
-
-            if (!success) {
-                const modeText = outputMode === 'official' ? 'official teleprompter' : 'dashboard';
-                Alert.alert('Error', `Failed to exit ${modeText}`);
-            }
-        } catch (error) {
-            console.error('Error exiting:', error);
-            const modeText = outputMode === 'official' ? 'official teleprompter' : 'dashboard';
-            Alert.alert('Error', `Failed to exit ${modeText}`);
-        }
-    };
-
-    // Connection handlers
-    /* @TODO: This is related to the glasses connection, since we will implement a ring controller the name should be adjusted */
-    const handleRetryConnection = async () => {
-        const reconnected = await attemptAutoReconnection(savedLeftMac, savedRightMac);
+    // Glasses connection handlers
+    const handleRetryGlassConnection = async () => {
+        const reconnected = await attemptGlassAutoReconnection(savedLeftGlassMac, savedRightGlassMac);
         if (!reconnected) {
-            Alert.alert('Connection Failed', 'Could not reconnect to the saved devices. Please try connecting manually.');
+            Alert.alert('Connection Failed', 'Could not reconnect to the saved glasses. Please try connecting manually.');
         }
     };
 
-    /* @TODO: This is related to the glasses connection, since we will implement a ring controller the name should be adjusted */
-    const handleSetupDevices = async () => {
-        setCurrentView('connection');
+    const handleSetupGlasses = async () => {
+        setCurrentView('glassesConnection');
         await loadPairedDevices();
     };
 
     const renderCurrentView = () => {
         const view = (() => {
             switch (currentView) {
-                case 'connection':
+                case 'glassesConnection':
                     return (
                         <GlassesConnection
                             devices={pairedDevices}
                             isScanning={isScanning}
                             connectionStep={(connectionStep as 'left' | 'right')}
-                            onGlassSideSelect={handleDeviceConnection}
+                            onGlassSideSelect={handleGlassConnection}
                             onRefresh={() => loadPairedDevices()}
                             onShowAllDevices={handleShowAllDevices}
-                            leftConnected={leftConnected}
-                            rightConnected={rightConnected}
+                            leftConnected={leftGlassConnected}
+                            rightConnected={rightGlassConnected}
                             isBluetoothEnabled={isBluetoothEnabled}
                         />
                     );
@@ -192,35 +88,30 @@ const TeleprompterApp: React.FC = () => {
                 case 'settings':
                     return (
                         <Settings
-                            inputText={inputText}
-                            onTextChange={setInputText}
                             outputMode={outputMode}
                             onOutputModeChange={setOutputMode}
-                            onSend={handleSendMessage}
-                            onExit={handleExit}
-                            leftConnected={leftConnected}
-                            rightConnected={rightConnected}
-                            isSending={isSending}
+                            leftConnected={leftGlassConnected}
+                            rightConnected={rightGlassConnected}
                         />
                     );
 
                 case 'device':
                     return (
                         <DevicesStatus
-                            leftConnected={leftConnected}
-                            rightConnected={rightConnected}
-                            onReconnectGlasses={handleRetryConnection}
-                            onSetupGlasses={handleSetupDevices}
+                            leftConnected={leftGlassConnected}
+                            rightConnected={rightGlassConnected}
+                            onReconnectGlasses={handleRetryGlassConnection}
+                            onSetupGlasses={handleSetupGlasses}
                             isReconnectingGlasses={isAutoConnecting}
-                            hasConfiguredGlasses={!!(savedLeftMac && savedRightMac)}
+                            hasConfiguredGlasses={!!(savedLeftGlassMac && savedRightGlassMac)}
                         />
                     );
 
                 case 'presentations':
                     return (
                         <PresentationsScreen
-                            leftConnected={leftConnected}
-                            rightConnected={rightConnected}
+                            leftConnected={leftGlassConnected}
+                            rightConnected={rightGlassConnected}
                             outputMode={outputMode}
                         />
                     );

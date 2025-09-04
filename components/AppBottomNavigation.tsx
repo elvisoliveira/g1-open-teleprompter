@@ -5,7 +5,7 @@ import { bottomNavigationStyles as styles } from '../styles/BottomNavigationStyl
 import { MaterialColors } from '../styles/MaterialTheme';
 
 interface AppBottomNavigationProps {
-    currentView: 'settings' | 'device' | 'presentations' | 'connection';
+    currentView: 'settings' | 'device' | 'presentations' | 'glassesConnection';
     onNavigate: (view: 'settings' | 'device' | 'presentations') => void;
 }
 

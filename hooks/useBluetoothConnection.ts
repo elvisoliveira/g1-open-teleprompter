@@ -10,9 +10,9 @@ export interface PairedDevice {
 
 export type ConnectionStep = 'left' | 'right' | 'complete';
 
-export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'right', deviceId: string) => void) => {
-    const [leftConnected, setLeftConnected] = useState(false);
-    const [rightConnected, setRightConnected] = useState(false);
+export const useBluetoothConnection = (onGlassConnected?: (side: 'left' | 'right', deviceId: string) => void) => {
+    const [leftGlassConnected, setLeftGlassConnected] = useState(false);
+    const [rightGlassConnected, setRightGlassConnected] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
     const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
     const [connectionStep, setConnectionStep] = useState<ConnectionStep>('left');
@@ -22,8 +22,8 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
     useEffect(() => {
         // Subscribe to connection state changes from BluetoothService
         const unsubscribe = BluetoothService.onConnectionStateChange((state) => {
-            setLeftConnected(state.left);
-            setRightConnected(state.right);
+            setLeftGlassConnected(state.left);
+            setRightGlassConnected(state.right);
         });
 
         // Check initial Bluetooth status
@@ -35,12 +35,12 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
         };
     }, []);
 
-    // Auto-advance to next step when devices connected
+    // Auto-advance to next step when glasses connected
     useEffect(() => {
-        if (leftConnected && rightConnected && connectionStep !== 'complete') {
+        if (leftGlassConnected && rightGlassConnected && connectionStep !== 'complete') {
             setConnectionStep('complete');
         }
-    }, [leftConnected, rightConnected, connectionStep]);
+    }, [leftGlassConnected, rightGlassConnected, connectionStep]);
 
     const checkBluetoothStatus = async () => {
         try {
@@ -75,7 +75,7 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
         }
     };
 
-    const handleDeviceConnection = async (deviceId: string, side: 'left' | 'right') => {
+    const handleGlassConnection = async (deviceId: string, side: 'left' | 'right') => {
         try {
             if (side === 'left') {
                 await BluetoothService.connectLeft(deviceId);
@@ -85,14 +85,14 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
             }
             
             // Notify parent component about successful connection
-            onDeviceConnected?.(side, deviceId);
+            onGlassConnected?.(side, deviceId);
         } catch (error) {
-            console.error(`Failed to connect ${side} device:`, error);
-            Alert.alert('Connection Error', `Failed to connect to the ${side} device`);
+            console.error(`Failed to connect ${side} glass:`, error);
+            Alert.alert('Connection Error', `Failed to connect to the ${side} glass`);
         }
     };
 
-    const attemptAutoReconnection = async (leftMac: string | null, rightMac: string | null) => {
+    const attemptGlassAutoReconnection = async (leftMac: string | null, rightMac: string | null) => {
         if (!leftMac || !rightMac) return false;
 
         setIsAutoConnecting(true);
@@ -104,7 +104,7 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
             setIsAutoConnecting(false);
             return true;
         } catch (error) {
-            console.error('Auto-reconnection failed:', error);
+            console.error('Glass auto-reconnection failed:', error);
             setIsAutoConnecting(false);
             return false;
         }
@@ -115,17 +115,22 @@ export const useBluetoothConnection = (onDeviceConnected?: (side: 'left' | 'righ
     };
 
     return {
-        leftConnected,
-        rightConnected,
+        leftGlassConnected,
+        rightGlassConnected,
         isScanning,
         pairedDevices,
         connectionStep,
         isAutoConnecting,
         isBluetoothEnabled,
         loadPairedDevices,
-        handleDeviceConnection,
-        attemptAutoReconnection,
+        handleGlassConnection,
+        attemptGlassAutoReconnection,
         resetConnection,
         checkBluetoothStatus,
+        // Legacy exports for backward compatibility (deprecated)
+        leftConnected: leftGlassConnected,
+        rightConnected: rightGlassConnected,
+        handleDeviceConnection: handleGlassConnection,
+        attemptAutoReconnection: attemptGlassAutoReconnection,
     };
 };

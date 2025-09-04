@@ -1,37 +1,111 @@
+import { defaultBitmapGenerator } from '@/services/BitmapGenerator';
+import BluetoothService from '@/services/BluetoothService';
 import { MaterialIcons } from '@expo/vector-icons';
-import React from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
 import { MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 import { settingsStyles as styles } from '../styles/SettingsStyles';
 import { OutputMode } from '../types/OutputMode';
 
 interface SettingsProps {
-    inputText: string;
-    onTextChange: (text: string) => void;
     outputMode: OutputMode;
     onOutputModeChange: (mode: OutputMode) => void;
-    onSend: () => void;
-    onExit: () => void;
     leftConnected: boolean;
     rightConnected: boolean;
-    isSending?: boolean;
 }
 
 const Settings: React.FC<SettingsProps> = ({
-    inputText,
-    onTextChange,
     outputMode,
     onOutputModeChange,
-    onSend,
-    onExit,
     leftConnected,
     rightConnected,
-    isSending = false
 }) => {
+    // Message state managed internally
+    const [inputText, setInputText] = useState('');
+    const [isSending, setIsSending] = useState(false);
     const canSend = inputText.trim().length > 0 && (leftConnected || rightConnected) && !isSending;
     const bothConnected = leftConnected && rightConnected;
     const anyDeviceConnected = leftConnected || rightConnected;
+
+    const getModeText = (mode: OutputMode, forSuccess: boolean) => {
+        if (mode === 'text') return forSuccess ? 'text' : 'message';
+        if (mode === 'image') return forSuccess ? 'image (BMP)' : 'image';
+        if (mode === 'official') return 'official teleprompter';
+        return '';
+    };
+
+    const handleSendMessage = async () => {
+        const messageText = inputText.trim();
+        if (!messageText) return;
+
+        setIsSending(true);
+        try {
+            let success = false;
+
+            if (outputMode === 'text') {
+                success = await BluetoothService.sendText(messageText);
+            } else if (outputMode === 'image') {
+                try {
+                    const bmpBuffer = await defaultBitmapGenerator.textToBitmap(messageText);
+
+                    if (!defaultBitmapGenerator.validateBmpFormat(bmpBuffer)) {
+                        throw new Error('Generated BMP format is invalid');
+                    }
+
+                    const base64Image = defaultBitmapGenerator.bufferToBase64(bmpBuffer);
+                    success = await BluetoothService.sendImage(base64Image);
+                } catch (bitmapError) {
+                    console.error('Error generating bitmap:', bitmapError);
+                    Alert.alert('Error', 'Failed to generate image from text');
+                    return;
+                }
+            } else if (outputMode === 'official') {
+                success = await BluetoothService.sendOfficialTeleprompter(messageText);
+            }
+
+            if (success) {
+                setInputText('');
+                const modeText = getModeText(outputMode, true);
+                console.log(`Successfully sent ${modeText} to glasses`);
+            } else {
+                const modeText = getModeText(outputMode, false);
+                Alert.alert('Error', `Failed to send ${modeText}`);
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            const modeText = getModeText(outputMode, false);
+            Alert.alert('Error', `Failed to send ${modeText}`);
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const handleExit = async () => {
+        try {
+            let success = false;
+
+            if (outputMode === 'official') {
+                success = await BluetoothService.exitOfficialTeleprompter();
+            } else {
+                success = await BluetoothService.exit();
+            }
+
+            if (!success) {
+                const modeText = outputMode === 'official' ? 'official teleprompter' : 'dashboard';
+                Alert.alert('Error', `Failed to exit ${modeText}`);
+            }
+        } catch (error) {
+            console.error('Error exiting:', error);
+            const modeText = outputMode === 'official' ? 'official teleprompter' : 'dashboard';
+            Alert.alert('Error', `Failed to exit ${modeText}`);
+        }
+    };
+
+    const insertRandomLoremIpsum = () => {
+        const randomText = loremIpsumTexts[Math.floor(Math.random() * loremIpsumTexts.length)];
+        setInputText(randomText);
+    };
 
     const loremIpsumTexts = [
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla consequat consequat elit, sed feugiat arcu sollicitudin vel. Etiam lobortis eu eros quis convallis. Donec cursus justo a porta iaculis. Fusce vulputate tincidunt odio eu venenatis. Vivamus ac feugiat tortor. Mauris ac velit tortor.",
@@ -41,10 +115,7 @@ const Settings: React.FC<SettingsProps> = ({
         "In sit amet commodo ligula. Integer eleifend, nisl quis interdum blandit, mi risus ultrices lacus, et porttitor mauris nisl vitae nisi. Ut laoreet turpis id est rhoncus, non gravida libero placerat. Cras sollicitudin lectus tempor dictum aliquam. Suspendisse vitae tristique neque."
     ];
 
-    const insertRandomLoremIpsum = () => {
-        const randomText = loremIpsumTexts[Math.floor(Math.random() * loremIpsumTexts.length)];
-        onTextChange(randomText);
-    };
+
 
     const getSendButtonText = () => {
         if (isSending) return 'Testing...';
@@ -162,7 +233,7 @@ const Settings: React.FC<SettingsProps> = ({
                 <TextInput
                     style={styles.textInput}
                     value={inputText}
-                    onChangeText={onTextChange}
+                    onChangeText={setInputText}
                     placeholder="Type your test message here..."
                     placeholderTextColor={MaterialColors.onSurfaceVariant}
                     multiline={true}
@@ -215,7 +286,7 @@ const Settings: React.FC<SettingsProps> = ({
                             styles.sendButton,
                             !canSend && styles.sendButtonDisabled
                         ]}
-                        onPress={onSend}
+                        onPress={handleSendMessage}
                         disabled={!canSend}
                         activeOpacity={0.8}
                     >
@@ -235,7 +306,7 @@ const Settings: React.FC<SettingsProps> = ({
 
                     {/* Exit Button */}
                     <TouchableOpacity
-                        onPress={onExit}
+                        onPress={handleExit}
                         style={[
                             ButtonStyles.secondaryButton,
                             styles.exitButton
