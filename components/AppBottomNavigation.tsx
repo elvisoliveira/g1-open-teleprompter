@@ -1,11 +1,12 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { AppView } from '../services/types';
 import { bottomNavigationStyles as styles } from '../styles/BottomNavigationStyles';
 import { MaterialColors } from '../styles/MaterialTheme';
 
 interface AppBottomNavigationProps {
-    currentView: 'settings' | 'device' | 'presentations' | 'glassesConnection';
+    currentView: AppView;
     onNavigate: (view: 'settings' | 'device' | 'presentations') => void;
 }
 

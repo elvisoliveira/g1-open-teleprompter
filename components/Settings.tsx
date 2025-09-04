@@ -3,10 +3,10 @@ import BluetoothService from '@/services/BluetoothService';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { OutputMode } from '../services/types';
 import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
 import { MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 import { settingsStyles as styles } from '../styles/SettingsStyles';
-import { OutputMode } from '../types/OutputMode';
 
 interface SettingsProps {
     outputMode: OutputMode;

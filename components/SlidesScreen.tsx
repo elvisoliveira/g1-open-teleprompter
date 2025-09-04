@@ -4,9 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { defaultBitmapGenerator } from '../services/BitmapGenerator';
 import BluetoothService from '../services/BluetoothService';
+import { OutputMode } from '../services/types';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles, InputStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
-import { OutputMode } from '../types/OutputMode';
 
 interface Slide {
     id: string;

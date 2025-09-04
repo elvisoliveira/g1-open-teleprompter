@@ -50,6 +50,13 @@ export interface RingInfo {
 // Generic Connected Device Types
 export type ConnectedDeviceType = 'glasses' | 'ring';
 
+export type AppView = 'glassesConnection' | 'settings' | 'device' | 'presentations';
+
+/**
+ * Output mode types for the teleprompter app
+ */
+export type OutputMode = 'text' | 'image' | 'official';
+
 export interface ConnectedDevice {
     type: ConnectedDeviceType;
     id: string;

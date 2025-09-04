@@ -2,16 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { useBluetoothConnection } from '../hooks/useBluetoothConnection';
 import { useSavedDevices } from '../hooks/useSavedDevices';
+import { AppView, OutputMode } from '../services/types';
 import { teleprompterAppStyles } from '../styles/AppStyles';
-import { OutputMode } from '../types/OutputMode';
 import AppBottomNavigation from './AppBottomNavigation';
 import DevicesStatus from './DevicesStatus';
 import GlassesConnection from './GlassesConnection';
 import PresentationsScreen from './PresentationsScreen';
 import Settings from './Settings';
 import TopAppBar from './TopAppBar';
-
-type AppView = 'glassesConnection' | 'settings' | 'device' | 'presentations';
 
 const TeleprompterApp: React.FC = () => {
     // Core view state - start directly with device connection view
