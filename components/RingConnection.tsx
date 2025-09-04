@@ -10,93 +10,26 @@ interface PairedDevice {
     isConnected: boolean;
 }
 
-interface DeviceConnectionProps {
+interface RingConnectionProps {
     devices: PairedDevice[];
     isScanning: boolean;
-    connectionStep: 'left' | 'right';
-    onDeviceSelect: (deviceId: string, side: 'left' | 'right') => void;
+    onRingSelect: (deviceId: string) => void;
     onRefresh: () => void;
     onShowAllDevices: () => void;
-    leftConnected: boolean;
-    rightConnected: boolean;
+    ringConnected: boolean;
     isBluetoothEnabled: boolean;
 }
 
-const DeviceConnection: React.FC<DeviceConnectionProps> = ({
+const RingConnection: React.FC<RingConnectionProps> = ({
     devices,
     isScanning,
-    connectionStep,
-    onDeviceSelect,
+    onRingSelect,
     onRefresh,
     onShowAllDevices,
-    leftConnected,
-    rightConnected,
+    ringConnected,
     isBluetoothEnabled
 }) => {
     const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
-    const getStepInfo = () => {
-        switch (connectionStep) {
-            case 'left':
-                return { title: 'Connect Left Glass', subtitle: 'Select your left smart glass' };
-            case 'right':
-                return { title: 'Connect Right Glass', subtitle: 'Select your right smart glass' };
-            default:
-                return { title: 'Connect Glass', subtitle: 'Select your smart glass' };
-        }
-    };
-
-    const stepInfo = getStepInfo();
-
-    const renderStepIndicator = () => (
-        <View style={styles.stepContainer}>
-            <View style={styles.stepIndicator}>
-                <View style={[
-                    styles.step,
-                    !leftConnected && styles.stepInactive
-                ]}>
-                    <Text style={[
-                        styles.stepNumber,
-                        !leftConnected && styles.stepNumberInactive
-                    ]}>
-                        <MaterialIcons
-                            name="arrow-back"
-                            size={11}
-                            color={leftConnected ? '#1C1B1F' : '#49454F'}
-                        />
-                    </Text>
-                </View>
-                <View style={[
-                    styles.stepLine,
-                    (!leftConnected || connectionStep === 'left') && styles.stepLineInactive
-                ]} />
-                <View style={[
-                    styles.step,
-                    !rightConnected && styles.stepInactive
-                ]}>
-                    <Text style={[
-                        styles.stepNumber,
-                        !rightConnected && styles.stepNumberInactive
-                    ]}>
-                        <MaterialIcons
-                            name="arrow-forward"
-                            size={11}
-                            color={rightConnected ? '#1C1B1F' : '#49454F'}
-                        />
-                    </Text>
-                </View>
-            </View>
-            <View style={styles.stepLabels}>
-                <Text style={[
-                    styles.stepLabel,
-                    leftConnected && styles.stepLabelActive
-                ]}>Left Glass</Text>
-                <Text style={[
-                    styles.stepLabel,
-                    rightConnected && styles.stepLabelActive
-                ]}>Right Glass</Text>
-            </View>
-        </View>
-    );
 
     const renderDeviceCard = ({ item }: { item: PairedDevice }) => {
         const isConnecting = connectingDeviceId === item.id;
@@ -110,16 +43,12 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                     isConnecting && styles.deviceCardConnecting,
                     isDisabled && styles.deviceCardDisabled
                 ]}
-                onPress={async () => {
+                onPress={() => {
                     if (isDisabled) return;
 
                     setConnectingDeviceId(item.id);
                     try {
-                        if (connectionStep === 'left') {
-                            await onDeviceSelect(item.id, 'left');
-                        } else if (connectionStep === 'right') {
-                            await onDeviceSelect(item.id, 'right');
-                        }
+                        onRingSelect(item.id);
                     } finally {
                         setConnectingDeviceId(null);
                     }
@@ -130,7 +59,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                 <View style={styles.deviceCardContent}>
                     <View style={styles.deviceInfo}>
                         <MaterialIcons
-                            name="bluetooth"
+                            name="radio-button-unchecked"
                             size={24}
                             color={isConnecting ? MaterialColors.onSurfaceVariant : MaterialColors.primary}
                         />
@@ -139,7 +68,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                                 styles.deviceName,
                                 isConnecting && styles.deviceNameConnecting
                             ]}>
-                                {item.name || 'Unknown Device'}
+                                {item.name || 'Unknown Ring'}
                             </Text>
                             <Text style={[
                                 styles.deviceId,
@@ -173,36 +102,12 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
         );
     };
 
-    const renderBluetoothDisabledState = () => (
-        <View style={styles.emptyState}>
-            <MaterialIcons name="bluetooth-disabled" size={48} color={MaterialColors.onSurfaceVariant} />
-            <Text style={styles.emptyTitle}>Bluetooth is Disabled</Text>
-            <Text style={styles.emptySubtitle}>
-                Bluetooth must be enabled to connect to your Even G1 glasses.
-                Please enable Bluetooth in your device settings and try again.
-            </Text>
-
-            <View style={styles.actionButtonGroup}>
-                <TouchableOpacity
-                    onPress={onRefresh}
-                    style={[styles.actionButton, styles.primaryActionButton]}
-                    activeOpacity={0.8}
-                >
-                    <MaterialIcons name="refresh" size={20} color={MaterialColors.onPrimary} />
-                    <Text style={styles.primaryActionText}>Check Bluetooth Status</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
-
     const renderEmptyState = () => (
         <View style={styles.emptyState}>
             <MaterialIcons name="search-off" size={48} color={MaterialColors.onSurfaceVariant} />
-            <Text style={styles.emptyTitle}>No Even G1 Glasses Found</Text>
+            <Text style={styles.emptyTitle}>No Ring Controllers Found</Text>
             <Text style={styles.emptySubtitle}>
-                This app is a companion for the official Even Realities app.
-                Please ensure your Even G1 glasses are paired and connected to the official Even Realities app first,
-                then try scanning again.
+                Make sure your ring controller is in pairing mode and try scanning again.
             </Text>
 
             <View style={styles.actionButtonGroup}>
@@ -212,7 +117,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
                     activeOpacity={0.8}
                 >
                     <MaterialIcons name="refresh" size={20} color={MaterialColors.onPrimary} />
-                    <Text style={styles.primaryActionText}>Scan for G1 Glasses</Text>
+                    <Text style={styles.primaryActionText}>Scan for Ring</Text>
                 </TouchableOpacity>
 
                 <View style={styles.dividerContainer}>
@@ -238,7 +143,7 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
             <View style={styles.loadingIconContainer}>
                 <MaterialIcons name="bluetooth-searching" size={32} color={MaterialColors.primary} />
             </View>
-            <Text style={styles.loadingTitle}>Scanning for Even G1 Glasses</Text>
+            <Text style={styles.loadingTitle}>Scanning for Ring Controller</Text>
             <Text style={styles.loadingSubtitle}>This may take a few seconds...</Text>
         </View>
     );
@@ -246,21 +151,27 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>{stepInfo.title}</Text>
-                <Text style={styles.subtitle}>{stepInfo.subtitle}</Text>
+                <Text style={styles.title}>Connect Ring Controller</Text>
+                <Text style={styles.subtitle}>Select your ring controller device</Text>
             </View>
-            {renderStepIndicator()}
+
             <View style={styles.deviceList}>
                 {isScanning ? (
                     renderLoadingState()
                 ) : !isBluetoothEnabled ? (
-                    renderBluetoothDisabledState()
+                    <View style={styles.emptyState}>
+                        <MaterialIcons name="bluetooth-disabled" size={48} color={MaterialColors.onSurfaceVariant} />
+                        <Text style={styles.emptyTitle}>Bluetooth is Disabled</Text>
+                        <Text style={styles.emptySubtitle}>
+                            Bluetooth must be enabled to connect to your ring controller.
+                        </Text>
+                    </View>
                 ) : devices.length === 0 ? (
                     renderEmptyState()
                 ) : (
                     <>
                         <View style={styles.listHeader}>
-                            <Text style={styles.listTitle}>Available Devices</Text>
+                            <Text style={styles.listTitle}>Available Ring Controllers</Text>
                             <TouchableOpacity
                                 onPress={onRefresh}
                                 disabled={isScanning}
@@ -288,4 +199,4 @@ const DeviceConnection: React.FC<DeviceConnectionProps> = ({
     );
 };
 
-export default DeviceConnection;
+export default RingConnection;

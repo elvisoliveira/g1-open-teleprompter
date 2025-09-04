@@ -5,12 +5,12 @@ import { CommunicationManager } from './CommunicationManager';
 import { CONNECTION_TIMEOUT_MS, HEARTBEAT_INTERVAL_MS, MTU_SIZE } from './constants';
 import { PermissionManager } from './PermissionManager';
 import { TeleprompterUtils } from './TeleprompterUtils';
-import { BatteryInfo, DeviceInfo, DeviceSide, DeviceStatus, FirmwareInfo, UptimeInfo } from './types';
+import { BatteryInfo, DeviceStatus, FirmwareInfo, GlassesInfo, GlassSide, UptimeInfo } from './types';
 import { Utils } from './utils';
 
 class BluetoothService {
     private manager: BleManager;
-    private devices: DeviceInfo = { left: null, right: null };
+    private devices: GlassesInfo = { left: null, right: null };
     private batteryInfo: BatteryInfo = { left: -1, right: -1 };
     private deviceUptime: UptimeInfo = { left: -1, right: -1 };
     private firmwareInfo: FirmwareInfo = { left: null, right: null };
@@ -29,11 +29,11 @@ class BluetoothService {
 
     // Public API Methods
     async connectLeft(address: string): Promise<void> {
-        await this.connectDevice(address, DeviceSide.LEFT);
+        await this.connectDevice(address, GlassSide.LEFT);
     }
 
     async connectRight(address: string): Promise<void> {
-        await this.connectDevice(address, DeviceSide.RIGHT);
+        await this.connectDevice(address, GlassSide.RIGHT);
     }
 
     async connect(address: string): Promise<void> {
@@ -89,7 +89,7 @@ class BluetoothService {
             Utils.formatTextForDisplay(text)
         );
 
-        const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
+        const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
             return await CommunicationManager.sendPacketsToDevice(device, packets, 5);
         });
 
@@ -105,7 +105,7 @@ class BluetoothService {
             const bmpData = new Uint8Array(Buffer.from(base64ImageData, 'base64'));
             const packets = CommunicationManager.createBmpPackets(bmpData);
 
-            const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
+            const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
                 return await CommunicationManager.sendBmpToDevice(device, bmpData, packets);
             }, true);
 
@@ -141,7 +141,7 @@ class BluetoothService {
                 slidePercentage
             );
 
-            const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
+            const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
                 return await CommunicationManager.sendTeleprompterPackets(device, packets);
             });
 
@@ -160,7 +160,7 @@ class BluetoothService {
 
         try {
             const endPacket = CommunicationManager.buildTeleprompterEndPacket(this.teleprompterSeq);
-            const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
+            const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
                 return await CommunicationManager.sendTeleprompterEndPacket(device, endPacket);
             });
             return results.every(Boolean);
@@ -175,7 +175,7 @@ class BluetoothService {
             throw new Error('No devices connected');
         }
 
-        const results = await this.executeForDevices(DeviceSide.BOTH, async (device) => {
+        const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
             return await CommunicationManager.sendExitCommand(device);
         });
         return results.every(Boolean);
@@ -259,13 +259,13 @@ class BluetoothService {
 
     // Private Helper Methods
     // Connects a device to the specified side (left or right)
-    private async connectDevice(address: string, side: DeviceSide.LEFT | DeviceSide.RIGHT): Promise<void> {
+    private async connectDevice(address: string, side: GlassSide.LEFT | GlassSide.RIGHT): Promise<void> {
         try {
             // Establishes BLE connection, requests permissions, discovers services, and sets MTU
             const device = await this.establishBleConnection(address);
 
             // Store device reference and update connection state
-            if (side === DeviceSide.LEFT) {
+            if (side === GlassSide.LEFT) {
                 this.devices.left = device;
                 this.connectionState.left = true;
             } else {
@@ -282,7 +282,7 @@ class BluetoothService {
                 this.startHeartbeat();
             }
         } catch (error: any) {
-            throw new Error(`Failed to connect ${side === DeviceSide.LEFT ? 'left' : 'right'} device: ${error?.message || 'Unknown error'}`);
+            throw new Error(`Failed to connect ${side === GlassSide.LEFT ? 'left' : 'right'} device: ${error?.message || 'Unknown error'}`);
         }
     }
 
@@ -311,14 +311,14 @@ class BluetoothService {
         return device;
     }
 
-    private async getFirmwareInfo(side: DeviceSide.LEFT | DeviceSide.RIGHT): Promise<void> {
-        const device = side === DeviceSide.LEFT ? this.devices.left : this.devices.right;
-        const currentFirmware = side === DeviceSide.LEFT ? this.firmwareInfo.left : this.firmwareInfo.right;
+    private async getFirmwareInfo(side: GlassSide.LEFT | GlassSide.RIGHT): Promise<void> {
+        const device = side === GlassSide.LEFT ? this.devices.left : this.devices.right;
+        const currentFirmware = side === GlassSide.LEFT ? this.firmwareInfo.left : this.firmwareInfo.right;
 
         if (device && currentFirmware === null) {
             const firmwareInfo = await CommunicationManager.requestFirmwareInfo(device);
             if (firmwareInfo !== null) {
-                if (side === DeviceSide.LEFT) {
+                if (side === GlassSide.LEFT) {
                     this.firmwareInfo.left = firmwareInfo;
                 } else {
                     this.firmwareInfo.right = firmwareInfo;
@@ -372,13 +372,13 @@ class BluetoothService {
     }
 
     private async executeForDevices<T>(
-        side: DeviceSide,
-        operation: (device: any, deviceSide: DeviceSide.LEFT | DeviceSide.RIGHT) => Promise<T>,
+        side: GlassSide,
+        operation: (device: any, deviceSide: GlassSide.LEFT | GlassSide.RIGHT) => Promise<T>,
         parallel: boolean = false
     ): Promise<T[]> {
         const entries = this.getDevicesForSide(side).filter(({ device }) => !!device);
 
-        const run = async (entry: { device: any; side: DeviceSide.LEFT | DeviceSide.RIGHT }) => {
+        const run = async (entry: { device: any; side: GlassSide.LEFT | GlassSide.RIGHT }) => {
             try {
                 return await operation(entry.device, entry.side);
             } catch (error) {
@@ -400,13 +400,13 @@ class BluetoothService {
         return out;
     }
 
-    private getDevicesForSide(side: DeviceSide): Array<{ device: Device | null; side: DeviceSide.LEFT | DeviceSide.RIGHT }> {
-        const devices: Array<{ device: Device | null; side: DeviceSide.LEFT | DeviceSide.RIGHT }> = [];
-        if (side === DeviceSide.BOTH || side === DeviceSide.LEFT) {
-            devices.push({ device: this.devices.left, side: DeviceSide.LEFT });
+    private getDevicesForSide(side: GlassSide): Array<{ device: Device | null; side: GlassSide.LEFT | GlassSide.RIGHT }> {
+        const devices: Array<{ device: Device | null; side: GlassSide.LEFT | GlassSide.RIGHT }> = [];
+        if (side === GlassSide.BOTH || side === GlassSide.LEFT) {
+            devices.push({ device: this.devices.left, side: GlassSide.LEFT });
         }
-        if (side === DeviceSide.BOTH || side === DeviceSide.RIGHT) {
-            devices.push({ device: this.devices.right, side: DeviceSide.RIGHT });
+        if (side === GlassSide.BOTH || side === GlassSide.RIGHT) {
+            devices.push({ device: this.devices.right, side: GlassSide.RIGHT });
         }
         return devices;
     }

@@ -76,6 +76,7 @@ $RECYCLE.BIN/
 .eslintcache
 
 # IDE - VSCode
+.kiro/
 .vscode/
 !.vscode/settings.json
 !.vscode/tasks.json

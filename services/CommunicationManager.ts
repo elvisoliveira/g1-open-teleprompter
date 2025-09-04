@@ -482,15 +482,15 @@ export class CommunicationManager {
         // Build control array
         const control = new Uint8Array([
             TELEPROMPTER_RESERVED,           // reserved0
-            seq & 0xFF,                      // seq
-            newScreen & 0xFF,                // newScreen
-            numPackets & 0xFF,               // numPackets
+            seq                     & 0xFF,  // seq
+            newScreen               & 0xFF,  // newScreen
+            numPackets              & 0xFF,  // numPackets
             TELEPROMPTER_RESERVED,           // reserved1
-            partIdx & 0xFF,                  // partIdx
+            partIdx                 & 0xFF,  // partIdx
             TELEPROMPTER_RESERVED,           // reserved2
-            TELEPROMPTER_COUNTDOWN & 0xFF,   // countdown (stopwatch delay)
-            flags & 0xFF,                    // flags
-            slidePercentage & 0xFF           // scrollbar position (0-100)
+            TELEPROMPTER_COUNTDOWN  & 0xFF,  // countdown (stopwatch delay)
+            flags                   & 0xFF,  // flags
+            slidePercentage         & 0xFF   // scrollbar position (0-100)
         ]);
 
         // Calculate total length
@@ -519,12 +519,11 @@ export class CommunicationManager {
         slidePercentage?: number
     ): Uint8Array[] {
         const packets: Uint8Array[] = [];
-        const numPackets = nextText ? 2 : 1;
 
         // Build visible text packet (part 1)
         packets.push(this.buildTeleprompterValue(
             sequence,
-            numPackets,
+            nextText ? 2 : 1,
             1,
             this.formatTeleprompterPayload(visibleText),
             slidePercentage
@@ -565,4 +564,4 @@ export class CommunicationManager {
     static formatTeleprompterPayload(text: string): Uint8Array {
         return new TextEncoder().encode(text);
     }
-} 
+}

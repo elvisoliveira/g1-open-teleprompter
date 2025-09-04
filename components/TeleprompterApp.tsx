@@ -7,12 +7,15 @@ import BluetoothService from '../services/BluetoothService';
 import { teleprompterAppStyles } from '../styles/AppStyles';
 import { OutputMode } from '../types/OutputMode';
 import AppBottomNavigation from './AppBottomNavigation';
-import ConnectionStatus from './ConnectionStatus';
-import DeviceConnection from './DeviceConnection';
+import DevicesStatus from './DevicesStatus';
+import GlassesConnection from './GlassesConnection';
 import PresentationsScreen from './PresentationsScreen';
 import Settings from './Settings';
 import TopAppBar from './TopAppBar';
 
+/* @TODO: The connection app view actually represents the glasses connection (left and right sides), but since we need to add a controller ring
+ * conection string as well, there is the need to enhance the naming of this view.
+ */
 type AppView = 'connection' | 'settings' | 'device' | 'presentations';
 
 const TeleprompterApp: React.FC = () => {
@@ -20,6 +23,14 @@ const TeleprompterApp: React.FC = () => {
     const [currentView, setCurrentView] = useState<AppView>('device');
 
     // Storage hook
+    /* @TODO: This applied to useDeviceStorage and useBluetoothConnection.
+     * Currently useDeviceStorage is being used for storing the mac addreses of previously connected glasses (right and left side).
+     * Since we will need to add a controller ring as well, there is the need for enhancing the naming to something more related to
+     * left and right glasses side, and add the storing of the ring mac address as well.
+     * useBluetoothConnection is being used as a sort of bridge between the components and BluetoothService.
+     * Maybe useBluetoothConnection and useBluetoothConnection could be bundled toguether to make the project less verbose, but renaming everything to make clear that
+     * we are dealing specifically with the glasses and it's sides, so that it will be easier to implement the ring features afterwards.
+     */
     const { savedLeftMac, savedRightMac, saveMacAddress, loadSavedMacAddresses } =
         useDeviceStorage();
 
@@ -39,9 +50,11 @@ const TeleprompterApp: React.FC = () => {
         saveMacAddress(side, deviceId);
     });
 
-    // Message state
-    const [inputText, setInputText] = useState('');
     const [outputMode, setOutputMode] = useState<OutputMode>('text');
+
+    // Message state
+    /* @TODO: Evaluate if inputText and isSending could be inside the settings component for code clarity */
+    const [inputText, setInputText] = useState('');
     const [isSending, setIsSending] = useState(false);
 
     // Initialize app by loading saved addresses and paired devices
@@ -65,6 +78,7 @@ const TeleprompterApp: React.FC = () => {
         await loadPairedDevices(true);
     };
 
+    /* @TODO: Evaluate if this could be inside the settings component for code clarity */
     const getModeText = (mode: OutputMode, forSuccess: boolean) => {
         if (mode === 'text') return forSuccess ? 'text' : 'message';
         if (mode === 'image') return forSuccess ? 'image (BMP)' : 'image';
@@ -72,6 +86,7 @@ const TeleprompterApp: React.FC = () => {
         return '';
     };
 
+    /* @TODO: Evaluate if this could be inside the settings component for code clarity */
     const handleSendMessage = async () => {
         const messageText = inputText.trim();
         if (!messageText) return;
@@ -119,6 +134,7 @@ const TeleprompterApp: React.FC = () => {
         }
     };
 
+    /* @TODO: Evaluate if this could be inside the settings component */
     const handleExit = async () => {
         try {
             let success = false;
@@ -141,6 +157,7 @@ const TeleprompterApp: React.FC = () => {
     };
 
     // Connection handlers
+    /* @TODO: This is related to the glasses connection, since we will implement a ring controller the name should be adjusted */
     const handleRetryConnection = async () => {
         const reconnected = await attemptAutoReconnection(savedLeftMac, savedRightMac);
         if (!reconnected) {
@@ -148,6 +165,7 @@ const TeleprompterApp: React.FC = () => {
         }
     };
 
+    /* @TODO: This is related to the glasses connection, since we will implement a ring controller the name should be adjusted */
     const handleSetupDevices = async () => {
         setCurrentView('connection');
         await loadPairedDevices();
@@ -158,11 +176,11 @@ const TeleprompterApp: React.FC = () => {
             switch (currentView) {
                 case 'connection':
                     return (
-                        <DeviceConnection
+                        <GlassesConnection
                             devices={pairedDevices}
                             isScanning={isScanning}
                             connectionStep={(connectionStep as 'left' | 'right')}
-                            onDeviceSelect={handleDeviceConnection}
+                            onGlassSideSelect={handleDeviceConnection}
                             onRefresh={() => loadPairedDevices()}
                             onShowAllDevices={handleShowAllDevices}
                             leftConnected={leftConnected}
@@ -188,13 +206,13 @@ const TeleprompterApp: React.FC = () => {
 
                 case 'device':
                     return (
-                        <ConnectionStatus
+                        <DevicesStatus
                             leftConnected={leftConnected}
                             rightConnected={rightConnected}
-                            onReconnect={handleRetryConnection}
-                            onSetupDevices={handleSetupDevices}
-                            isReconnecting={isAutoConnecting}
-                            hasConfiguredDevices={!!(savedLeftMac && savedRightMac)}
+                            onReconnectGlasses={handleRetryConnection}
+                            onSetupGlasses={handleSetupDevices}
+                            isReconnectingGlasses={isAutoConnecting}
+                            hasConfiguredGlasses={!!(savedLeftMac && savedRightMac)}
                         />
                     );
 

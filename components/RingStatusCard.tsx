@@ -1,19 +1,17 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { DeviceStatus } from '../services/types';
+import { RingStatus } from '../services/types';
 import { deviceStatusCardStyles as styles } from '../styles/DeviceStatusCardStyles';
 
-interface DeviceStatusCardProps {
-    side: 'left' | 'right';
+interface RingStatusCardProps {
     connected: boolean;
-    deviceStatus?: DeviceStatus;
+    ringStatus?: RingStatus;
     isCompact?: boolean;
 }
 
-const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
-    side,
+const RingStatusCard: React.FC<RingStatusCardProps> = ({
     connected,
-    deviceStatus,
+    ringStatus,
     isCompact = false
 }) => {
     const extractFirmwareVersion = (firmwareText: string | null) => {
@@ -32,41 +30,21 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
         return 'Unknown';
     };
 
-    const formatUptime = (uptime: number) => {
-        if (uptime < 0) return 'Unknown';
-        
-        const days = Math.floor(uptime / 86400);
-        const hours = Math.floor((uptime % 86400) / 3600);
-        const minutes = Math.floor((uptime % 3600) / 60);
-        const seconds = uptime % 60;
-        
-        if (days > 0) {
-            return `${days}d ${hours}h ${minutes}m`;
-        } else if (hours > 0) {
-            return `${hours}h ${minutes}m`;
-        } else if (minutes > 0) {
-            return `${minutes}m ${seconds}s`;
-        } else {
-            return `${seconds}s`;
-        }
-    };
-
-    const uptime = formatUptime(deviceStatus?.uptime || 0);
-    const firmwareVersion = extractFirmwareVersion(deviceStatus?.firmware || null);
+    const firmwareVersion = extractFirmwareVersion(ringStatus?.firmware || null);
 
     return (
         <View style={[
             styles.container,
             connected ? styles.containerConnected : styles.containerDisconnected
         ]}>
-            {/* Header - Device name (bold, dark text) and Status (small, green text on right) */}
+            {/* Header - Ring name and Status */}
             <View style={styles.header}>
                 <View style={styles.titleRow}>
                     <Text style={[
                         styles.title,
                         connected ? styles.titleConnected : styles.titleDisconnected
                     ]}>
-                        {side.charAt(0).toUpperCase() + side.slice(1)} Glass
+                        Ring Controller
                     </Text>
                 </View>
                 <View style={styles.statusIndicator}>
@@ -80,23 +58,27 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
             </View>
 
             {/* Content - only show when connected */}
-            {connected && (
+            {connected && ringStatus && (
                 <View style={styles.content}>
-                    {/* Battery Reading - Label in light gray, Large bold percentage in black */}
-                    {deviceStatus?.battery !== undefined && deviceStatus.battery >= 0 && (
+                    {/* Battery Reading */}
+                    {ringStatus.battery !== undefined && ringStatus.battery >= 0 && (
                         <View style={styles.infoRow}>
                             <Text style={styles.labelText}>Battery</Text>
-                            <Text style={styles.valueTextBattery}>{deviceStatus.battery}%</Text>
+                            <Text style={styles.valueTextBattery}>{ringStatus.battery}%</Text>
                         </View>
                     )}
 
-                    {/* Uptime Reading - Label in light gray, Value with color coding */}
-                    {/* <View style={styles.infoRow}>
-                        <Text style={styles.labelText}>Uptime</Text>
-                        <Text style={styles.valueTextUptime}>{uptime}</Text>
-                    </View> */}
+                    {/* Gesture Mode */}
+                    {ringStatus.gestureMode && (
+                        <View style={styles.infoRow}>
+                            <Text style={styles.labelText}>Mode</Text>
+                            <Text style={styles.valueTextFirmware}>
+                                {ringStatus.gestureMode.charAt(0).toUpperCase() + ringStatus.gestureMode.slice(1)}
+                            </Text>
+                        </View>
+                    )}
 
-                    {/* Firmware Reading - Label in light gray, Value with color coding */}
+                    {/* Firmware Reading */}
                     <View style={styles.infoRow}>
                         <Text style={styles.labelText}>Firmware</Text>
                         <Text style={[
@@ -109,12 +91,12 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
                         </Text>
                     </View>
 
-                    {/* Full Firmware Info (Firmware Details Section with light gray background) */}
-                    {!isCompact && deviceStatus?.firmware && (
+                    {/* Full Firmware Info */}
+                    {!isCompact && ringStatus.firmware && (
                         <View style={styles.detailsSection}>
                             <Text style={styles.detailsTitle}>Firmware Details</Text>
                             <Text style={styles.detailsText} numberOfLines={3}>
-                                {deviceStatus.firmware}
+                                {ringStatus.firmware}
                             </Text>
                         </View>
                     )}
@@ -124,11 +106,11 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({
             {/* Disconnected State */}
             {!connected && (
                 <View style={styles.disconnectedContent}>
-                    <Text style={styles.disconnectedText}>Device not connected</Text>
+                    <Text style={styles.disconnectedText}>Ring controller not connected</Text>
                 </View>
             )}
         </View>
     );
 };
 
-export default DeviceStatusCard;
+export default RingStatusCard;
