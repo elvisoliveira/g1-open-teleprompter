@@ -1,7 +1,7 @@
+import GlassesBluetoothService from '@/services/GlassesBluetoothService';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import BluetoothService from '../services/BluetoothService';
 import { DeviceStatus, RingStatus } from '../services/types';
 import { ButtonStyles } from '../styles/CommonStyles';
 import { connectionStatusStyles as styles } from '../styles/ConnectionStatusStyles';
@@ -87,7 +87,7 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
 
         setIsUpdatingBattery(true);
         try {
-            await BluetoothService.refreshBatteryInfo();
+            await GlassesBluetoothService.refreshBatteryInfo();
         } catch (error) {
             console.warn('Failed to update battery status:', error);
         } finally {
@@ -99,7 +99,7 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
         try {
             // Refresh glasses status
             if (leftConnected || rightConnected) {
-                const glassesStatus = BluetoothService.getDeviceStatus();
+                const glassesStatus = GlassesBluetoothService.getDeviceStatus();
                 setGlassSidesStatus(glassesStatus);
             }
 

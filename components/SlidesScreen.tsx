@@ -1,9 +1,9 @@
+import GlassesBluetoothService from '@/services/GlassesBluetoothService';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { defaultBitmapGenerator } from '../services/BitmapGenerator';
-import BluetoothService from '../services/BluetoothService';
 import { OutputMode } from '../services/types';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles, InputStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
@@ -258,7 +258,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 try {
                     switch (outputMode) {
                         case 'text':
-                            await BluetoothService.sendText(slide.text);
+                            await GlassesBluetoothService.sendText(slide.text);
                             break;
                         case 'image':
                             // Convert text to bitmap and send
@@ -269,7 +269,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             }
 
                             const base64Image = defaultBitmapGenerator.bufferToBase64(bmpBuffer);
-                            await BluetoothService.sendImage(base64Image);
+                            await GlassesBluetoothService.sendImage(base64Image);
                             break;
                         case 'official':
                             // Send using official teleprompter protocol with slide position
@@ -277,10 +277,10 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             const slidePercentage = presentation.slides.length > 1
                                 ? (slideIndex / (presentation.slides.length - 1)) * 100
                                 : 0;
-                            await BluetoothService.sendOfficialTeleprompter(slide.text, slidePercentage);
+                            await GlassesBluetoothService.sendOfficialTeleprompter(slide.text, slidePercentage);
                             break;
                         default:
-                            await BluetoothService.sendText(slide.text);
+                            await GlassesBluetoothService.sendText(slide.text);
                             break;
                     }
                 } catch (error) {
@@ -303,9 +303,9 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
             // We're stopping presentation, call appropriate exit method based on output mode
             try {
                 if (outputMode === 'official') {
-                    await BluetoothService.exitOfficialTeleprompter();
+                    await GlassesBluetoothService.exitOfficialTeleprompter();
                 } else {
-                    await BluetoothService.exit();
+                    await GlassesBluetoothService.exit();
                 }
             } catch (error) {
                 console.error('Failed to exit when stopping presentation:', error);
@@ -319,11 +319,11 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
             // Component is unmounting, stop any active presentation
             if (presentingSlideRef.current) {
                 if (outputMode === 'official') {
-                    BluetoothService.exitOfficialTeleprompter().catch((error: any) => {
+                    GlassesBluetoothService.exitOfficialTeleprompter().catch((error: any) => {
                         console.error('Failed to exit official teleprompter on component unmount:', error);
                     });
                 } else {
-                    BluetoothService.exit().catch((error: any) => {
+                    GlassesBluetoothService.exit().catch((error: any) => {
                         console.error('Failed to exit on component unmount:', error);
                     });
                 }
@@ -336,9 +336,9 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         if (presentingSlideId) {
             try {
                 if (outputMode === 'official') {
-                    await BluetoothService.exitOfficialTeleprompter();
+                    await GlassesBluetoothService.exitOfficialTeleprompter();
                 } else {
-                    await BluetoothService.exit();
+                    await GlassesBluetoothService.exit();
                 }
                 presentingSlideRef.current = null; // Clear ref since we manually stopped
             } catch (error) {
@@ -647,9 +647,9 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             <TouchableOpacity
                                 onPress={async () => {
                                     if (outputMode === 'official') {
-                                        await BluetoothService.exitOfficialTeleprompter();
+                                        await GlassesBluetoothService.exitOfficialTeleprompter();
                                     } else {
-                                        await BluetoothService.exit();
+                                        await GlassesBluetoothService.exit();
                                     }
                                     setPresentingSlideId(null);
                                     presentingSlideRef.current = null; // Clear ref since we manually stopped

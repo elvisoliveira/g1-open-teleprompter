@@ -15,6 +15,7 @@ const STORAGE_KEYS = {
 export const useSavedDevices = () => {
     const [savedLeftGlassMac, setSavedLeftGlassMac] = useState<string | null>(null);
     const [savedRightGlassMac, setSavedRightGlassMac] = useState<string | null>(null);
+    const [savedRingMac, setSavedRingMac] = useState<string | null>(null);
 
     const saveGlassMacAddress = async (side: 'left' | 'right', macAddress: string) => {
         try {
@@ -27,6 +28,15 @@ export const useSavedDevices = () => {
             }
         } catch (error) {
             console.error(`Failed to save ${side} glass MAC:`, error);
+        }
+    };
+
+    const saveRingMacAddress = async (macAddress: string) => {
+        try {
+            await AsyncStorage.setItem(STORAGE_KEYS.RING_MAC, macAddress);
+            setSavedRingMac(macAddress);
+        } catch (error) {
+            console.error('Failed to save ring MAC:', error);
         }
     };
 
@@ -66,6 +76,17 @@ export const useSavedDevices = () => {
         }
     };
 
+    const loadSavedRingMacAddress = async () => {
+        try {
+            const ringMac = await AsyncStorage.getItem(STORAGE_KEYS.RING_MAC);
+            setSavedRingMac(ringMac);
+            return ringMac;
+        } catch (error) {
+            console.error('Failed to load saved ring MAC address:', error);
+            return null;
+        }
+    };
+
     const clearSavedGlassMacAddresses = async () => {
         try {
             await Promise.all([
@@ -82,12 +103,25 @@ export const useSavedDevices = () => {
         }
     };
 
+    const clearSavedRingMacAddress = async () => {
+        try {
+            await AsyncStorage.removeItem(STORAGE_KEYS.RING_MAC);
+            setSavedRingMac(null);
+        } catch (error) {
+            console.error('Failed to clear saved ring MAC address:', error);
+        }
+    };
+
     return {
         savedLeftGlassMac,
         savedRightGlassMac,
+        savedRingMac,
         saveGlassMacAddress,
+        saveRingMacAddress,
         loadSavedGlassMacAddresses,
+        loadSavedRingMacAddress,
         clearSavedGlassMacAddresses,
+        clearSavedRingMacAddress,
         // Legacy exports for backward compatibility (deprecated)
         savedLeftMac: savedLeftGlassMac,
         savedRightMac: savedRightGlassMac,

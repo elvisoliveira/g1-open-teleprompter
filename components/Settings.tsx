@@ -1,5 +1,5 @@
 import { defaultBitmapGenerator } from '@/services/BitmapGenerator';
-import BluetoothService from '@/services/BluetoothService';
+import GlassesBluetoothService from '@/services/GlassesBluetoothService';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -44,7 +44,7 @@ const Settings: React.FC<SettingsProps> = ({
             let success = false;
 
             if (outputMode === 'text') {
-                success = await BluetoothService.sendText(messageText);
+                success = await GlassesBluetoothService.sendText(messageText);
             } else if (outputMode === 'image') {
                 try {
                     const bmpBuffer = await defaultBitmapGenerator.textToBitmap(messageText);
@@ -54,14 +54,14 @@ const Settings: React.FC<SettingsProps> = ({
                     }
 
                     const base64Image = defaultBitmapGenerator.bufferToBase64(bmpBuffer);
-                    success = await BluetoothService.sendImage(base64Image);
+                    success = await GlassesBluetoothService.sendImage(base64Image);
                 } catch (bitmapError) {
                     console.error('Error generating bitmap:', bitmapError);
                     Alert.alert('Error', 'Failed to generate image from text');
                     return;
                 }
             } else if (outputMode === 'official') {
-                success = await BluetoothService.sendOfficialTeleprompter(messageText);
+                success = await GlassesBluetoothService.sendOfficialTeleprompter(messageText);
             }
 
             if (success) {
@@ -86,9 +86,9 @@ const Settings: React.FC<SettingsProps> = ({
             let success = false;
 
             if (outputMode === 'official') {
-                success = await BluetoothService.exitOfficialTeleprompter();
+                success = await GlassesBluetoothService.exitOfficialTeleprompter();
             } else {
-                success = await BluetoothService.exit();
+                success = await GlassesBluetoothService.exit();
             }
 
             if (!success) {

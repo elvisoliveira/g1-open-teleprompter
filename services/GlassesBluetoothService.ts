@@ -1,15 +1,13 @@
 import { Buffer } from 'buffer';
-import { NativeModules, Platform } from 'react-native';
-import { BleManager, Device, State } from 'react-native-ble-plx';
+import { Device } from 'react-native-ble-plx';
+import { BaseBluetoothService } from './BaseBluetoothService';
 import { CommunicationManager } from './CommunicationManager';
-import { CONNECTION_TIMEOUT_MS, HEARTBEAT_INTERVAL_MS, MTU_SIZE } from './constants';
-import { PermissionManager } from './PermissionManager';
+import { HEARTBEAT_INTERVAL_MS } from './constants';
 import { TeleprompterUtils } from './TeleprompterUtils';
 import { BatteryInfo, DeviceStatus, FirmwareInfo, GlassesInfo, GlassSide, UptimeInfo } from './types';
 import { Utils } from './utils';
 
-class BluetoothService {
-    private manager: BleManager;
+class GlassesBluetoothService extends BaseBluetoothService {
     private devices: GlassesInfo = { left: null, right: null };
     private batteryInfo: BatteryInfo = { left: -1, right: -1 };
     private deviceUptime: UptimeInfo = { left: -1, right: -1 };
@@ -24,7 +22,11 @@ class BluetoothService {
     private teleprompterSeq: number = 0;
 
     constructor() {
-        this.manager = new BleManager();
+        super();
+    }
+
+    protected getServiceName(): string {
+        return 'GlassesBluetoothService';
     }
 
     // Public API Methods
@@ -49,15 +51,6 @@ class BluetoothService {
     }
 
     // Device Status Methods
-    async isBluetoothEnabled(): Promise<boolean> {
-        try {
-            const state = await this.manager.state();
-            return state === State.PoweredOn;
-        } catch (error) {
-            console.warn('[BluetoothService] Failed to check Bluetooth state:', error);
-            return false;
-        }
-    }
 
     isConnected(): boolean {
         return this.connectionState.left || this.connectionState.right;
@@ -111,7 +104,7 @@ class BluetoothService {
 
             return results.every(Boolean);
         } catch (error) {
-            console.error('[BluetoothService] Error sending BMP image:', error);
+            console.error('[GlassesBluetoothService] Error sending BMP image:', error);
             return false;
         }
     }
@@ -148,7 +141,7 @@ class BluetoothService {
             this.teleprompterSeq = (this.teleprompterSeq + packets.length) & 0xFF;
             return results.every(Boolean);
         } catch (error) {
-            console.error('[BluetoothService] Error sending official teleprompter:', error);
+            console.error('[GlassesBluetoothService] Error sending official teleprompter:', error);
             return false;
         }
     }
@@ -165,7 +158,7 @@ class BluetoothService {
             });
             return results.every(Boolean);
         } catch (error) {
-            console.error('[BluetoothService] Error exiting official teleprompter:', error);
+            console.error('[GlassesBluetoothService] Error exiting official teleprompter:', error);
             return false;
         }
     }
@@ -228,34 +221,7 @@ class BluetoothService {
         };
     }
 
-    async getPairedDevices(showAllDevices: boolean = false): Promise<Array<{ id: string; name: string | null; isConnected: boolean }>> {
-        if (Platform.OS !== 'android') return [];
 
-        try {
-            if (!await PermissionManager.requestBluetoothPermissions()) {
-                return [];
-            }
-
-            const { BluetoothAdapter } = NativeModules as any;
-            if (!BluetoothAdapter?.getPairedDevices) {
-                return [];
-            }
-
-            const pairedDevices = await BluetoothAdapter.getPairedDevices();
-            const bondedDevices = pairedDevices.map((device: { name: string; address: string; connected?: boolean }) => ({
-                id: device.address,
-                name: device.name || null,
-                isConnected: Boolean(device.connected)
-            }));
-
-            return showAllDevices
-                ? bondedDevices
-                : bondedDevices.filter((device: { name: string; }) => device.name?.startsWith("Even G1"));
-        } catch (error) {
-            console.warn('[BluetoothService] Failed to get paired devices:', error);
-            return [];
-        }
-    }
 
     // Private Helper Methods
     // Connects a device to the specified side (left or right)
@@ -286,30 +252,7 @@ class BluetoothService {
         }
     }
 
-    // Establishes complete BLE connection: permissions, connection, service discovery, and MTU setup
-    private async establishBleConnection(address: string): Promise<Device> {
-        if (!await PermissionManager.requestBluetoothConnectPermission()) {
-            throw new Error('Bluetooth permission not granted');
-        }
 
-        // Connect to device with timeout to prevent hanging connections
-        const device = await this.manager.connectToDevice(address, {
-            autoConnect: false,
-            timeout: CONNECTION_TIMEOUT_MS
-        });
-
-        // Service discovery is required to access device characteristics for communication
-        await device.discoverAllServicesAndCharacteristics();
-
-        // Request larger MTU for better data throughput (optional, won't fail connection if unsupported)
-        try {
-            await device.requestMTU(MTU_SIZE);
-        } catch (error) {
-            console.warn(`[BluetoothService] MTU request failed for device ${address}:`, error);
-        }
-
-        return device;
-    }
 
     private async getFirmwareInfo(side: GlassSide.LEFT | GlassSide.RIGHT): Promise<void> {
         const device = side === GlassSide.LEFT ? this.devices.left : this.devices.right;
@@ -382,7 +325,7 @@ class BluetoothService {
             try {
                 return await operation(entry.device, entry.side);
             } catch (error) {
-                console.error(`[BluetoothService] Operation failed for ${entry.side} device:`, error);
+                console.error(`[GlassesBluetoothService] Operation failed for ${entry.side} device:`, error);
                 return undefined;
             }
         };
@@ -438,4 +381,4 @@ class BluetoothService {
     }
 }
 
-export default new BluetoothService();
+export default new GlassesBluetoothService();

@@ -8,6 +8,7 @@ import AppBottomNavigation from './AppBottomNavigation';
 import DevicesStatus from './DevicesStatus';
 import GlassesConnection from './GlassesConnection';
 import PresentationsScreen from './PresentationsScreen';
+import RingConnection from './RingConnection';
 import Settings from './Settings';
 import TopAppBar from './TopAppBar';
 
@@ -15,14 +16,22 @@ const TeleprompterApp: React.FC = () => {
     // Core view state - start directly with device connection view
     const [currentView, setCurrentView] = useState<AppView>('device');
 
-    // Glasses pairing and connection hooks
-    const { savedLeftGlassMac, savedRightGlassMac, saveGlassMacAddress, loadSavedGlassMacAddresses } =
-        useSavedDevices();
+    // Device pairing and connection hooks
+    const {
+        savedLeftGlassMac,
+        savedRightGlassMac,
+        savedRingMac,
+        saveGlassMacAddress,
+        saveRingMacAddress,
+        loadSavedGlassMacAddresses,
+        loadSavedRingMacAddress
+    } = useSavedDevices();
 
-    // Glasses Bluetooth connection hook
+    // Bluetooth connection hook for glasses and ring
     const {
         leftGlassConnected,
         rightGlassConnected,
+        ringConnected,
         isScanning,
         pairedDevices,
         connectionStep,
@@ -30,10 +39,19 @@ const TeleprompterApp: React.FC = () => {
         isBluetoothEnabled,
         loadPairedDevices,
         handleGlassConnection,
+        handleRingConnection,
+        handleGlassDisconnect,
+        handleRingDisconnect,
         attemptGlassAutoReconnection,
-    } = useBluetoothConnection((side, deviceId) => {
-        saveGlassMacAddress(side, deviceId);
-    });
+        attemptRingAutoReconnection,
+    } = useBluetoothConnection(
+        (side, deviceId) => {
+            saveGlassMacAddress(side, deviceId);
+        },
+        (deviceId) => {
+            saveRingMacAddress(deviceId);
+        }
+    );
 
     // Output mode state (kept at app level as it affects multiple components)
     const [outputMode, setOutputMode] = useState<OutputMode>('text');
@@ -42,14 +60,32 @@ const TeleprompterApp: React.FC = () => {
     useEffect(() => {
         const initializeApp = async () => {
             await loadSavedGlassMacAddresses();
-            await loadPairedDevices();
+            await loadSavedRingMacAddress();
+            await loadPairedDevices('glasses');
         };
         initializeApp();
     }, []);
 
+    // Navigate back to device view when devices are connected
+    useEffect(() => {
+        if (ringConnected && currentView === 'ringConnection') {
+            setCurrentView('device');
+        }
+    }, [ringConnected, currentView]);
+
+    useEffect(() => {
+        if ((leftGlassConnected || rightGlassConnected) && currentView === 'glassesConnection') {
+            setCurrentView('device');
+        }
+    }, [leftGlassConnected, rightGlassConnected, currentView]);
+
+    // State for disconnect loading
+    const [isDisconnectingGlasses, setIsDisconnectingGlasses] = useState(false);
+    const [isDisconnectingRing, setIsDisconnectingRing] = useState(false);
+
     // Show all paired devices including non-Even G1
     const handleShowAllDevices = async () => {
-        await loadPairedDevices(true);
+        await loadPairedDevices('all');
     };
 
     // Glasses connection handlers
@@ -62,7 +98,37 @@ const TeleprompterApp: React.FC = () => {
 
     const handleSetupGlasses = async () => {
         setCurrentView('glassesConnection');
-        await loadPairedDevices();
+        await loadPairedDevices('glasses');
+    };
+
+    const handleSetupRing = async () => {
+        setCurrentView('ringConnection');
+        await loadPairedDevices('ring');
+    };
+
+    const handleRetryRingConnection = async () => {
+        const reconnected = await attemptRingAutoReconnection(savedRingMac);
+        if (!reconnected) {
+            Alert.alert('Connection Failed', 'Could not reconnect to the saved ring controller. Please try connecting manually.');
+        }
+    };
+
+    const handleDisconnectGlasses = async () => {
+        setIsDisconnectingGlasses(true);
+        try {
+            await handleGlassDisconnect();
+        } finally {
+            setIsDisconnectingGlasses(false);
+        }
+    };
+
+    const handleDisconnectRing = async () => {
+        setIsDisconnectingRing(true);
+        try {
+            await handleRingDisconnect();
+        } finally {
+            setIsDisconnectingRing(false);
+        }
     };
 
     const renderCurrentView = () => {
@@ -75,10 +141,23 @@ const TeleprompterApp: React.FC = () => {
                             isScanning={isScanning}
                             connectionStep={(connectionStep as 'left' | 'right')}
                             onGlassSideSelect={handleGlassConnection}
-                            onRefresh={() => loadPairedDevices()}
+                            onRefresh={() => loadPairedDevices('glasses')}
                             onShowAllDevices={handleShowAllDevices}
                             leftConnected={leftGlassConnected}
                             rightConnected={rightGlassConnected}
+                            isBluetoothEnabled={isBluetoothEnabled}
+                        />
+                    );
+
+                case 'ringConnection':
+                    return (
+                        <RingConnection
+                            devices={pairedDevices}
+                            isScanning={isScanning}
+                            onRingSelect={handleRingConnection}
+                            onRefresh={() => loadPairedDevices('ring')}
+                            onShowAllDevices={handleShowAllDevices}
+                            ringConnected={ringConnected}
                             isBluetoothEnabled={isBluetoothEnabled}
                         />
                     );
@@ -98,10 +177,19 @@ const TeleprompterApp: React.FC = () => {
                         <DevicesStatus
                             leftConnected={leftGlassConnected}
                             rightConnected={rightGlassConnected}
+                            ringConnected={ringConnected}
                             onReconnectGlasses={handleRetryGlassConnection}
+                            onReconnectRing={handleRetryRingConnection}
+                            onDisconnectGlasses={handleDisconnectGlasses}
+                            onDisconnectRing={handleDisconnectRing}
                             onSetupGlasses={handleSetupGlasses}
+                            onSetupRing={handleSetupRing}
                             isReconnectingGlasses={isAutoConnecting}
+                            isReconnectingRing={isAutoConnecting}
+                            isDisconnectingGlasses={isDisconnectingGlasses}
+                            isDisconnectingRing={isDisconnectingRing}
                             hasConfiguredGlasses={!!(savedLeftGlassMac && savedRightGlassMac)}
+                            hasConfiguredRing={!!savedRingMac}
                         />
                     );
 
