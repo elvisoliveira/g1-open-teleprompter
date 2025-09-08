@@ -1,4 +1,8 @@
 import { Device } from 'react-native-ble-plx';
+import {
+    CHARACTERISTIC_SERVICE,
+    RING_BATTERY_CMD
+} from '../constants/RingConstants';
 import { BluetoothTransport } from './BluetoothTransport';
 
 /**
@@ -11,7 +15,13 @@ export class RingProtocol {
      */
     static async requestBatteryLevel(device: Device): Promise<number | null> {
         // TODO: Implement ring-specific battery level request
-        console.log('[RingProtocol] Ring battery level request not yet implemented');
+        console.log('[RingProtocol] Ring battery level request');
+
+        const requestBytes = new Uint8Array([RING_BATTERY_CMD, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03]);
+        const response = await BluetoothTransport.sendCommandWithResponse(device, requestBytes, new Uint8Array([RING_BATTERY_CMD]), CHARACTERISTIC_SERVICE);
+        if (response && response.length >= 1) {
+            return response[1];
+        }
         return null;
     }
 
@@ -21,7 +31,7 @@ export class RingProtocol {
     static async sendRingCommand(device: Device, command: Uint8Array): Promise<boolean> {
         // TODO: Implement ring-specific command sending
         console.log('[RingProtocol] Ring command sending not yet implemented');
-        return await BluetoothTransport.writeToDevice(device, command, false);
+        return await BluetoothTransport.writeToDevice(device, command, CHARACTERISTIC_SERVICE, false);
     }
 
     /**

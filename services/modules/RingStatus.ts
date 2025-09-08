@@ -1,4 +1,7 @@
+import { Device } from 'react-native-ble-plx';
 import { RingStatus as RingStatusType } from '../DeviceTypes';
+import { RingProtocol } from '../transport/RingProtocol';
+
 
 export class RingStatus {
     private status: RingStatusType = {
@@ -8,6 +11,15 @@ export class RingStatus {
         gestureMode: 'disabled',
         sensitivity: 50
     };
+
+    async refreshBatteryInfo(device: Device | null): Promise<void> {
+        if (device) {
+            const batteryLevel = await RingProtocol.requestBatteryLevel(device);
+            if (batteryLevel !== null) {
+                this.status.battery = batteryLevel;
+            }
+        }
+    }
 
     updateConnectionState(connected: boolean): void {
         this.status.connected = connected;
@@ -31,7 +43,7 @@ export class RingStatus {
         return true;
     }
 
-    getRingStatus(): RingStatusType {
+    getDeviceStatus(): RingStatusType {
         return { ...this.status };
     }
 }

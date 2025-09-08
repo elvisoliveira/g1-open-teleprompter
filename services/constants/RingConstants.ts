@@ -1,6 +1,11 @@
-// Ring Protocol Commands (placeholder for future implementation)
+export const CHARACTERISTIC_SERVICE = '6e40fff0-b5a3-f393-e0a9-e50e24dcca9e';
+// export const CHARACTERISTIC_SERVICE_V2 = 'de5bf728-d711-4e47-af26-65e3012a5dc7';
+
+// Ring Protocol Commands
+export const RING_BATTERY_CMD = 0x03;
+
+//  (placeholder for future implementation)
 export const RING_GESTURE_CMD = 0x30;
-export const RING_BATTERY_CMD = 0x31;
 export const RING_CALIBRATE_CMD = 0x32;
 export const RING_STATUS_CMD = 0x33;
 

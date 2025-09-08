@@ -1,4 +1,5 @@
-import GlassesBluetoothService from '@/services/GlassesController';
+import GlassesController from '@/services/GlassesController';
+import RingController from '@/services/RingController';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -87,7 +88,8 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
 
         setIsUpdatingBattery(true);
         try {
-            await GlassesBluetoothService.refreshBatteryInfo();
+            await GlassesController.refreshBatteryInfo();
+            await RingController.refreshBatteryInfo();
         } catch (error) {
             console.warn('Failed to update battery status:', error);
         } finally {
@@ -99,14 +101,14 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
         try {
             // Refresh glasses status
             if (leftConnected || rightConnected) {
-                const glassesStatus = GlassesBluetoothService.getDeviceStatus();
+                const glassesStatus = GlassesController.getDeviceStatus();
                 setGlassSidesStatus(glassesStatus);
             }
 
-            // TODO: Refresh ring status when ring service is implemented
+            // Refresh ring status
             if (ringConnected) {
-                // const ringStatus = RingService.getStatus();
-                // setRingStatus(ringStatus);
+                const ringStatus = RingController.getDeviceStatus();
+                setRingStatus(ringStatus);
             }
         } catch (error) {
             console.warn('Failed to get devices status:', error);

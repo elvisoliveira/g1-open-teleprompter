@@ -34,8 +34,12 @@ class RingController extends BaseDeviceController {
         return this.connection.onConnectionStateChange(callback);
     }
 
-    getRingStatus(): import('./DeviceTypes').RingStatus {
-        return this.status.getRingStatus();
+    async refreshBatteryInfo(): Promise<void> {
+        await this.status.refreshBatteryInfo(this.connection.getDevice());
+    }
+
+    getDeviceStatus(): import('./DeviceTypes').RingStatus {
+        return this.status.getDeviceStatus();
     }
 
     // Ring-specific methods

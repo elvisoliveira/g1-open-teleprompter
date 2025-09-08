@@ -1,4 +1,7 @@
 import { BaseDeviceController } from './BaseDeviceController';
+import {
+    CHARACTERISTIC_SERVICE
+} from './constants/GlassesConstants';
 import { DeviceStatus, GlassSide } from './DeviceTypes';
 import { GlassesConnection } from './modules/GlassesConnection';
 import { GlassesDispatcher } from './modules/GlassesDispatcher';
@@ -72,7 +75,7 @@ class GlassesController extends BaseDeviceController {
 
         const packets = this.packetBuilder.prepareTextPackets(text);
         const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
-            return await BluetoothTransport.sendPacketsToDevice(device, packets, 5);
+            return await BluetoothTransport.sendPacketsToDevice(device, packets, CHARACTERISTIC_SERVICE, 5);
         });
 
         return results.every(Boolean);

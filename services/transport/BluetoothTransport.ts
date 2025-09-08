@@ -1,9 +1,8 @@
 import { Buffer } from 'buffer';
 import { Device } from 'react-native-ble-plx';
 import {
-    CHARACTERISTIC_NOTIFY_V1,
-    CHARACTERISTIC_WRITE,
-    SERVICE_UUID
+    CHARACTERISTIC_NOTIFY,
+    CHARACTERISTIC_WRITE
 } from '../constants/BluetoothConstants';
 import { TextFormatter } from '../TextFormatter';
 
@@ -14,6 +13,7 @@ export class BluetoothTransport {
     static async writeToDevice(
         device: Device,
         data: Uint8Array,
+        serviceUuid: string,
         requireResponse: boolean = false
     ): Promise<boolean> {
         try {
@@ -22,21 +22,21 @@ export class BluetoothTransport {
 
             if (requireResponse) {
                 await device.writeCharacteristicWithResponseForService(
-                    SERVICE_UUID,
+                    serviceUuid,
                     CHARACTERISTIC_WRITE,
                     base64
                 );
             } else {
                 try {
                     await device.writeCharacteristicWithoutResponseForService(
-                        SERVICE_UUID,
+                        serviceUuid,
                         CHARACTERISTIC_WRITE,
                         base64
                     );
                 } catch (writeError) {
                     console.warn('[BluetoothTransport] Write without response failed, fallback to with response');
                     await device.writeCharacteristicWithResponseForService(
-                        SERVICE_UUID,
+                        serviceUuid,
                         CHARACTERISTIC_WRITE,
                         base64
                     );
@@ -55,10 +55,10 @@ export class BluetoothTransport {
     static async sendCommandWithResponse(
         device: Device,
         requestBytes: Uint8Array,
-        expectedHeader: Uint8Array
+        expectedHeader: Uint8Array,
+        serviceUuid: string
     ): Promise<Uint8Array | null> {
         console.log(`[BluetoothTransport] Command: ${TextFormatter.arrayToHex(requestBytes)}, expecting header: ${TextFormatter.arrayToHex(expectedHeader)}`);
-
         try {
             const responsePromise = new Promise<Uint8Array | null>((resolve) => {
                 const timeout = setTimeout(() => {
@@ -88,13 +88,13 @@ export class BluetoothTransport {
                 };
 
                 subscription = device.monitorCharacteristicForService(
-                    SERVICE_UUID,
-                    CHARACTERISTIC_NOTIFY_V1,
+                    serviceUuid,
+                    CHARACTERISTIC_NOTIFY,
                     handleResponse
                 );
             });
 
-            const success = await this.writeToDevice(device, requestBytes, true);
+            const success = await this.writeToDevice(device, requestBytes, serviceUuid, true);
             if (!success) {
                 console.error('[BluetoothTransport] Failed to write command');
                 return null;
@@ -109,8 +109,8 @@ export class BluetoothTransport {
 
             try {
                 const characteristic = await device.readCharacteristicForService(
-                    SERVICE_UUID,
-                    CHARACTERISTIC_NOTIFY_V1
+                    serviceUuid,
+                    CHARACTERISTIC_NOTIFY
                 );
                 if (characteristic?.value) {
                     const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
@@ -144,9 +144,9 @@ export class BluetoothTransport {
     /**
      * Send packets to a device with delays
      */
-    static async sendPacketsToDevice(device: Device, packets: Uint8Array[], delayMs: number): Promise<boolean> {
+    static async sendPacketsToDevice(device: Device, packets: Uint8Array[], serviceUuid: string, delayMs: number): Promise<boolean> {
         for (const packet of packets) {
-            if (!await this.writeToDevice(device, packet, false)) {
+            if (!await this.writeToDevice(device, packet, serviceUuid, false)) {
                 return false;
             }
             if (delayMs > 0) {

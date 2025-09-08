@@ -1,6 +1,7 @@
 import { Device } from 'react-native-ble-plx';
 import { TextFormatter } from '../TextFormatter';
 import {
+    CHARACTERISTIC_SERVICE,
     GLASSES_TELEPROMPTER_CMD,
     GLASSES_TELEPROMPTER_CONTROL_SIZE,
     GLASSES_TELEPROMPTER_COUNTDOWN,
@@ -26,7 +27,7 @@ export class TeleprompterProtocol {
     static async sendTeleprompterPackets(device: Device, packets: Uint8Array[]): Promise<boolean> {
         try {
             for (const packet of packets) {
-                if (!await BluetoothTransport.writeToDevice(device, packet, false)) {
+                if (!await BluetoothTransport.writeToDevice(device, packet, CHARACTERISTIC_SERVICE, false)) {
                     console.error('[TeleprompterProtocol] Failed to send teleprompter packet');
                     return false;
                 }
@@ -47,7 +48,7 @@ export class TeleprompterProtocol {
      */
     static async sendTeleprompterEndPacket(device: Device, endPacket: Uint8Array): Promise<boolean> {
         try {
-            return await BluetoothTransport.writeToDevice(device, endPacket, false);
+            return await BluetoothTransport.writeToDevice(device, endPacket, CHARACTERISTIC_SERVICE, false);
         } catch (error) {
             console.error('[TeleprompterProtocol] Failed to send teleprompter end packet:', error);
             return false;
