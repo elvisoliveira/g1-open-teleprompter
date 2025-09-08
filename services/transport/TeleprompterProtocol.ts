@@ -1,23 +1,23 @@
 import { Device } from 'react-native-ble-plx';
+import { TextFormatter } from '../TextFormatter';
 import {
-    TELEPROMPTER_CMD,
-    TELEPROMPTER_CONTROL_SIZE,
-    TELEPROMPTER_COUNTDOWN,
-    TELEPROMPTER_DEFAULT_SCROLL_POSITION,
-    TELEPROMPTER_END_CMD,
-    TELEPROMPTER_FINISH,
-    TELEPROMPTER_FLAGS_MANUAL,
-    TELEPROMPTER_FLAGS_NORMAL,
-    TELEPROMPTER_HEADER_SIZE,
-    TELEPROMPTER_MANUAL_MODE,
-    TELEPROMPTER_NEW_SCREEN_MANUAL,
-    TELEPROMPTER_NEW_SCREEN_NORMAL,
-    TELEPROMPTER_PACKET_DELAY,
-    TELEPROMPTER_RESERVED,
-    TELEPROMPTER_SUBCMD
-} from '../Constants';
-import { Utils } from '../Utils';
-import { DeviceCommunication } from './DeviceCommunication';
+    GLASSES_TELEPROMPTER_CMD,
+    GLASSES_TELEPROMPTER_CONTROL_SIZE,
+    GLASSES_TELEPROMPTER_COUNTDOWN,
+    GLASSES_TELEPROMPTER_DEFAULT_SCROLL_POSITION,
+    GLASSES_TELEPROMPTER_END_CMD,
+    GLASSES_TELEPROMPTER_FINISH,
+    GLASSES_TELEPROMPTER_FLAGS_MANUAL,
+    GLASSES_TELEPROMPTER_FLAGS_NORMAL,
+    GLASSES_TELEPROMPTER_HEADER_SIZE,
+    GLASSES_TELEPROMPTER_MANUAL_MODE,
+    GLASSES_TELEPROMPTER_NEW_SCREEN_MANUAL,
+    GLASSES_TELEPROMPTER_NEW_SCREEN_NORMAL,
+    GLASSES_TELEPROMPTER_PACKET_DELAY,
+    GLASSES_TELEPROMPTER_RESERVED,
+    GLASSES_TELEPROMPTER_SUBCMD
+} from '../constants/GlassesConstants';
+import { BluetoothTransport } from './BluetoothTransport';
 
 export class TeleprompterProtocol {
     /**
@@ -26,13 +26,13 @@ export class TeleprompterProtocol {
     static async sendTeleprompterPackets(device: Device, packets: Uint8Array[]): Promise<boolean> {
         try {
             for (const packet of packets) {
-                if (!await DeviceCommunication.writeToDevice(device, packet, false)) {
+                if (!await BluetoothTransport.writeToDevice(device, packet, false)) {
                     console.error('[TeleprompterProtocol] Failed to send teleprompter packet');
                     return false;
                 }
                 // Small delay between packets to ensure proper transmission
                 if (packets.length > 1) {
-                    await Utils.sleep(TELEPROMPTER_PACKET_DELAY);
+                    await TextFormatter.sleep(GLASSES_TELEPROMPTER_PACKET_DELAY);
                 }
             }
             return true;
@@ -47,7 +47,7 @@ export class TeleprompterProtocol {
      */
     static async sendTeleprompterEndPacket(device: Device, endPacket: Uint8Array): Promise<boolean> {
         try {
-            return await DeviceCommunication.writeToDevice(device, endPacket, false);
+            return await BluetoothTransport.writeToDevice(device, endPacket, false);
         } catch (error) {
             console.error('[TeleprompterProtocol] Failed to send teleprompter end packet:', error);
             return false;
@@ -62,37 +62,37 @@ export class TeleprompterProtocol {
         numPackets: number,
         partIdx: number,
         payload: Uint8Array,
-        slidePercentage: number = TELEPROMPTER_DEFAULT_SCROLL_POSITION
+        slidePercentage: number = GLASSES_TELEPROMPTER_DEFAULT_SCROLL_POSITION
     ): Uint8Array {
-        const newScreen = TELEPROMPTER_MANUAL_MODE ? TELEPROMPTER_NEW_SCREEN_MANUAL : TELEPROMPTER_NEW_SCREEN_NORMAL;
-        const flags = TELEPROMPTER_MANUAL_MODE ? TELEPROMPTER_FLAGS_MANUAL : TELEPROMPTER_FLAGS_NORMAL;
+        const newScreen = GLASSES_TELEPROMPTER_MANUAL_MODE ? GLASSES_TELEPROMPTER_NEW_SCREEN_MANUAL : GLASSES_TELEPROMPTER_NEW_SCREEN_NORMAL;
+        const flags = GLASSES_TELEPROMPTER_MANUAL_MODE ? GLASSES_TELEPROMPTER_FLAGS_MANUAL : GLASSES_TELEPROMPTER_FLAGS_NORMAL;
 
         // Build control array
         const control = new Uint8Array([
-            TELEPROMPTER_RESERVED,           // reserved0
-            seq                     & 0xFF,  // seq
-            newScreen               & 0xFF,  // newScreen
-            numPackets              & 0xFF,  // numPackets
-            TELEPROMPTER_RESERVED,           // reserved1
-            partIdx                 & 0xFF,  // partIdx
-            TELEPROMPTER_RESERVED,           // reserved2
-            TELEPROMPTER_COUNTDOWN  & 0xFF,  // countdown (stopwatch delay)
-            flags                   & 0xFF,  // flags
-            slidePercentage         & 0xFF   // scrollbar position (0-100)
+            GLASSES_TELEPROMPTER_RESERVED,           // reserved0
+            seq                             & 0xFF,  // seq
+            newScreen                       & 0xFF,  // newScreen
+            numPackets                      & 0xFF,  // numPackets
+            GLASSES_TELEPROMPTER_RESERVED,           // reserved1
+            partIdx                         & 0xFF,  // partIdx
+            GLASSES_TELEPROMPTER_RESERVED,           // reserved2
+            GLASSES_TELEPROMPTER_COUNTDOWN  & 0xFF,  // countdown (stopwatch delay)
+            flags                           & 0xFF,  // flags
+            slidePercentage                 & 0xFF   // scrollbar position (0-100)
         ]);
 
         // Calculate total length
-        const len = TELEPROMPTER_HEADER_SIZE + TELEPROMPTER_CONTROL_SIZE + payload.length;
+        const len = GLASSES_TELEPROMPTER_HEADER_SIZE + GLASSES_TELEPROMPTER_CONTROL_SIZE + payload.length;
         if (len > 255) {
             throw new Error(`Teleprompter value too large: ${len} > 255 bytes`);
         }
 
         // Build the complete packet
-        const packet = new Uint8Array(TELEPROMPTER_HEADER_SIZE + TELEPROMPTER_CONTROL_SIZE + payload.length);
-        packet[0] = TELEPROMPTER_CMD; // Cmd.Teleprompter
+        const packet = new Uint8Array(GLASSES_TELEPROMPTER_HEADER_SIZE + GLASSES_TELEPROMPTER_CONTROL_SIZE + payload.length);
+        packet[0] = GLASSES_TELEPROMPTER_CMD; // Cmd.Teleprompter
         packet[1] = len; // total length
-        packet.set(control, TELEPROMPTER_HEADER_SIZE); // control array
-        packet.set(payload, TELEPROMPTER_HEADER_SIZE + TELEPROMPTER_CONTROL_SIZE); // payload
+        packet.set(control, GLASSES_TELEPROMPTER_HEADER_SIZE); // control array
+        packet.set(payload, GLASSES_TELEPROMPTER_HEADER_SIZE + GLASSES_TELEPROMPTER_CONTROL_SIZE); // payload
 
         return packet;
     }
@@ -137,12 +137,12 @@ export class TeleprompterProtocol {
     static buildTeleprompterEndPacket(sequence: number): Uint8Array {
         // Tiny "end" control packet: [0x09, 0x06, 0x00, seq, 0x05, 0x01]
         return new Uint8Array([
-            TELEPROMPTER_CMD,                // Cmd.Teleprompter
-            TELEPROMPTER_END_CMD,            // cmd = End
-            TELEPROMPTER_RESERVED,           // reserved
-            sequence & 0xFF,                 // current seq (don't increment)
-            TELEPROMPTER_SUBCMD,             // subCmd
-            TELEPROMPTER_FINISH              // finish
+            GLASSES_TELEPROMPTER_CMD,       // Cmd.Teleprompter
+            GLASSES_TELEPROMPTER_END_CMD,   // cmd = End
+            GLASSES_TELEPROMPTER_RESERVED,  // reserved
+            sequence & 0xFF,                // current seq (don't increment)
+            GLASSES_TELEPROMPTER_SUBCMD,    // subCmd
+            GLASSES_TELEPROMPTER_FINISH     // finish
         ]);
     }
 

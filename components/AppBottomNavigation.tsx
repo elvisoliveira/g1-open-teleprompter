@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { AppView } from '../services/Types';
+import { AppView } from '../services/DeviceTypes';
 import { bottomNavigationStyles as styles } from '../styles/BottomNavigationStyles';
 import { MaterialColors } from '../styles/MaterialTheme';
 

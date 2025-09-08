@@ -1,8 +1,8 @@
-import { BaseBluetoothService } from './BaseBluetoothService';
+import { BaseDeviceController } from './BaseDeviceController';
 import { RingConnection } from './modules/RingConnection';
 import { RingStatus } from './modules/RingStatus';
 
-class RingBluetoothService extends BaseBluetoothService {
+class RingController extends BaseDeviceController {
     private connection = new RingConnection();
     private status = new RingStatus();
 
@@ -11,7 +11,7 @@ class RingBluetoothService extends BaseBluetoothService {
     }
 
     protected getServiceName(): string {
-        return 'RingBluetoothService';
+        return 'RingController';
     }
 
     // Public API Methods
@@ -34,7 +34,7 @@ class RingBluetoothService extends BaseBluetoothService {
         return this.connection.onConnectionStateChange(callback);
     }
 
-    getRingStatus(): import('./Types').RingStatus {
+    getRingStatus(): import('./DeviceTypes').RingStatus {
         return this.status.getRingStatus();
     }
 
@@ -54,4 +54,4 @@ class RingBluetoothService extends BaseBluetoothService {
     }
 }
 
-export default new RingBluetoothService();
+export default new RingController();

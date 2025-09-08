@@ -1,10 +1,10 @@
-import GlassesBluetoothService from '@/services/GlassesBluetoothService';
+import GlassesController from '@/services/GlassesController';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { defaultBitmapGenerator } from '../services/BitmapGeneratorService';
-import { OutputMode } from '../services/Types';
+import { defaultBitmapRenderer } from '../services/BitmapRenderer';
+import { OutputMode } from '../services/DeviceTypes';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles, InputStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 
@@ -258,18 +258,18 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 try {
                     switch (outputMode) {
                         case 'text':
-                            await GlassesBluetoothService.sendText(slide.text);
+                            await GlassesController.sendText(slide.text);
                             break;
                         case 'image':
                             // Convert text to bitmap and send
-                            const bmpBuffer = await defaultBitmapGenerator.textToBitmap(slide.text);
+                            const bmpBuffer = await defaultBitmapRenderer.textToBitmap(slide.text);
 
-                            if (!defaultBitmapGenerator.validateBmpFormat(bmpBuffer)) {
+                            if (!defaultBitmapRenderer.validateBmpFormat(bmpBuffer)) {
                                 throw new Error('Generated BMP format is invalid');
                             }
 
-                            const base64Image = defaultBitmapGenerator.bufferToBase64(bmpBuffer);
-                            await GlassesBluetoothService.sendImage(base64Image);
+                            const base64Image = defaultBitmapRenderer.bufferToBase64(bmpBuffer);
+                            await GlassesController.sendImage(base64Image);
                             break;
                         case 'official':
                             // Send using official teleprompter protocol with slide position
@@ -277,10 +277,10 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             const slidePercentage = presentation.slides.length > 1
                                 ? (slideIndex / (presentation.slides.length - 1)) * 100
                                 : 0;
-                            await GlassesBluetoothService.sendOfficialTeleprompter(slide.text, slidePercentage);
+                            await GlassesController.sendOfficialTeleprompter(slide.text, slidePercentage);
                             break;
                         default:
-                            await GlassesBluetoothService.sendText(slide.text);
+                            await GlassesController.sendText(slide.text);
                             break;
                     }
                 } catch (error) {
@@ -303,9 +303,9 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
             // We're stopping presentation, call appropriate exit method based on output mode
             try {
                 if (outputMode === 'official') {
-                    await GlassesBluetoothService.exitOfficialTeleprompter();
+                    await GlassesController.exitOfficialTeleprompter();
                 } else {
-                    await GlassesBluetoothService.exit();
+                    await GlassesController.exit();
                 }
             } catch (error) {
                 console.error('Failed to exit when stopping presentation:', error);
@@ -319,11 +319,11 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
             // Component is unmounting, stop any active presentation
             if (presentingSlideRef.current) {
                 if (outputMode === 'official') {
-                    GlassesBluetoothService.exitOfficialTeleprompter().catch((error: any) => {
+                    GlassesController.exitOfficialTeleprompter().catch((error: any) => {
                         console.error('Failed to exit official teleprompter on component unmount:', error);
                     });
                 } else {
-                    GlassesBluetoothService.exit().catch((error: any) => {
+                    GlassesController.exit().catch((error: any) => {
                         console.error('Failed to exit on component unmount:', error);
                     });
                 }
@@ -336,9 +336,9 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         if (presentingSlideId) {
             try {
                 if (outputMode === 'official') {
-                    await GlassesBluetoothService.exitOfficialTeleprompter();
+                    await GlassesController.exitOfficialTeleprompter();
                 } else {
-                    await GlassesBluetoothService.exit();
+                    await GlassesController.exit();
                 }
                 presentingSlideRef.current = null; // Clear ref since we manually stopped
             } catch (error) {
@@ -647,9 +647,9 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             <TouchableOpacity
                                 onPress={async () => {
                                     if (outputMode === 'official') {
-                                        await GlassesBluetoothService.exitOfficialTeleprompter();
+                                        await GlassesController.exitOfficialTeleprompter();
                                     } else {
-                                        await GlassesBluetoothService.exit();
+                                        await GlassesController.exit();
                                     }
                                     setPresentingSlideId(null);
                                     presentingSlideRef.current = null; // Clear ref since we manually stopped

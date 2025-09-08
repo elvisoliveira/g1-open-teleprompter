@@ -1,7 +1,7 @@
 import { Device } from 'react-native-ble-plx';
-import { GlassSide } from '../Types';
+import { GlassSide } from '../DeviceTypes';
 
-export class GlassesDeviceExecutor {
+export class GlassesDispatcher {
     async executeForDevices<T>(
         devices: { left: Device | null; right: Device | null },
         side: GlassSide,
@@ -17,7 +17,7 @@ export class GlassesDeviceExecutor {
             try {
                 return await operation(entry.device, entry.side);
             } catch (error) {
-                console.error(`[GlassesDeviceExecutor] Operation failed for ${entry.side} device:`, error);
+                console.error(`[GlassesDispatcher] Operation failed for ${entry.side} device:`, error);
                 return undefined;
             }
         };

@@ -1,9 +1,13 @@
 import { Buffer } from 'buffer';
 import { Device } from 'react-native-ble-plx';
-import { READ_CHARACTERISTIC_UUID, SERVICE_UUID, WRITE_CHARACTERISTIC_UUID } from '../Constants';
-import { Utils } from '../Utils';
+import {
+    CHARACTERISTIC_NOTIFY_V1,
+    CHARACTERISTIC_WRITE,
+    SERVICE_UUID
+} from '../constants/BluetoothConstants';
+import { TextFormatter } from '../TextFormatter';
 
-export class DeviceCommunication {
+export class BluetoothTransport {
     /**
      * Write data to a specific device
      */
@@ -14,33 +18,33 @@ export class DeviceCommunication {
     ): Promise<boolean> {
         try {
             const base64 = Buffer.from(data).toString('base64');
-            console.log(`[DeviceCommunication] Writing ${requireResponse ? 'with' : 'without'} response: ${Utils.arrayToHex(data)}`);
+            console.log(`[BluetoothTransport] Writing ${requireResponse ? 'with' : 'without'} response: ${TextFormatter.arrayToHex(data)}`);
 
             if (requireResponse) {
                 await device.writeCharacteristicWithResponseForService(
                     SERVICE_UUID,
-                    WRITE_CHARACTERISTIC_UUID,
+                    CHARACTERISTIC_WRITE,
                     base64
                 );
             } else {
                 try {
                     await device.writeCharacteristicWithoutResponseForService(
                         SERVICE_UUID,
-                        WRITE_CHARACTERISTIC_UUID,
+                        CHARACTERISTIC_WRITE,
                         base64
                     );
                 } catch (writeError) {
-                    console.warn('[DeviceCommunication] Write without response failed, fallback to with response');
+                    console.warn('[BluetoothTransport] Write without response failed, fallback to with response');
                     await device.writeCharacteristicWithResponseForService(
                         SERVICE_UUID,
-                        WRITE_CHARACTERISTIC_UUID,
+                        CHARACTERISTIC_WRITE,
                         base64
                     );
                 }
             }
             return true;
         } catch (error) {
-            console.error('[DeviceCommunication] Write failed:', error);
+            console.error('[BluetoothTransport] Write failed:', error);
             return false;
         }
     }
@@ -53,12 +57,12 @@ export class DeviceCommunication {
         requestBytes: Uint8Array,
         expectedHeader: Uint8Array
     ): Promise<Uint8Array | null> {
-        console.log(`[DeviceCommunication] Command: ${Utils.arrayToHex(requestBytes)}, expecting header: ${Utils.arrayToHex(expectedHeader)}`);
+        console.log(`[BluetoothTransport] Command: ${TextFormatter.arrayToHex(requestBytes)}, expecting header: ${TextFormatter.arrayToHex(expectedHeader)}`);
 
         try {
             const responsePromise = new Promise<Uint8Array | null>((resolve) => {
                 const timeout = setTimeout(() => {
-                    console.warn(`[DeviceCommunication] Timeout`);
+                    console.warn(`[BluetoothTransport] Timeout`);
                     resolve(null)
                 }, 3000);
 
@@ -70,7 +74,7 @@ export class DeviceCommunication {
                     }
 
                     const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
-                    console.log(`[DeviceCommunication] Received notification: ${Utils.arrayToHex(data)}`);
+                    console.log(`[BluetoothTransport] Received notification: ${TextFormatter.arrayToHex(data)}`);
 
                     // Check if this response matches what we're expecting
                     if (expectedHeader.length === 0 || this.headerMatches(data, expectedHeader)) {
@@ -78,21 +82,21 @@ export class DeviceCommunication {
                         subscription.remove();
                         resolve(data);
                     } else {
-                        console.warn(`[DeviceCommunication] Ignoring unexpected response, waiting for expected header: ${Utils.arrayToHex(expectedHeader)}`);
+                        console.warn(`[BluetoothTransport] Ignoring unexpected response, waiting for expected header: ${TextFormatter.arrayToHex(expectedHeader)}`);
                         // Keep listening for the correct response
                     }
                 };
 
                 subscription = device.monitorCharacteristicForService(
                     SERVICE_UUID,
-                    READ_CHARACTERISTIC_UUID,
+                    CHARACTERISTIC_NOTIFY_V1,
                     handleResponse
                 );
             });
 
             const success = await this.writeToDevice(device, requestBytes, true);
             if (!success) {
-                console.error('[DeviceCommunication] Failed to write command');
+                console.error('[BluetoothTransport] Failed to write command');
                 return null;
             }
 
@@ -101,27 +105,27 @@ export class DeviceCommunication {
                 return response;
             }
 
-            console.warn('[DeviceCommunication] First response detection method failed, trying the fallback');
+            console.warn('[BluetoothTransport] First response detection method failed, trying the fallback');
 
             try {
                 const characteristic = await device.readCharacteristicForService(
                     SERVICE_UUID,
-                    READ_CHARACTERISTIC_UUID
+                    CHARACTERISTIC_NOTIFY_V1
                 );
                 if (characteristic?.value) {
                     const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
-                    console.log(`[DeviceCommunication] Response: ${Utils.arrayToHex(data)}`);
+                    console.log(`[BluetoothTransport] Response: ${TextFormatter.arrayToHex(data)}`);
                     if (expectedHeader.length === 0 || this.headerMatches(data, expectedHeader)) {
                         return data;
                     }
                 }
             } catch (readError) {
-                console.log('[DeviceCommunication] Failed to read from characteristic');
+                console.log('[BluetoothTransport] Failed to read from characteristic');
             }
 
             return null;
         } catch (error) {
-            console.error('[DeviceCommunication] Top-level error:', error);
+            console.error('[BluetoothTransport] Top-level error:', error);
             return null;
         }
     }
@@ -146,7 +150,7 @@ export class DeviceCommunication {
                 return false;
             }
             if (delayMs > 0) {
-                await Utils.sleep(delayMs);
+                await TextFormatter.sleep(delayMs);
             }
         }
         return true;

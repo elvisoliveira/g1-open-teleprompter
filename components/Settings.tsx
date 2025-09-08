@@ -1,9 +1,9 @@
-import { defaultBitmapGenerator } from '@/services/BitmapGeneratorService';
-import GlassesBluetoothService from '@/services/GlassesBluetoothService';
+import { defaultBitmapRenderer } from '@/services/BitmapRenderer';
+import GlassesController from '@/services/GlassesController';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { OutputMode } from '../services/Types';
+import { OutputMode } from '../services/DeviceTypes';
 import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
 import { MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 import { settingsStyles as styles } from '../styles/SettingsStyles';
@@ -44,24 +44,24 @@ const Settings: React.FC<SettingsProps> = ({
             let success = false;
 
             if (outputMode === 'text') {
-                success = await GlassesBluetoothService.sendText(messageText);
+                success = await GlassesController.sendText(messageText);
             } else if (outputMode === 'image') {
                 try {
-                    const bmpBuffer = await defaultBitmapGenerator.textToBitmap(messageText);
+                    const bmpBuffer = await defaultBitmapRenderer.textToBitmap(messageText);
 
-                    if (!defaultBitmapGenerator.validateBmpFormat(bmpBuffer)) {
+                    if (!defaultBitmapRenderer.validateBmpFormat(bmpBuffer)) {
                         throw new Error('Generated BMP format is invalid');
                     }
 
-                    const base64Image = defaultBitmapGenerator.bufferToBase64(bmpBuffer);
-                    success = await GlassesBluetoothService.sendImage(base64Image);
+                    const base64Image = defaultBitmapRenderer.bufferToBase64(bmpBuffer);
+                    success = await GlassesController.sendImage(base64Image);
                 } catch (bitmapError) {
                     console.error('Error generating bitmap:', bitmapError);
                     Alert.alert('Error', 'Failed to generate image from text');
                     return;
                 }
             } else if (outputMode === 'official') {
-                success = await GlassesBluetoothService.sendOfficialTeleprompter(messageText);
+                success = await GlassesController.sendOfficialTeleprompter(messageText);
             }
 
             if (success) {
@@ -86,9 +86,9 @@ const Settings: React.FC<SettingsProps> = ({
             let success = false;
 
             if (outputMode === 'official') {
-                success = await GlassesBluetoothService.exitOfficialTeleprompter();
+                success = await GlassesController.exitOfficialTeleprompter();
             } else {
-                success = await GlassesBluetoothService.exit();
+                success = await GlassesController.exit();
             }
 
             if (!success) {

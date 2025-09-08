@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { PERMISSIONS, request } from 'react-native-permissions';
 
-export class PermissionManager {
+export class BluetoothPermissions {
     /**
      * Request Bluetooth permissions based on Android version
      * @returns Promise<boolean> - true if permissions granted, false otherwise
@@ -15,7 +15,7 @@ export class PermissionManager {
                 const bluetoothConnectGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_CONNECT);
                 
                 if (bluetoothScanGranted !== 'granted' || bluetoothConnectGranted !== 'granted') {
-                    console.error('[PermissionManager] Bluetooth permissions not granted:', {
+                    console.error('[BluetoothPermissions] Bluetooth permissions not granted:', {
                         bluetoothScan: bluetoothScanGranted,
                         bluetoothConnect: bluetoothConnectGranted
                     });
@@ -24,13 +24,13 @@ export class PermissionManager {
             } else {
                 const locationGranted = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
                 if (locationGranted !== 'granted') {
-                    console.error('[PermissionManager] Location permission not granted:', locationGranted);
+                    console.error('[BluetoothPermissions] Location permission not granted:', locationGranted);
                     return false;
                 }
             }
             return true;
         } catch (error) {
-            console.error('[PermissionManager] Failed to request permissions:', error);
+            console.error('[BluetoothPermissions] Failed to request permissions:', error);
             return false;
         }
     }
@@ -45,11 +45,11 @@ export class PermissionManager {
         if (Platform.Version >= 31) {
             const bluetoothConnectGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_CONNECT);
             if (bluetoothConnectGranted !== 'granted') {
-                console.error('[PermissionManager] Bluetooth connect permission not granted');
+                console.error('[BluetoothPermissions] Bluetooth connect permission not granted');
                 return false;
             }
         }
         
         return true;
     }
-} 
+}

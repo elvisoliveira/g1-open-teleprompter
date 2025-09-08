@@ -1,5 +1,5 @@
 import { Device } from 'react-native-ble-plx';
-import { DeviceCommunication } from './DeviceCommunication';
+import { BluetoothTransport } from './BluetoothTransport';
 
 /**
  * RingProtocol - Handles ring device-specific communication
@@ -21,7 +21,7 @@ export class RingProtocol {
     static async sendRingCommand(device: Device, command: Uint8Array): Promise<boolean> {
         // TODO: Implement ring-specific command sending
         console.log('[RingProtocol] Ring command sending not yet implemented');
-        return await DeviceCommunication.writeToDevice(device, command, false);
+        return await BluetoothTransport.writeToDevice(device, command, false);
     }
 
     /**

@@ -1,7 +1,7 @@
 import { Device } from 'react-native-ble-plx';
-import { BaseBluetoothService } from '../BaseBluetoothService';
+import { BaseDeviceController } from '../BaseDeviceController';
 
-export class RingConnection extends BaseBluetoothService {
+export class RingConnection extends BaseDeviceController {
     private device: Device | null = null;
     private connectionState: boolean = false;
     private connectionStateCallback: ((connected: boolean) => void) | null = null;

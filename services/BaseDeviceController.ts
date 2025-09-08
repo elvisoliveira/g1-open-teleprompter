@@ -1,9 +1,9 @@
 import { NativeModules, Platform } from 'react-native';
 import { BleManager, Device, State } from 'react-native-ble-plx';
-import { CONNECTION_TIMEOUT_MS, MTU_SIZE } from './Constants';
-import { PermissionManager } from './PermissionManager';
+import { BluetoothPermissions } from './BluetoothPermissions';
+import { CONNECTION_TIMEOUT_MS, MTU_SIZE } from './constants/BluetoothConstants';
 
-export abstract class BaseBluetoothService {
+export abstract class BaseDeviceController {
     protected manager: BleManager;
 
     constructor() {
@@ -25,7 +25,7 @@ export abstract class BaseBluetoothService {
         if (Platform.OS !== 'android') return [];
 
         try {
-            if (!await PermissionManager.requestBluetoothPermissions()) {
+            if (!await BluetoothPermissions.requestBluetoothPermissions()) {
                 return [];
             }
 
@@ -48,7 +48,7 @@ export abstract class BaseBluetoothService {
 
     // Shared Connection Helper
     protected async establishBleConnection(address: string): Promise<Device> {
-        if (!await PermissionManager.requestBluetoothConnectPermission()) {
+        if (!await BluetoothPermissions.requestBluetoothConnectPermission()) {
             throw new Error('Bluetooth permission not granted');
         }
 

@@ -1,27 +1,27 @@
-import { BaseBluetoothService } from './BaseBluetoothService';
-import { GlassesCommunication } from './modules/GlassesCommunication';
+import { BaseDeviceController } from './BaseDeviceController';
+import { DeviceStatus, GlassSide } from './DeviceTypes';
 import { GlassesConnection } from './modules/GlassesConnection';
-import { GlassesDeviceExecutor } from './modules/GlassesDeviceExecutor';
+import { GlassesDispatcher } from './modules/GlassesDispatcher';
 import { GlassesHeartbeat } from './modules/GlassesHeartbeat';
+import { GlassesPacketBuilder } from './modules/GlassesPacketBuilder';
 import { GlassesStatus } from './modules/GlassesStatus';
-import { DeviceCommunication } from './transport/DeviceCommunication';
+import { BluetoothTransport } from './transport/BluetoothTransport';
 import { GlassesProtocol } from './transport/GlassesProtocol';
 import { TeleprompterProtocol } from './transport/TeleprompterProtocol';
-import { DeviceStatus, GlassSide } from './Types';
 
-class GlassesBluetoothService extends BaseBluetoothService {
+class GlassesController extends BaseDeviceController {
     private connection = new GlassesConnection();
     private status = new GlassesStatus();
     private heartbeat = new GlassesHeartbeat();
-    private communication = new GlassesCommunication();
-    private executor = new GlassesDeviceExecutor();
+    private packetBuilder = new GlassesPacketBuilder();
+    private dispatcher = new GlassesDispatcher();
 
     constructor() {
         super();
     }
 
     protected getServiceName(): string {
-        return 'GlassesBluetoothService';
+        return 'GlassesController';
     }
 
     // Public API Methods
@@ -70,9 +70,9 @@ class GlassesBluetoothService extends BaseBluetoothService {
             throw new Error('No devices connected');
         }
 
-        const packets = this.communication.prepareTextPackets(text);
+        const packets = this.packetBuilder.prepareTextPackets(text);
         const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
-            return await DeviceCommunication.sendPacketsToDevice(device, packets, 5);
+            return await BluetoothTransport.sendPacketsToDevice(device, packets, 5);
         });
 
         return results.every(Boolean);
@@ -84,14 +84,14 @@ class GlassesBluetoothService extends BaseBluetoothService {
         }
 
         try {
-            const { bmpData, packets } = this.communication.prepareImageData(base64ImageData);
+            const { bmpData, packets } = this.packetBuilder.prepareImageData(base64ImageData);
             const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
                 return await GlassesProtocol.sendBmpToDevice(device, bmpData);
             }, true);
 
             return results.every(Boolean);
         } catch (error) {
-            console.error('[GlassesBluetoothService] Error sending BMP image:', error);
+            console.error('[GlassesController] Error sending BMP image:', error);
             return false;
         }
     }
@@ -102,14 +102,14 @@ class GlassesBluetoothService extends BaseBluetoothService {
         }
 
         try {
-            const packets = this.communication.prepareOfficialTeleprompterPackets(text, slidePercentage);
+            const packets = this.packetBuilder.prepareOfficialTeleprompterPackets(text, slidePercentage);
             const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
                 return await TeleprompterProtocol.sendTeleprompterPackets(device, packets);
             });
 
             return results.every(Boolean);
         } catch (error) {
-            console.error('[GlassesBluetoothService] Error sending official teleprompter:', error);
+            console.error('[GlassesController] Error sending official teleprompter:', error);
             return false;
         }
     }
@@ -120,13 +120,13 @@ class GlassesBluetoothService extends BaseBluetoothService {
         }
 
         try {
-            const endPacket = this.communication.prepareOfficialTeleprompterEndPacket();
+            const endPacket = this.packetBuilder.prepareOfficialTeleprompterEndPacket();
             const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
                 return await TeleprompterProtocol.sendTeleprompterEndPacket(device, endPacket);
             });
             return results.every(Boolean);
         } catch (error) {
-            console.error('[GlassesBluetoothService] Error exiting official teleprompter:', error);
+            console.error('[GlassesController] Error exiting official teleprompter:', error);
             return false;
         }
     }
@@ -168,7 +168,7 @@ class GlassesBluetoothService extends BaseBluetoothService {
         operation: (device: any, deviceSide: GlassSide.LEFT | GlassSide.RIGHT) => Promise<T>,
         parallel: boolean = false
     ): Promise<T[]> {
-        return await this.executor.executeForDevices(
+        return await this.dispatcher.executeForDevices(
             this.connection.getDevices(),
             side,
             operation,
@@ -177,4 +177,4 @@ class GlassesBluetoothService extends BaseBluetoothService {
     }
 }
 
-export default new GlassesBluetoothService();
+export default new GlassesController();

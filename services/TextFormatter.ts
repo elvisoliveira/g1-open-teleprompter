@@ -1,9 +1,9 @@
-import { MAX_DISPLAY_LINES, MAX_LINE_LENGTH } from './Constants';
+import { GLASSES_MAX_DISPLAY_LINES, GLASSES_MAX_LINE_LENGTH } from './constants/GlassesConstants';
 
 /**
- * Utility class containing common helper methods
+ * Utility class for text formatting and display preparation
  */
-export class Utils {
+export class TextFormatter {
     /**
      * Split text into lines based on maximum line length
      * @param text - The text to split
@@ -16,7 +16,7 @@ export class Utils {
         let currentLine = '';
 
         for (const word of words) {
-            if (currentLine.length + word.length + 1 <= MAX_LINE_LENGTH) {
+            if (currentLine.length + word.length + 1 <= GLASSES_MAX_LINE_LENGTH) {
                 currentLine += (currentLine ? ' ' : '') + word;
             } else {
                 if (currentLine) {
@@ -40,7 +40,7 @@ export class Utils {
      */
     static formatTextForDisplay(text: string): string {
         const lines = this.splitTextIntoLines(text);
-        return lines.slice(0, MAX_DISPLAY_LINES).join('\n');
+        return lines.slice(0, GLASSES_MAX_DISPLAY_LINES).join('\n');
     }
 
     /**
@@ -60,4 +60,4 @@ export class Utils {
     static arrayToHex(data: Uint8Array): string {
         return Array.from(data).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ');
     }
-} 
+}

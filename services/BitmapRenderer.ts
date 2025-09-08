@@ -53,7 +53,7 @@ export const DEFAULT_TEXT_LAYOUT: TextLayout = {
  * Simple text-to-bitmap converter for G1 glasses
  * This creates a 1-bit bitmap (black and white) of the specified dimensions
  */
-export class BitmapGenerator {
+export class BitmapRenderer {
     private dimensions: BitmapDimensions;
     private fontConfig: FontConfig;
     private layout: TextLayout;
@@ -302,7 +302,7 @@ export class BitmapGenerator {
      */
     private getCharacterPattern(char: string): number[] {
         // Use static pattern lookup for better performance
-        return BitmapGenerator.CHARACTER_PATTERNS[char.toUpperCase()] || BitmapGenerator.DEFAULT_PATTERN;
+        return BitmapRenderer.CHARACTER_PATTERNS[char.toUpperCase()] || BitmapRenderer.DEFAULT_PATTERN;
     }
 
     /**
@@ -386,4 +386,4 @@ export class BitmapGenerator {
 /**
  * Default instance for easy use
  */
-export const defaultBitmapGenerator = new BitmapGenerator();
+export const defaultBitmapRenderer = new BitmapRenderer();

@@ -1,29 +1,29 @@
 import { Device } from 'react-native-ble-plx';
+import { ENABLE_TRANSFER_LOGGING } from '../constants/AppConstants';
 import {
-    BATTERY_CMD,
-    BMP_CHUNK_SIZE,
-    BMP_DATA_CMD,
-    BMP_END_CMD,
-    BMP_END_DELAY,
-    BMP_PACKET_DELAY,
-    BMP_STORAGE_ADDRESS,
-    CHUNK_SIZE,
-    CRC_CMD,
-    DEFAULT_MAX_PAGES,
-    DEFAULT_PAGE_NUM,
-    DEFAULT_POS,
-    ENABLE_TRANSFER_LOGGING,
-    EXIT_CMD,
-    FIRMWARE_REQUEST_CMD,
-    HEARTBEAT_CMD,
-    NEW_SCREEN_FLAG,
-    PACKET_DELAY,
-    TEXT_COMMAND,
-    UPTIME_CMD
-} from '../Constants';
-import { Utils } from '../Utils';
-import { DataProcessor } from './DataProcessor';
-import { DeviceCommunication } from './DeviceCommunication';
+    GLASSES_BATTERY_CMD,
+    GLASSES_BMP_CHUNK_SIZE,
+    GLASSES_BMP_DATA_CMD,
+    GLASSES_BMP_END_CMD,
+    GLASSES_BMP_END_DELAY,
+    GLASSES_BMP_PACKET_DELAY,
+    GLASSES_BMP_STORAGE_ADDRESS,
+    GLASSES_CHUNK_SIZE,
+    GLASSES_CRC_CMD,
+    GLASSES_DEFAULT_MAX_PAGES,
+    GLASSES_DEFAULT_PAGE_NUM,
+    GLASSES_DEFAULT_POS,
+    GLASSES_EXIT_CMD,
+    GLASSES_FIRMWARE_REQUEST_CMD,
+    GLASSES_HEARTBEAT_CMD,
+    GLASSES_NEW_SCREEN_FLAG,
+    GLASSES_PACKET_DELAY,
+    GLASSES_TEXT_CMD,
+    GLASSES_UPTIME_CMD
+} from '../constants/GlassesConstants';
+import { TextFormatter } from '../TextFormatter';
+import { BluetoothTransport } from './BluetoothTransport';
+import { CrcCalculator } from './CrcCalculator';
 
 export class GlassesProtocol {
     private static evenaiSeq: number = 0;
@@ -32,8 +32,8 @@ export class GlassesProtocol {
      * Request battery level from device
      */
     static async requestBatteryLevel(device: Device): Promise<number | null> {
-        const requestBytes = new Uint8Array([BATTERY_CMD, 0x01]);
-        const response = await DeviceCommunication.sendCommandWithResponse(device, requestBytes, new Uint8Array([BATTERY_CMD]));
+        const requestBytes = new Uint8Array([GLASSES_BATTERY_CMD, 0x01]);
+        const response = await BluetoothTransport.sendCommandWithResponse(device, requestBytes, new Uint8Array([GLASSES_BATTERY_CMD]));
         if (response && response.length > 2) {
             return response[2] & 0xff;
         }
@@ -44,7 +44,7 @@ export class GlassesProtocol {
      * Request firmware information from device
      */
     static async requestFirmwareInfo(device: Device): Promise<string | null> {
-        const response = await DeviceCommunication.sendCommandWithResponse(device, new Uint8Array(FIRMWARE_REQUEST_CMD), new Uint8Array([]));
+        const response = await BluetoothTransport.sendCommandWithResponse(device, new Uint8Array(GLASSES_FIRMWARE_REQUEST_CMD), new Uint8Array([]));
         if (response && response.length > 0) {
             try {
                 return new TextDecoder('utf-8').decode(response).trim();
@@ -59,7 +59,7 @@ export class GlassesProtocol {
      * Request device uptime
      */
     static async requestUptime(device: Device): Promise<number | null> {
-        const response = await DeviceCommunication.sendCommandWithResponse(device, new Uint8Array([UPTIME_CMD]), new Uint8Array([UPTIME_CMD]));
+        const response = await BluetoothTransport.sendCommandWithResponse(device, new Uint8Array([GLASSES_UPTIME_CMD]), new Uint8Array([GLASSES_UPTIME_CMD]));
         console.log('uptime response');
         console.log(response);
         if (response && response.length >= 4) {
@@ -74,8 +74,8 @@ export class GlassesProtocol {
      * Send exit command
      */
     static async sendExitCommand(device: Device): Promise<boolean> {
-        const command = new Uint8Array([EXIT_CMD]);
-        return await DeviceCommunication.writeToDevice(device, command, false);
+        const command = new Uint8Array([GLASSES_EXIT_CMD]);
+        return await BluetoothTransport.writeToDevice(device, command, false);
     }
 
     /**
@@ -83,15 +83,15 @@ export class GlassesProtocol {
      */
     static async sendHeartbeat(device: Device, seq: number): Promise<boolean> {
         const heartbeatData = new Uint8Array([
-            HEARTBEAT_CMD,
+            GLASSES_HEARTBEAT_CMD,
             6,
             0,
             seq & 0xff,
             0x04,
             seq & 0xff
         ]);
-        const response = await DeviceCommunication.sendCommandWithResponse(device, heartbeatData, new Uint8Array([HEARTBEAT_CMD]));
-        return !!response && response.length > 5 && response[0] === HEARTBEAT_CMD && response[4] === 0x04;
+        const response = await BluetoothTransport.sendCommandWithResponse(device, heartbeatData, new Uint8Array([GLASSES_HEARTBEAT_CMD]));
+        return !!response && response.length > 5 && response[0] === GLASSES_HEARTBEAT_CMD && response[4] === 0x04;
     }
 
     /**
@@ -102,23 +102,23 @@ export class GlassesProtocol {
         const syncSeq = this.evenaiSeq++ & 0xFF;
         const packets: Uint8Array[] = [];
 
-        const totalPackets = Math.ceil(data.length / CHUNK_SIZE);
+        const totalPackets = Math.ceil(data.length / GLASSES_CHUNK_SIZE);
 
         for (let i = 0; i < totalPackets; i++) {
-            const start = i * CHUNK_SIZE;
-            const end = Math.min(start + CHUNK_SIZE, data.length);
+            const start = i * GLASSES_CHUNK_SIZE;
+            const end = Math.min(start + GLASSES_CHUNK_SIZE, data.length);
             const chunk = data.slice(start, end);
 
             const header = [
-                TEXT_COMMAND,
+                GLASSES_TEXT_CMD,
                 syncSeq,
                 totalPackets,
                 i,
-                NEW_SCREEN_FLAG,
-                (DEFAULT_POS >> 8) & 0xFF,
-                DEFAULT_POS & 0xFF,
-                DEFAULT_PAGE_NUM,
-                DEFAULT_MAX_PAGES
+                GLASSES_NEW_SCREEN_FLAG,
+                (GLASSES_DEFAULT_POS >> 8) & 0xFF,
+                GLASSES_DEFAULT_POS & 0xFF,
+                GLASSES_DEFAULT_PAGE_NUM,
+                GLASSES_DEFAULT_MAX_PAGES
             ];
 
             const packet = new Uint8Array(header.length + chunk.length);
@@ -137,24 +137,24 @@ export class GlassesProtocol {
         const packets: Uint8Array[] = [];
         let syncId = 0;
 
-        console.log(`[GlassesProtocol] Creating BMP packets with chunk size: ${BMP_CHUNK_SIZE} bytes`);
+        console.log(`[GlassesProtocol] Creating BMP packets with chunk size: ${GLASSES_BMP_CHUNK_SIZE} bytes`);
 
-        for (let i = 0; i < bmpData.length; i += BMP_CHUNK_SIZE) {
-            const end = Math.min(i + BMP_CHUNK_SIZE, bmpData.length);
+        for (let i = 0; i < bmpData.length; i += GLASSES_BMP_CHUNK_SIZE) {
+            const end = Math.min(i + GLASSES_BMP_CHUNK_SIZE, bmpData.length);
             const chunk = bmpData.slice(i, end);
 
             if (i === 0) {
                 // First packet: [0x15, syncId, storageAddress(4 bytes), data]
-                const packet = new Uint8Array(2 + BMP_STORAGE_ADDRESS.length + chunk.length);
-                packet[0] = BMP_DATA_CMD; // 0x15
+                const packet = new Uint8Array(2 + GLASSES_BMP_STORAGE_ADDRESS.length + chunk.length);
+                packet[0] = GLASSES_BMP_DATA_CMD; // 0x15
                 packet[1] = syncId & 0xFF;
-                packet.set(BMP_STORAGE_ADDRESS, 2); // 0x00, 0x1c, 0x00, 0x00
+                packet.set(GLASSES_BMP_STORAGE_ADDRESS, 2); // 0x00, 0x1c, 0x00, 0x00
                 packet.set(chunk, 6);
                 packets.push(packet);
             } else {
                 // Other packets: [0x15, syncId, data]
                 const packet = new Uint8Array(2 + chunk.length);
-                packet[0] = BMP_DATA_CMD; // 0x15
+                packet[0] = GLASSES_BMP_DATA_CMD; // 0x15
                 packet[1] = syncId & 0xFF;
                 packet.set(chunk, 2);
                 packets.push(packet);
@@ -171,7 +171,7 @@ export class GlassesProtocol {
      */
     static async sendTextToDevice(device: Device, text: string): Promise<boolean> {
         const packets = this.createTextPackets(text);
-        return await DeviceCommunication.sendPacketsToDevice(device, packets, PACKET_DELAY);
+        return await BluetoothTransport.sendPacketsToDevice(device, packets, GLASSES_PACKET_DELAY);
     }
 
     /**
@@ -191,40 +191,40 @@ export class GlassesProtocol {
                     console.log(`[GlassesProtocol] Sending packet ${i + 1}/${packets.length} (${packet.length} bytes)`);
                 }
 
-                if (!await DeviceCommunication.writeToDevice(device, packet, false)) {
+                if (!await BluetoothTransport.writeToDevice(device, packet, false)) {
                     console.error(`[GlassesProtocol] Failed to send packet ${i + 1}`);
                     return false;
                 }
 
-                if (i < packets.length - 1 && BMP_PACKET_DELAY > 0) {
-                    await Utils.sleep(BMP_PACKET_DELAY);
+                if (i < packets.length - 1 && GLASSES_BMP_PACKET_DELAY > 0) {
+                    await TextFormatter.sleep(GLASSES_BMP_PACKET_DELAY);
                 }
             }
 
             console.log('[GlassesProtocol] All packets sent, sending end command');
 
             // Send end command
-            const endCommand = new Uint8Array(BMP_END_CMD);
-            if (!await DeviceCommunication.writeToDevice(device, endCommand, false)) {
+            const endCommand = new Uint8Array(GLASSES_BMP_END_CMD);
+            if (!await BluetoothTransport.writeToDevice(device, endCommand, false)) {
                 console.error('[GlassesProtocol] Failed to send end command');
                 return false;
             }
 
-            await Utils.sleep(BMP_END_DELAY);
+            await TextFormatter.sleep(GLASSES_BMP_END_DELAY);
 
             // Send CRC verification
-            const crcValue = DataProcessor.computeBmpCrc32(bmpData);
+            const crcValue = CrcCalculator.computeBmpCrc32(bmpData);
             console.log(`[GlassesProtocol] CRC computed: 0x${crcValue.toString(16)}`);
 
             const crcBytes = new Uint8Array([
-                CRC_CMD,  // 0x16
+                GLASSES_CRC_CMD,  // 0x16
                 (crcValue >> 24) & 0xFF,
                 (crcValue >> 16) & 0xFF,
                 (crcValue >> 8) & 0xFF,
                 crcValue & 0xFF,
             ]);
 
-            if (!await DeviceCommunication.writeToDevice(device, crcBytes, false)) {
+            if (!await BluetoothTransport.writeToDevice(device, crcBytes, false)) {
                 console.error('[GlassesProtocol] Failed to send CRC');
                 return false;
             }

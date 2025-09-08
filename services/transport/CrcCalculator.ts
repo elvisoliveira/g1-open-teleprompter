@@ -1,6 +1,6 @@
-import { BMP_STORAGE_ADDRESS } from '../Constants';
+import { GLASSES_BMP_STORAGE_ADDRESS } from '../constants/GlassesConstants';
 
-export class DataProcessor {
+export class CrcCalculator {
     /**
      * Compute CRC32 for data verification
      */
@@ -29,9 +29,9 @@ export class DataProcessor {
      */
     static computeBmpCrc32(bmpData: Uint8Array): number {
         // Combine storage address + BMP data for CRC calculation
-        const combinedData = new Uint8Array(BMP_STORAGE_ADDRESS.length + bmpData.length);
-        combinedData.set(BMP_STORAGE_ADDRESS, 0);
-        combinedData.set(bmpData, BMP_STORAGE_ADDRESS.length);
+        const combinedData = new Uint8Array(GLASSES_BMP_STORAGE_ADDRESS.length + bmpData.length);
+        combinedData.set(GLASSES_BMP_STORAGE_ADDRESS, 0);
+        combinedData.set(bmpData, GLASSES_BMP_STORAGE_ADDRESS.length);
 
         return this.computeCrc32(combinedData);
     }

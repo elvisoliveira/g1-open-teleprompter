@@ -1,6 +1,6 @@
 import { Device } from 'react-native-ble-plx';
+import { BatteryInfo, DeviceStatus, FirmwareInfo, GlassSide, UptimeInfo } from '../DeviceTypes';
 import { GlassesProtocol } from '../transport/GlassesProtocol';
-import { BatteryInfo, DeviceStatus, FirmwareInfo, GlassSide, UptimeInfo } from '../Types';
 
 export class GlassesStatus {
     private batteryInfo: BatteryInfo = { left: -1, right: -1 };

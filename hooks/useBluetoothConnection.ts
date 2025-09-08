@@ -1,7 +1,7 @@
-import RingBluetoothService from '@/services/RingBluetoothService';
+import RingController from '@/services/RingController';
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import GlassesBluetoothService from '../services/GlassesBluetoothService';
+import GlassesController from '../services/GlassesController';
 
 export interface PairedDevice {
     id: string;
@@ -27,13 +27,13 @@ export const useBluetoothConnection = (
 
     useEffect(() => {
         // Subscribe to connection state changes from GlassesBluetoothService
-        const unsubscribeGlasses = GlassesBluetoothService.onConnectionStateChange((state) => {
+        const unsubscribeGlasses = GlassesController.onConnectionStateChange((state) => {
             setLeftGlassConnected(state.left);
             setRightGlassConnected(state.right);
         });
 
-        // Subscribe to connection state changes from RingBluetoothService
-        const unsubscribeRing = RingBluetoothService.onConnectionStateChange((connected) => {
+        // Subscribe to connection state changes from RingController
+        const unsubscribeRing = RingController.onConnectionStateChange((connected) => {
             setRingConnected(connected);
         });
 
@@ -43,8 +43,8 @@ export const useBluetoothConnection = (
         return () => {
             unsubscribeGlasses();
             unsubscribeRing();
-            GlassesBluetoothService.disconnect();
-            RingBluetoothService.disconnect();
+            GlassesController.disconnect();
+            RingController.disconnect();
         };
     }, []);
 
@@ -57,7 +57,7 @@ export const useBluetoothConnection = (
 
     const checkBluetoothStatus = async () => {
         try {
-            const enabled = await GlassesBluetoothService.isBluetoothEnabled();
+            const enabled = await GlassesController.isBluetoothEnabled();
             setIsBluetoothEnabled(enabled);
             return enabled;
         } catch (error) {
@@ -82,13 +82,13 @@ export const useBluetoothConnection = (
             
             // Get devices from appropriate service(s)
             if (deviceType === 'all') {
-                const glassesDevices = await GlassesBluetoothService.getPairedDevices();
-                const ringDevices = await RingBluetoothService.getPairedDevices();
+                const glassesDevices = await GlassesController.getPairedDevices();
+                const ringDevices = await RingController.getPairedDevices();
                 allDevices = [...glassesDevices, ...ringDevices];
             } else if (deviceType === 'glasses') {
-                allDevices = await GlassesBluetoothService.getPairedDevices();
+                allDevices = await GlassesController.getPairedDevices();
             } else if (deviceType === 'ring') {
-                allDevices = await RingBluetoothService.getPairedDevices();
+                allDevices = await RingController.getPairedDevices();
             }
 
             // Filter devices based on type
@@ -116,10 +116,10 @@ export const useBluetoothConnection = (
     const handleGlassConnection = async (deviceId: string, side: 'left' | 'right') => {
         try {
             if (side === 'left') {
-                await GlassesBluetoothService.connectLeft(deviceId);
+                await GlassesController.connectLeft(deviceId);
                 setConnectionStep('right');
             } else {
-                await GlassesBluetoothService.connectRight(deviceId);
+                await GlassesController.connectRight(deviceId);
             }
 
             // Notify parent component about successful connection
@@ -135,8 +135,8 @@ export const useBluetoothConnection = (
 
         setIsAutoConnecting(true);
         try {
-            await GlassesBluetoothService.connectLeft(leftMac);
-            await GlassesBluetoothService.connectRight(rightMac);
+            await GlassesController.connectLeft(leftMac);
+            await GlassesController.connectRight(rightMac);
 
             setConnectionStep('complete');
             setIsAutoConnecting(false);
@@ -150,7 +150,7 @@ export const useBluetoothConnection = (
 
     const handleRingConnection = async (deviceId: string) => {
         try {
-            await RingBluetoothService.connect(deviceId);
+            await RingController.connect(deviceId);
 
             // Notify parent component about successful connection
             onRingConnected?.(deviceId);
@@ -165,7 +165,7 @@ export const useBluetoothConnection = (
 
         setIsAutoConnecting(true);
         try {
-            await RingBluetoothService.connect(ringMac);
+            await RingController.connect(ringMac);
 
             setIsAutoConnecting(false);
             return true;
@@ -178,7 +178,7 @@ export const useBluetoothConnection = (
 
     const handleGlassDisconnect = async () => {
         try {
-            await GlassesBluetoothService.disconnect();
+            await GlassesController.disconnect();
             setConnectionStep('left');
         } catch (error) {
             console.error('Failed to disconnect glasses:', error);
@@ -188,7 +188,7 @@ export const useBluetoothConnection = (
 
     const handleRingDisconnect = async () => {
         try {
-            await RingBluetoothService.disconnect();
+            await RingController.disconnect();
         } catch (error) {
             console.error('Failed to disconnect ring:', error);
             Alert.alert('Disconnect Error', 'Failed to disconnect ring controller');

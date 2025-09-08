@@ -1,5 +1,5 @@
 import { Device } from 'react-native-ble-plx';
-import { HEARTBEAT_INTERVAL_MS } from '../Constants';
+import { GLASSES_HEARTBEAT_INTERVAL_MS } from '../constants/GlassesConstants';
 import { GlassesProtocol } from '../transport/GlassesProtocol';
 
 export class GlassesHeartbeat {
@@ -14,7 +14,7 @@ export class GlassesHeartbeat {
         this.stop();
         this.heartbeatInterval = setInterval(async () => {
             await this.performHeartbeat(getDevices, getConnectionState, updateConnectionState);
-        }, HEARTBEAT_INTERVAL_MS);
+        }, GLASSES_HEARTBEAT_INTERVAL_MS);
         this.performHeartbeat(getDevices, getConnectionState, updateConnectionState);
     }
 

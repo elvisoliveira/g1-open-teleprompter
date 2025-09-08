@@ -1,8 +1,8 @@
 import { Device } from 'react-native-ble-plx';
-import { BaseBluetoothService } from '../BaseBluetoothService';
-import { GlassSide } from '../Types';
+import { BaseDeviceController } from '../BaseDeviceController';
+import { GlassSide } from '../DeviceTypes';
 
-export class GlassesConnection extends BaseBluetoothService {
+export class GlassesConnection extends BaseDeviceController {
     private devices: { left: Device | null; right: Device | null } = { left: null, right: null };
     private connectionState: { left: boolean; right: boolean } = { left: false, right: false };
     private connectionStateCallback: ((state: { left: boolean; right: boolean }) => void) | null = null;

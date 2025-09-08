@@ -1,16 +1,16 @@
 import { Buffer } from 'buffer';
-import { EXIT_CMD } from '../Constants';
-import { TeleprompterUtils } from '../TeleprompterUtils';
+import { GLASSES_EXIT_CMD } from '../constants/GlassesConstants';
+import { TeleprompterTextProcessor } from '../TeleprompterTextProcessor';
+import { TextFormatter } from '../TextFormatter';
 import { GlassesProtocol } from '../transport/GlassesProtocol';
 import { TeleprompterProtocol } from '../transport/TeleprompterProtocol';
-import { Utils } from '../Utils';
 
-export class GlassesCommunication {
+export class GlassesPacketBuilder {
     private teleprompterSeq: number = 0;
 
     prepareTextPackets(text: string): Uint8Array[] {
         return GlassesProtocol.createTextPackets(
-            Utils.formatTextForDisplay(text)
+            TextFormatter.formatTextForDisplay(text)
         );
     }
 
@@ -21,8 +21,8 @@ export class GlassesCommunication {
     }
 
     prepareOfficialTeleprompterPackets(text: string, slidePercentage?: number): Uint8Array[] {
-        const formattedText = TeleprompterUtils.addLineBreaks(text, 180);
-        const textParts = TeleprompterUtils.splitTextForTeleprompter(formattedText);
+        const formattedText = TeleprompterTextProcessor.addLineBreaks(text, 180);
+        const textParts = TeleprompterTextProcessor.splitTextForTeleprompter(formattedText);
         const packets = TeleprompterProtocol.buildTeleprompterPackets(
             textParts.visible,
             textParts.next,
@@ -39,6 +39,6 @@ export class GlassesCommunication {
     }
 
     prepareExitCommand(): Uint8Array {
-        return new Uint8Array([EXIT_CMD]);
+        return new Uint8Array([GLASSES_EXIT_CMD]);
     }
 }

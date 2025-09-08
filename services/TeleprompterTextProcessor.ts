@@ -3,7 +3,7 @@ import fontData from '../assets/g1_fonts.json';
 /**
  * Utility class for teleprompter-specific text processing
  */
-export class TeleprompterUtils {
+export class TeleprompterTextProcessor {
     private static charWidths = new Map(fontData.glyphs.map(g => [g.char, g.width]));
 
     /**
