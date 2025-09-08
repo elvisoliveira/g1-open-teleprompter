@@ -1,25 +1,18 @@
-import { Buffer } from 'buffer';
-import { Device } from 'react-native-ble-plx';
 import { BaseBluetoothService } from './BaseBluetoothService';
 import { CommunicationManager } from './CommunicationManager';
-import { HEARTBEAT_INTERVAL_MS } from './constants';
-import { TeleprompterUtils } from './TeleprompterUtils';
-import { BatteryInfo, DeviceStatus, FirmwareInfo, GlassesInfo, GlassSide, UptimeInfo } from './types';
-import { Utils } from './utils';
+import { GlassesCommunication } from './glasses/GlassesCommunication';
+import { GlassesConnection } from './glasses/GlassesConnection';
+import { GlassesDeviceExecutor } from './glasses/GlassesDeviceExecutor';
+import { GlassesHeartbeat } from './glasses/GlassesHeartbeat';
+import { GlassesStatus } from './glasses/GlassesStatus';
+import { DeviceStatus, GlassSide } from './types';
 
 class GlassesBluetoothService extends BaseBluetoothService {
-    private devices: GlassesInfo = { left: null, right: null };
-    private batteryInfo: BatteryInfo = { left: -1, right: -1 };
-    private deviceUptime: UptimeInfo = { left: -1, right: -1 };
-    private firmwareInfo: FirmwareInfo = { left: null, right: null };
-
-    private heartbeatInterval: NodeJS.Timeout | null = null;
-    private heartbeatSeq: number = 0;
-    private connectionState: { left: boolean; right: boolean } = { left: false, right: false };
-    private connectionStateCallback: ((state: { left: boolean; right: boolean }) => void) | null = null;
-
-    // Sequence number for teleprompter packets to ensure proper ordering
-    private teleprompterSeq: number = 0;
+    private connection = new GlassesConnection();
+    private status = new GlassesStatus();
+    private heartbeat = new GlassesHeartbeat();
+    private communication = new GlassesCommunication();
+    private executor = new GlassesDeviceExecutor();
 
     constructor() {
         super();
@@ -31,11 +24,15 @@ class GlassesBluetoothService extends BaseBluetoothService {
 
     // Public API Methods
     async connectLeft(address: string): Promise<void> {
-        await this.connectDevice(address, GlassSide.LEFT);
+        await this.connection.connectDevice(address, GlassSide.LEFT);
+        await this.status.getFirmwareInfo(this.connection.getDevices().left!, GlassSide.LEFT);
+        this.startHeartbeatIfNeeded();
     }
 
     async connectRight(address: string): Promise<void> {
-        await this.connectDevice(address, GlassSide.RIGHT);
+        await this.connection.connectDevice(address, GlassSide.RIGHT);
+        await this.status.getFirmwareInfo(this.connection.getDevices().right!, GlassSide.RIGHT);
+        this.startHeartbeatIfNeeded();
     }
 
     async connect(address: string): Promise<void> {
@@ -43,33 +40,26 @@ class GlassesBluetoothService extends BaseBluetoothService {
     }
 
     async disconnect(): Promise<void> {
-        this.stopHeartbeat();
-        await this.disconnectAllDevices();
-        this.resetDeviceStatus();
-        this.connectionState = { left: false, right: false };
-        this.connectionStateCallback?.(this.connectionState);
+        this.heartbeat.stop();
+        await this.connection.disconnectAll();
+        this.status.reset();
     }
 
     // Device Status Methods
-
     isConnected(): boolean {
-        return this.connectionState.left || this.connectionState.right;
+        return this.connection.isConnected();
     }
 
     isLeftConnected(): boolean {
-        return this.connectionState.left;
+        return this.connection.isLeftConnected();
     }
 
     isRightConnected(): boolean {
-        return this.connectionState.right;
+        return this.connection.isRightConnected();
     }
 
     onConnectionStateChange(callback: (state: { left: boolean; right: boolean }) => void): () => void {
-        callback(this.connectionState);
-        this.connectionStateCallback = callback;
-        return () => {
-            this.connectionStateCallback = null;
-        };
+        return this.connection.onConnectionStateChange(callback);
     }
 
     // Communication Methods
@@ -78,10 +68,7 @@ class GlassesBluetoothService extends BaseBluetoothService {
             throw new Error('No devices connected');
         }
 
-        const packets = CommunicationManager.createTextPackets(
-            Utils.formatTextForDisplay(text)
-        );
-
+        const packets = this.communication.prepareTextPackets(text);
         const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
             return await CommunicationManager.sendPacketsToDevice(device, packets, 5);
         });
@@ -95,9 +82,7 @@ class GlassesBluetoothService extends BaseBluetoothService {
         }
 
         try {
-            const bmpData = new Uint8Array(Buffer.from(base64ImageData, 'base64'));
-            const packets = CommunicationManager.createBmpPackets(bmpData);
-
+            const { bmpData, packets } = this.communication.prepareImageData(base64ImageData);
             const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
                 return await CommunicationManager.sendBmpToDevice(device, bmpData, packets);
             }, true);
@@ -109,36 +94,17 @@ class GlassesBluetoothService extends BaseBluetoothService {
         }
     }
 
-    /**
-     * Send text using official teleprompter protocol
-     * @param text - Text to display
-     * @param scrollPosition - Scrollbar position (0-100%), useful for showing slide progress
-     */
-    async sendOfficialTeleprompter(
-        text: string,
-        slidePercentage?: number
-    ): Promise<boolean> {
+    async sendOfficialTeleprompter(text: string, slidePercentage?: number): Promise<boolean> {
         if (!this.isConnected()) {
             throw new Error('No devices connected');
         }
 
-        // Add line breaks based on character widths
-        text = TeleprompterUtils.addLineBreaks(text, 180);
-
         try {
-            const textParts = TeleprompterUtils.splitTextForTeleprompter(text);
-            const packets = CommunicationManager.buildTeleprompterPackets(
-                textParts.visible,
-                textParts.next,
-                this.teleprompterSeq,
-                slidePercentage
-            );
-
+            const packets = this.communication.prepareOfficialTeleprompterPackets(text, slidePercentage);
             const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
                 return await CommunicationManager.sendTeleprompterPackets(device, packets);
             });
 
-            this.teleprompterSeq = (this.teleprompterSeq + packets.length) & 0xFF;
             return results.every(Boolean);
         } catch (error) {
             console.error('[GlassesBluetoothService] Error sending official teleprompter:', error);
@@ -152,7 +118,7 @@ class GlassesBluetoothService extends BaseBluetoothService {
         }
 
         try {
-            const endPacket = CommunicationManager.buildTeleprompterEndPacket(this.teleprompterSeq);
+            const endPacket = this.communication.prepareOfficialTeleprompterEndPacket();
             const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
                 return await CommunicationManager.sendTeleprompterEndPacket(device, endPacket);
             });
@@ -175,143 +141,24 @@ class GlassesBluetoothService extends BaseBluetoothService {
     }
 
     async refreshUptime(): Promise<void> {
-        if (this.isLeftConnected()) {
-            const leftUptime = await CommunicationManager.requestUptime(this.devices.left!);
-            if (leftUptime !== null) {
-                this.deviceUptime.left = leftUptime;
-            }
-        }
-        if (this.isRightConnected()) {
-            const rightUptime = await CommunicationManager.requestUptime(this.devices.right!);
-            if (rightUptime !== null) {
-                this.deviceUptime.right = rightUptime;
-            }
-        }
+        await this.status.refreshUptime(this.connection.getDevices());
     }
 
     async refreshBatteryInfo(): Promise<void> {
-        if (this.isLeftConnected()) {
-            const leftBatteryLevel = await CommunicationManager.requestBatteryLevel(this.devices.left!);
-            if (leftBatteryLevel !== null) {
-                this.batteryInfo.left = leftBatteryLevel;
-            }
-        }
-        if (this.isRightConnected()) {
-            const rightBatteryLevel = await CommunicationManager.requestBatteryLevel(this.devices.right!);
-            if (rightBatteryLevel !== null) {
-                this.batteryInfo.right = rightBatteryLevel;
-            }
-        }
+        await this.status.refreshBatteryInfo(this.connection.getDevices());
     }
 
-    getDeviceStatus(): { left: DeviceStatus; right: DeviceStatus; } {
-        return {
-            left: {
-                connected: this.isLeftConnected(),
-                battery: this.batteryInfo.left,
-                uptime: this.deviceUptime.left,
-                firmware: this.firmwareInfo.left
-            },
-            right: {
-                connected: this.isRightConnected(),
-                battery: this.batteryInfo.right,
-                uptime: this.deviceUptime.right,
-                firmware: this.firmwareInfo.right
-            }
-        };
+    getDeviceStatus(): { left: DeviceStatus; right: DeviceStatus } {
+        return this.status.getDeviceStatus(this.connection.getConnectionState());
     }
-
-
 
     // Private Helper Methods
-    // Connects a device to the specified side (left or right)
-    private async connectDevice(address: string, side: GlassSide.LEFT | GlassSide.RIGHT): Promise<void> {
-        try {
-            // Establishes BLE connection, requests permissions, discovers services, and sets MTU
-            const device = await this.establishBleConnection(address);
-
-            // Store device reference and update connection state
-            if (side === GlassSide.LEFT) {
-                this.devices.left = device;
-                this.connectionState.left = true;
-            } else {
-                this.devices.right = device;
-                this.connectionState.right = true;
-            }
-
-            this.connectionStateCallback?.(this.connectionState);
-
-            await this.getFirmwareInfo(side);
-
-            // Start heartbeat only if it's not already running
-            if (!this.heartbeatInterval) {
-                this.startHeartbeat();
-            }
-        } catch (error: any) {
-            throw new Error(`Failed to connect ${side === GlassSide.LEFT ? 'left' : 'right'} device: ${error?.message || 'Unknown error'}`);
-        }
-    }
-
-
-
-    private async getFirmwareInfo(side: GlassSide.LEFT | GlassSide.RIGHT): Promise<void> {
-        const device = side === GlassSide.LEFT ? this.devices.left : this.devices.right;
-        const currentFirmware = side === GlassSide.LEFT ? this.firmwareInfo.left : this.firmwareInfo.right;
-
-        if (device && currentFirmware === null) {
-            const firmwareInfo = await CommunicationManager.requestFirmwareInfo(device);
-            if (firmwareInfo !== null) {
-                if (side === GlassSide.LEFT) {
-                    this.firmwareInfo.left = firmwareInfo;
-                } else {
-                    this.firmwareInfo.right = firmwareInfo;
-                }
-            }
-        }
-    }
-
-    private async performHeartbeat(): Promise<void> {
-        const seq = this.heartbeatSeq++ & 0xFF;
-
-        // Send heartbeat to connected devices and track success
-        const leftSuccess = await this.sendHeartbeatToDevice(this.devices.left, this.isLeftConnected(), seq);
-        const rightSuccess = await this.sendHeartbeatToDevice(this.devices.right, this.isRightConnected() && leftSuccess, seq);
-
-        // Update connection state if it changed
-        const newState = {
-            left: leftSuccess && this.isLeftConnected(),
-            right: rightSuccess && this.isRightConnected()
-        };
-
-        if (this.connectionState.left !== newState.left || this.connectionState.right !== newState.right) {
-            this.connectionState = newState;
-            this.connectionStateCallback?.(this.connectionState);
-        }
-    }
-
-    private async sendHeartbeatToDevice(device: Device | null, shouldSend: boolean, seq: number): Promise<boolean> {
-        if (!shouldSend || !device) return false;
-
-        try {
-            return await CommunicationManager.sendHeartbeat(device, seq);
-        } catch (error) {
-            return false;
-        }
-    }
-
-    private startHeartbeat(): void {
-        this.stopHeartbeat();
-        this.heartbeatInterval = setInterval(async () => {
-            await this.performHeartbeat();
-        }, HEARTBEAT_INTERVAL_MS);
-        this.performHeartbeat();
-    }
-
-    private stopHeartbeat(): void {
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-            this.heartbeatInterval = null;
-        }
+    private startHeartbeatIfNeeded(): void {
+        this.heartbeat.start(
+            () => this.connection.getDevices(),
+            () => this.connection.getConnectionState(),
+            (state: { left: boolean; right: boolean }) => this.connection.updateConnectionState(state)
+        );
     }
 
     private async executeForDevices<T>(
@@ -319,65 +166,12 @@ class GlassesBluetoothService extends BaseBluetoothService {
         operation: (device: any, deviceSide: GlassSide.LEFT | GlassSide.RIGHT) => Promise<T>,
         parallel: boolean = false
     ): Promise<T[]> {
-        const entries = this.getDevicesForSide(side).filter(({ device }) => !!device);
-
-        const run = async (entry: { device: any; side: GlassSide.LEFT | GlassSide.RIGHT }) => {
-            try {
-                return await operation(entry.device, entry.side);
-            } catch (error) {
-                console.error(`[GlassesBluetoothService] Operation failed for ${entry.side} device:`, error);
-                return undefined;
-            }
-        };
-
-        if (parallel) {
-            const results = await Promise.all(entries.map(run));
-            return results.filter((v) => v !== undefined) as T[];
-        }
-
-        const out: T[] = [];
-        for (const entry of entries) {
-            const res = await run(entry);
-            if (res !== undefined) out.push(res);
-        }
-        return out;
-    }
-
-    private getDevicesForSide(side: GlassSide): Array<{ device: Device | null; side: GlassSide.LEFT | GlassSide.RIGHT }> {
-        const devices: Array<{ device: Device | null; side: GlassSide.LEFT | GlassSide.RIGHT }> = [];
-        if (side === GlassSide.BOTH || side === GlassSide.LEFT) {
-            devices.push({ device: this.devices.left, side: GlassSide.LEFT });
-        }
-        if (side === GlassSide.BOTH || side === GlassSide.RIGHT) {
-            devices.push({ device: this.devices.right, side: GlassSide.RIGHT });
-        }
-        return devices;
-    }
-
-
-
-    private async disconnectAllDevices(): Promise<void> {
-        const disconnectPromises: Promise<Device>[] = [];
-
-        if (this.devices.left) {
-            disconnectPromises.push(this.devices.left.cancelConnection());
-            this.devices.left = null;
-        }
-        if (this.devices.right) {
-            disconnectPromises.push(this.devices.right.cancelConnection());
-            this.devices.right = null;
-        }
-
-        if (disconnectPromises.length > 0) {
-            await Promise.all(disconnectPromises);
-        }
-    }
-
-    // Resets all device status information to initial state
-    private resetDeviceStatus(): void {
-        this.batteryInfo = { left: -1, right: -1 };
-        this.deviceUptime = { left: -1, right: -1 };
-        this.firmwareInfo = { left: null, right: null };
+        return await this.executor.executeForDevices(
+            this.connection.getDevices(),
+            side,
+            operation,
+            parallel
+        );
     }
 }
 
