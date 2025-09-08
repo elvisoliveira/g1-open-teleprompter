@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { RingStatus } from '../services/types';
+import { RingStatus } from '../services/Types';
 import { deviceStatusCardStyles as styles } from '../styles/DeviceStatusCardStyles';
 
 interface RingStatusCardProps {

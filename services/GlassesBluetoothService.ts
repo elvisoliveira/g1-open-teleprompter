@@ -1,11 +1,13 @@
 import { BaseBluetoothService } from './BaseBluetoothService';
-import { CommunicationManager } from './CommunicationManager';
-import { GlassesCommunication } from './glasses/GlassesCommunication';
-import { GlassesConnection } from './glasses/GlassesConnection';
-import { GlassesDeviceExecutor } from './glasses/GlassesDeviceExecutor';
-import { GlassesHeartbeat } from './glasses/GlassesHeartbeat';
-import { GlassesStatus } from './glasses/GlassesStatus';
-import { DeviceStatus, GlassSide } from './types';
+import { GlassesCommunication } from './modules/GlassesCommunication';
+import { GlassesConnection } from './modules/GlassesConnection';
+import { GlassesDeviceExecutor } from './modules/GlassesDeviceExecutor';
+import { GlassesHeartbeat } from './modules/GlassesHeartbeat';
+import { GlassesStatus } from './modules/GlassesStatus';
+import { DeviceCommunication } from './transport/DeviceCommunication';
+import { GlassesProtocol } from './transport/GlassesProtocol';
+import { TeleprompterProtocol } from './transport/TeleprompterProtocol';
+import { DeviceStatus, GlassSide } from './Types';
 
 class GlassesBluetoothService extends BaseBluetoothService {
     private connection = new GlassesConnection();
@@ -70,7 +72,7 @@ class GlassesBluetoothService extends BaseBluetoothService {
 
         const packets = this.communication.prepareTextPackets(text);
         const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
-            return await CommunicationManager.sendPacketsToDevice(device, packets, 5);
+            return await DeviceCommunication.sendPacketsToDevice(device, packets, 5);
         });
 
         return results.every(Boolean);
@@ -84,7 +86,7 @@ class GlassesBluetoothService extends BaseBluetoothService {
         try {
             const { bmpData, packets } = this.communication.prepareImageData(base64ImageData);
             const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
-                return await CommunicationManager.sendBmpToDevice(device, bmpData, packets);
+                return await GlassesProtocol.sendBmpToDevice(device, bmpData);
             }, true);
 
             return results.every(Boolean);
@@ -102,7 +104,7 @@ class GlassesBluetoothService extends BaseBluetoothService {
         try {
             const packets = this.communication.prepareOfficialTeleprompterPackets(text, slidePercentage);
             const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
-                return await CommunicationManager.sendTeleprompterPackets(device, packets);
+                return await TeleprompterProtocol.sendTeleprompterPackets(device, packets);
             });
 
             return results.every(Boolean);
@@ -120,7 +122,7 @@ class GlassesBluetoothService extends BaseBluetoothService {
         try {
             const endPacket = this.communication.prepareOfficialTeleprompterEndPacket();
             const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
-                return await CommunicationManager.sendTeleprompterEndPacket(device, endPacket);
+                return await TeleprompterProtocol.sendTeleprompterEndPacket(device, endPacket);
             });
             return results.every(Boolean);
         } catch (error) {
@@ -135,7 +137,7 @@ class GlassesBluetoothService extends BaseBluetoothService {
         }
 
         const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
-            return await CommunicationManager.sendExitCommand(device);
+            return await GlassesProtocol.sendExitCommand(device);
         });
         return results.every(Boolean);
     }

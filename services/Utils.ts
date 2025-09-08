@@ -1,4 +1,4 @@
-import { MAX_DISPLAY_LINES, MAX_LINE_LENGTH } from './constants';
+import { MAX_DISPLAY_LINES, MAX_LINE_LENGTH } from './Constants';
 
 /**
  * Utility class containing common helper methods

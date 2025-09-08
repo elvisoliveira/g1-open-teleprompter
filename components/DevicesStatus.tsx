@@ -2,7 +2,7 @@ import GlassesBluetoothService from '@/services/GlassesBluetoothService';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { DeviceStatus, RingStatus } from '../services/types';
+import { DeviceStatus, RingStatus } from '../services/Types';
 import { ButtonStyles } from '../styles/CommonStyles';
 import { connectionStatusStyles as styles } from '../styles/ConnectionStatusStyles';
 import { MaterialColors, MaterialSpacing } from '../styles/MaterialTheme';

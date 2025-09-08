@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { DeviceStatus } from '../services/types';
+import { DeviceStatus } from '../services/Types';
 import { deviceStatusCardStyles as styles } from '../styles/DeviceStatusCardStyles';
 
 interface GlassSideStatusCardProps {

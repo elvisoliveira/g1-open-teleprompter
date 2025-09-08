@@ -1,4 +1,4 @@
-import { RingStatus as RingStatusType } from '../types';
+import { RingStatus as RingStatusType } from '../Types';
 
 export class RingStatus {
     private status: RingStatusType = {

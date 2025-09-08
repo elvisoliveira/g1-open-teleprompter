@@ -1,6 +1,6 @@
 import { BaseBluetoothService } from './BaseBluetoothService';
-import { RingConnection } from './ring/RingConnection';
-import { RingStatus } from './ring/RingStatus';
+import { RingConnection } from './modules/RingConnection';
+import { RingStatus } from './modules/RingStatus';
 
 class RingBluetoothService extends BaseBluetoothService {
     private connection = new RingConnection();
@@ -34,7 +34,7 @@ class RingBluetoothService extends BaseBluetoothService {
         return this.connection.onConnectionStateChange(callback);
     }
 
-    getRingStatus(): import('./types').RingStatus {
+    getRingStatus(): import('./Types').RingStatus {
         return this.status.getRingStatus();
     }
 

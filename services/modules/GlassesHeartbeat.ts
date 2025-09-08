@@ -1,6 +1,6 @@
 import { Device } from 'react-native-ble-plx';
-import { CommunicationManager } from '../CommunicationManager';
-import { HEARTBEAT_INTERVAL_MS } from '../constants';
+import { HEARTBEAT_INTERVAL_MS } from '../Constants';
+import { GlassesProtocol } from '../transport/GlassesProtocol';
 
 export class GlassesHeartbeat {
     private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -51,7 +51,7 @@ export class GlassesHeartbeat {
         if (!shouldSend || !device) return false;
 
         try {
-            return await CommunicationManager.sendHeartbeat(device, seq);
+            return await GlassesProtocol.sendHeartbeat(device, seq);
         } catch (error) {
             return false;
         }

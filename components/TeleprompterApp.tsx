@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { useBluetoothConnection } from '../hooks/useBluetoothConnection';
 import { useSavedDevices } from '../hooks/useSavedDevices';
-import { AppView, OutputMode } from '../services/types';
+import { AppView, OutputMode } from '../services/Types';
 import { teleprompterAppStyles } from '../styles/AppStyles';
 import AppBottomNavigation from './AppBottomNavigation';
 import DevicesStatus from './DevicesStatus';

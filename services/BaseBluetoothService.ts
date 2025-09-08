@@ -1,6 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 import { BleManager, Device, State } from 'react-native-ble-plx';
-import { CONNECTION_TIMEOUT_MS, MTU_SIZE } from './constants';
+import { CONNECTION_TIMEOUT_MS, MTU_SIZE } from './Constants';
 import { PermissionManager } from './PermissionManager';
 
 export abstract class BaseBluetoothService {

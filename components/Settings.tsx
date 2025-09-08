@@ -1,9 +1,9 @@
-import { defaultBitmapGenerator } from '@/services/BitmapGenerator';
+import { defaultBitmapGenerator } from '@/services/BitmapGeneratorService';
 import GlassesBluetoothService from '@/services/GlassesBluetoothService';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { OutputMode } from '../services/types';
+import { OutputMode } from '../services/Types';
 import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
 import { MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 import { settingsStyles as styles } from '../styles/SettingsStyles';

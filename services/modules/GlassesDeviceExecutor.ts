@@ -1,5 +1,5 @@
 import { Device } from 'react-native-ble-plx';
-import { GlassSide } from '../types';
+import { GlassSide } from '../Types';
 
 export class GlassesDeviceExecutor {
     async executeForDevices<T>(

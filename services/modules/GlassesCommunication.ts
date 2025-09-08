@@ -1,28 +1,29 @@
 import { Buffer } from 'buffer';
-import { CommunicationManager } from '../CommunicationManager';
-import { EXIT_CMD } from '../constants';
+import { EXIT_CMD } from '../Constants';
 import { TeleprompterUtils } from '../TeleprompterUtils';
-import { Utils } from '../utils';
+import { GlassesProtocol } from '../transport/GlassesProtocol';
+import { TeleprompterProtocol } from '../transport/TeleprompterProtocol';
+import { Utils } from '../Utils';
 
 export class GlassesCommunication {
     private teleprompterSeq: number = 0;
 
     prepareTextPackets(text: string): Uint8Array[] {
-        return CommunicationManager.createTextPackets(
+        return GlassesProtocol.createTextPackets(
             Utils.formatTextForDisplay(text)
         );
     }
 
     prepareImageData(base64ImageData: string): { bmpData: Uint8Array; packets: Uint8Array[] } {
         const bmpData = new Uint8Array(Buffer.from(base64ImageData, 'base64'));
-        const packets = CommunicationManager.createBmpPackets(bmpData);
+        const packets = GlassesProtocol.createBmpPackets(bmpData);
         return { bmpData, packets };
     }
 
     prepareOfficialTeleprompterPackets(text: string, slidePercentage?: number): Uint8Array[] {
         const formattedText = TeleprompterUtils.addLineBreaks(text, 180);
         const textParts = TeleprompterUtils.splitTextForTeleprompter(formattedText);
-        const packets = CommunicationManager.buildTeleprompterPackets(
+        const packets = TeleprompterProtocol.buildTeleprompterPackets(
             textParts.visible,
             textParts.next,
             this.teleprompterSeq,
@@ -34,7 +35,7 @@ export class GlassesCommunication {
     }
 
     prepareOfficialTeleprompterEndPacket(): Uint8Array {
-        return CommunicationManager.buildTeleprompterEndPacket(this.teleprompterSeq);
+        return TeleprompterProtocol.buildTeleprompterEndPacket(this.teleprompterSeq);
     }
 
     prepareExitCommand(): Uint8Array {

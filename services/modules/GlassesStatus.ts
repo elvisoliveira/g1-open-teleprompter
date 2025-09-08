@@ -1,6 +1,6 @@
 import { Device } from 'react-native-ble-plx';
-import { CommunicationManager } from '../CommunicationManager';
-import { BatteryInfo, DeviceStatus, FirmwareInfo, GlassSide, UptimeInfo } from '../types';
+import { GlassesProtocol } from '../transport/GlassesProtocol';
+import { BatteryInfo, DeviceStatus, FirmwareInfo, GlassSide, UptimeInfo } from '../Types';
 
 export class GlassesStatus {
     private batteryInfo: BatteryInfo = { left: -1, right: -1 };
@@ -9,13 +9,13 @@ export class GlassesStatus {
 
     async refreshBatteryInfo(devices: { left: Device | null; right: Device | null }): Promise<void> {
         if (devices.left) {
-            const leftBatteryLevel = await CommunicationManager.requestBatteryLevel(devices.left);
+            const leftBatteryLevel = await GlassesProtocol.requestBatteryLevel(devices.left);
             if (leftBatteryLevel !== null) {
                 this.batteryInfo.left = leftBatteryLevel;
             }
         }
         if (devices.right) {
-            const rightBatteryLevel = await CommunicationManager.requestBatteryLevel(devices.right);
+            const rightBatteryLevel = await GlassesProtocol.requestBatteryLevel(devices.right);
             if (rightBatteryLevel !== null) {
                 this.batteryInfo.right = rightBatteryLevel;
             }
@@ -24,13 +24,13 @@ export class GlassesStatus {
 
     async refreshUptime(devices: { left: Device | null; right: Device | null }): Promise<void> {
         if (devices.left) {
-            const leftUptime = await CommunicationManager.requestUptime(devices.left);
+            const leftUptime = await GlassesProtocol.requestUptime(devices.left);
             if (leftUptime !== null) {
                 this.deviceUptime.left = leftUptime;
             }
         }
         if (devices.right) {
-            const rightUptime = await CommunicationManager.requestUptime(devices.right);
+            const rightUptime = await GlassesProtocol.requestUptime(devices.right);
             if (rightUptime !== null) {
                 this.deviceUptime.right = rightUptime;
             }
@@ -41,7 +41,7 @@ export class GlassesStatus {
         const currentFirmware = side === GlassSide.LEFT ? this.firmwareInfo.left : this.firmwareInfo.right;
 
         if (device && currentFirmware === null) {
-            const firmwareInfo = await CommunicationManager.requestFirmwareInfo(device);
+            const firmwareInfo = await GlassesProtocol.requestFirmwareInfo(device);
             if (firmwareInfo !== null) {
                 if (side === GlassSide.LEFT) {
                     this.firmwareInfo.left = firmwareInfo;

@@ -3,8 +3,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { defaultBitmapGenerator } from '../services/BitmapGenerator';
-import { OutputMode } from '../services/types';
+import { defaultBitmapGenerator } from '../services/BitmapGeneratorService';
+import { OutputMode } from '../services/Types';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles, InputStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 
