@@ -34,17 +34,33 @@ export interface UptimeInfo {
 }
 
 // Ring Controller Types
+
+export interface TouchControlStatus {
+    controlType: string;
+    mode: string;
+    modeValue: number;
+    sleepMinutes?: number;
+}
+
+export interface GestureControlStatus {
+    controlType: string;
+    mode: string;
+    modeValue: number;
+    enabled: boolean;
+}
+
+export type PanelStatus = TouchControlStatus | GestureControlStatus;
+
 export interface RingStatus {
     connected: boolean;
     battery: number;
     firmware: string | null;
-    gestureMode?: 'teleprompter' | 'presentation' | 'disabled';
-    sensitivity?: number;
+    panel: PanelStatus | null;
 }
 
-export interface RingInfo {
-    device: Device | null;
-    status: RingStatus | null;
+export interface RingStandardDeviceInfo {
+    firmware: string | null,
+    hardware: string | null,
 }
 
 // Generic Connected Device Types

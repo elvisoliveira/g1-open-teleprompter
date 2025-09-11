@@ -2,11 +2,11 @@ import { Device } from 'react-native-ble-plx';
 import { TextFormatter } from '../TextFormatter';
 import {
     CHARACTERISTIC_SERVICE,
-    GLASSES_TELEPROMPTER_CMD,
+    GLASSES_CMD_TELEPROMPTER,
+    GLASSES_CMD_TELEPROMPTER_END,
     GLASSES_TELEPROMPTER_CONTROL_SIZE,
     GLASSES_TELEPROMPTER_COUNTDOWN,
     GLASSES_TELEPROMPTER_DEFAULT_SCROLL_POSITION,
-    GLASSES_TELEPROMPTER_END_CMD,
     GLASSES_TELEPROMPTER_FINISH,
     GLASSES_TELEPROMPTER_FLAGS_MANUAL,
     GLASSES_TELEPROMPTER_FLAGS_NORMAL,
@@ -27,7 +27,7 @@ export class TeleprompterProtocol {
     static async sendTeleprompterPackets(device: Device, packets: Uint8Array[]): Promise<boolean> {
         try {
             for (const packet of packets) {
-                if (!await BluetoothTransport.writeToDevice(device, packet, CHARACTERISTIC_SERVICE, false)) {
+                if (!await BluetoothTransport.writeToDevice(CHARACTERISTIC_SERVICE, device, packet, false)) {
                     console.error('[TeleprompterProtocol] Failed to send teleprompter packet');
                     return false;
                 }
@@ -48,7 +48,7 @@ export class TeleprompterProtocol {
      */
     static async sendTeleprompterEndPacket(device: Device, endPacket: Uint8Array): Promise<boolean> {
         try {
-            return await BluetoothTransport.writeToDevice(device, endPacket, CHARACTERISTIC_SERVICE, false);
+            return await BluetoothTransport.writeToDevice(CHARACTERISTIC_SERVICE, device, endPacket, false);
         } catch (error) {
             console.error('[TeleprompterProtocol] Failed to send teleprompter end packet:', error);
             return false;
@@ -90,7 +90,7 @@ export class TeleprompterProtocol {
 
         // Build the complete packet
         const packet = new Uint8Array(GLASSES_TELEPROMPTER_HEADER_SIZE + GLASSES_TELEPROMPTER_CONTROL_SIZE + payload.length);
-        packet[0] = GLASSES_TELEPROMPTER_CMD; // Cmd.Teleprompter
+        packet[0] = GLASSES_CMD_TELEPROMPTER; // Cmd.Teleprompter
         packet[1] = len; // total length
         packet.set(control, GLASSES_TELEPROMPTER_HEADER_SIZE); // control array
         packet.set(payload, GLASSES_TELEPROMPTER_HEADER_SIZE + GLASSES_TELEPROMPTER_CONTROL_SIZE); // payload
@@ -138,8 +138,8 @@ export class TeleprompterProtocol {
     static buildTeleprompterEndPacket(sequence: number): Uint8Array {
         // Tiny "end" control packet: [0x09, 0x06, 0x00, seq, 0x05, 0x01]
         return new Uint8Array([
-            GLASSES_TELEPROMPTER_CMD,       // Cmd.Teleprompter
-            GLASSES_TELEPROMPTER_END_CMD,   // cmd = End
+            GLASSES_CMD_TELEPROMPTER,       // Cmd.Teleprompter
+            GLASSES_CMD_TELEPROMPTER_END,   // cmd = End
             GLASSES_TELEPROMPTER_RESERVED,  // reserved
             sequence & 0xFF,                // current seq (don't increment)
             GLASSES_TELEPROMPTER_SUBCMD,    // subCmd

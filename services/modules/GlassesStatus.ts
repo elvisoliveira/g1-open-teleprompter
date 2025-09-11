@@ -3,9 +3,15 @@ import { BatteryInfo, DeviceStatus, FirmwareInfo, GlassSide, UptimeInfo } from '
 import { GlassesProtocol } from '../transport/GlassesProtocol';
 
 export class GlassesStatus {
-    private batteryInfo: BatteryInfo = { left: -1, right: -1 };
-    private deviceUptime: UptimeInfo = { left: -1, right: -1 };
-    private firmwareInfo: FirmwareInfo = { left: null, right: null };
+    private batteryInfo: BatteryInfo;
+    private deviceUptime: UptimeInfo;
+    private firmwareInfo: FirmwareInfo;
+
+    constructor() {
+        this.batteryInfo = this.resetBatteryInfo();
+        this.deviceUptime = this.resetDeviceUptime();
+        this.firmwareInfo = this.resetFirmwareInfo();
+    }
 
     async refreshBatteryInfo(devices: { left: Device | null; right: Device | null }): Promise<void> {
         if (devices.left) {
@@ -70,8 +76,30 @@ export class GlassesStatus {
     }
 
     reset(): void {
-        this.batteryInfo = { left: -1, right: -1 };
-        this.deviceUptime = { left: -1, right: -1 };
-        this.firmwareInfo = { left: null, right: null };
+        this.batteryInfo = this.resetBatteryInfo();
+        this.deviceUptime = this.resetDeviceUptime();
+        this.firmwareInfo = this.resetFirmwareInfo();
     }
+
+    private resetBatteryInfo(): BatteryInfo {
+        return {
+            left: -1,
+            right: -1
+        };
+    }
+
+
+    private resetDeviceUptime(): UptimeInfo {
+        return {
+            left: -1,
+            right: -1
+        }
+    };
+
+    private resetFirmwareInfo(): FirmwareInfo {
+        return {
+            left: null,
+            right: null
+        }
+    };
 }

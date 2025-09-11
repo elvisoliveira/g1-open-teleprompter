@@ -2,29 +2,29 @@ export const CHARACTERISTIC_SERVICE = '6e40fff0-b5a3-f393-e0a9-e50e24dcca9e';
 // export const CHARACTERISTIC_SERVICE_V2 = 'de5bf728-d711-4e47-af26-65e3012a5dc7';
 
 // Ring Protocol Commands
-export const RING_BATTERY_CMD = 0x03;
+export const RING_CMD_BATTERY = 0x03;
+export const RING_CMD_KEEPALIVE = 0x48;
+export const RING_CMD_TOUCH_PANEL = 0x3b;
 
-//  (placeholder for future implementation)
-export const RING_GESTURE_CMD = 0x30;
-export const RING_CALIBRATE_CMD = 0x32;
-export const RING_STATUS_CMD = 0x33;
+// Touch panel Operation Types
+export const RING_OP_READ = 0x01;
+export const RING_OP_WRITE = 0x02;
 
-// Ring Configuration
-export const RING_SENSITIVITY_MIN = 1;
-export const RING_SENSITIVITY_MAX = 10;
-export const RING_HEARTBEAT_INTERVAL_MS = 30000;
+// Control Modes
+export const RING_MODE_TOUCH = 0x00;
+export const RING_MODE_GESTURE = 0x01;
 
-// Ring Gesture Types
-export const RING_GESTURE_SWIPE_LEFT = 0x01;
-export const RING_GESTURE_SWIPE_RIGHT = 0x02;
-export const RING_GESTURE_TAP = 0x03;
-export const RING_GESTURE_DOUBLE_TAP = 0x04;
+// Touch Control Modes
+export const RING_TOUCH_MODE_OFF = 0x00;
+export const RING_TOUCH_MODE_MUSIC = 0x01;
+export const RING_TOUCH_MODE_SHORT_VIDEO = 0x02;
+export const RING_TOUCH_MODE_TASBIH = 0x03;
+export const RING_TOUCH_MODE_EBOOK = 0x04;
+export const RING_TOUCH_MODE_PHOTO = 0x05;
 
-// Ring Modes
-export const RING_MODE_TELEPROMPTER = 'teleprompter';
-export const RING_MODE_PRESENTATION = 'presentation';
-export const RING_MODE_DISABLED = 'disabled';
-
-// Ring Timing Configuration
-export const RING_PACKET_DELAY = 10;
-export const RING_CONNECTION_TIMEOUT_MS = 8000;
+// Gesture Control Modes
+export const RING_GESTURE_MODE_OFF = 0x00;
+export const RING_GESTURE_MODE_DEFAULT = 0x01;
+export const RING_GESTURE_MODE_SHORT_VIDEO = 0x02;
+export const RING_GESTURE_MODE_EBOOK = 0x04;
+export const RING_GESTURE_MODE_GAME = 0x07;

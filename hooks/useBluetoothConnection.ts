@@ -160,6 +160,16 @@ export const useBluetoothConnection = (
         }
     };
 
+    const enableRingTouchPanel = async () => {
+        try {
+            console.log(`ENABLE TOUCH PANEL 2`);
+            await RingController.toggleRingTouchPanel();
+        } catch (error) {
+            console.error('@TODO', error);
+            Alert.alert('@TODO');
+        }
+    };
+
     const attemptRingAutoReconnection = async (ringMac: string | null) => {
         if (!ringMac) return false;
 
@@ -217,6 +227,7 @@ export const useBluetoothConnection = (
         attemptRingAutoReconnection,
         resetConnection,
         checkBluetoothStatus,
+        enableRingTouchPanel,
         // Legacy exports for backward compatibility (deprecated)
         leftConnected: leftGlassConnected,
         rightConnected: rightGlassConnected,

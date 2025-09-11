@@ -4,46 +4,75 @@ import { RingProtocol } from '../transport/RingProtocol';
 
 
 export class RingStatus {
-    private status: RingStatusType = {
-        connected: false,
-        battery: -1,
-        firmware: null,
-        gestureMode: 'disabled',
-        sensitivity: 50
-    };
+    private status: RingStatusType;
+
+    constructor() {
+        this.status = this.resetStatus();
+    }
 
     async refreshBatteryInfo(device: Device | null): Promise<void> {
-        if (device) {
-            const batteryLevel = await RingProtocol.requestBatteryLevel(device);
-            if (batteryLevel !== null) {
-                this.status.battery = batteryLevel;
-            }
+        if (!device) return;
+
+        const batteryLevel = await RingProtocol.requestBatteryLevel(device);
+        if (batteryLevel !== null) {
+            this.status.battery = batteryLevel;
         }
     }
 
-    updateConnectionState(connected: boolean): void {
-        this.status.connected = connected;
-    }
+    async getFirmwareInfo(device: Device | null): Promise<void> {
+        if (!device) return;
 
-    async setGestureMode(mode: 'teleprompter' | 'presentation' | 'disabled'): Promise<boolean> {
-        // TODO: Implement gesture mode setting
-        console.log(`Setting ring gesture mode to: ${mode}`);
-        this.status.gestureMode = mode;
-        return true;
-    }
-
-    async setSensitivity(sensitivity: number): Promise<boolean> {
-        if (sensitivity < 0 || sensitivity > 100) {
-            throw new Error('Sensitivity must be between 0 and 100');
+        const firmwareInfo = await RingProtocol.requestFirmwareInfo(device);
+        if (firmwareInfo !== null) {
+            this.status.firmware = firmwareInfo;
         }
+    }
 
-        // TODO: Implement sensitivity setting
-        console.log(`Setting ring sensitivity to: ${sensitivity}`);
-        this.status.sensitivity = sensitivity;
-        return true;
+    async getPanelStatus(device: Device | null): Promise<void> {
+        if (!device) return;
+
+        const panelStatus = await RingProtocol.requestPanelStatus(device);
+        if (panelStatus !== null) {
+            this.status.panel = panelStatus;
+        }
+    }
+
+    async disablePanel(device: Device | null): Promise<void> {
+        if (!device) return;
+
+        console.log(`ENABLE TOUCH PANEL 6`);
+        const panelStatus = await RingProtocol.disablePanel(device);
+        console.log(panelStatus);
+        if (panelStatus !== null) {
+            this.status.panel = panelStatus;
+        }
+    }
+
+    async enablePanel(device: Device | null): Promise<void> {
+        if (!device) return;
+
+        console.log(`ENABLE TOUCH PANEL 7`);
+        const panelStatus = await RingProtocol.enablePanel(device);
+        console.log(panelStatus);
+        if (panelStatus !== null) {
+            this.status.panel = panelStatus;
+        }
     }
 
     getDeviceStatus(): RingStatusType {
         return { ...this.status };
+    }
+
+    reset(): void {
+        this.status = this.resetStatus();
+    }
+
+    private resetStatus(): RingStatusType {
+        return {
+            connected: false,
+            battery: -1,
+            firmware: null,
+            panel: null
+        };
     }
 }

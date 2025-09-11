@@ -1,20 +1,20 @@
 export const CHARACTERISTIC_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 
 // G1 Glasses Protocol Commands
-export const GLASSES_TEXT_CMD = 0x4E;
-export const GLASSES_EXIT_CMD = 0x18;
-export const GLASSES_HEARTBEAT_CMD = 0x25;
-export const GLASSES_BMP_DATA_CMD = 0x15;
-export const GLASSES_BMP_END_CMD = [0x20, 0x0d, 0x0e];
-export const GLASSES_CRC_CMD = 0x16;
-export const GLASSES_BATTERY_CMD = 0x2C;
-export const GLASSES_UPTIME_CMD = 0x37;
-export const GLASSES_FIRMWARE_REQUEST_CMD = [0x23, 0x74];
-export const GLASSES_INIT_LEFT_CMD = [0x4D, 0xFB];
+export const GLASSES_CMD_TEXT = 0x4E;
+export const GLASSES_CMD_EXIT = 0x18;
+export const GLASSES_CMD_HEARTBEAT = 0x25;
+export const GLASSES_CMD_BMP_DATA = 0x15;
+export const GLASSES_CMD_BMP_END = [0x20, 0x0d, 0x0e];
+export const GLASSES_CMD_CRC = 0x16;
+export const GLASSES_CMD_BATTERY = 0x2C;
+export const GLASSES_CMD_UPTIME = 0x37;
+export const GLASSES_CMD_FIRMWARE_REQUEST = [0x23, 0x74];
+export const GLASSES_CMD_INIT_LEFT = [0x4D, 0xFB];
 
 // G1 Teleprompter Protocol Constants
-export const GLASSES_TELEPROMPTER_CMD = 0x09;
-export const GLASSES_TELEPROMPTER_END_CMD = 0x06;
+export const GLASSES_CMD_TELEPROMPTER = 0x09;
+export const GLASSES_CMD_TELEPROMPTER_END = 0x06;
 export const GLASSES_TELEPROMPTER_SUBCMD = 0x05;
 export const GLASSES_TELEPROMPTER_FINISH = 0x01;
 

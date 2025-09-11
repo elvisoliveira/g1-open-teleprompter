@@ -25,6 +25,7 @@ interface DevicesStatusProps {
     ringConnected?: boolean;
     onReconnectRing?: () => void;
     onDisconnectRing?: () => void;
+    onToggleTouchPanel?: () => void;
     onSetupRing?: () => void;
     isReconnectingRing?: boolean;
     isDisconnectingRing?: boolean;
@@ -44,6 +45,7 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
     ringConnected = false,
     onReconnectRing,
     onDisconnectRing,
+    onToggleTouchPanel,
     onSetupRing,
     isReconnectingRing = false,
     isDisconnectingRing = false,
@@ -381,13 +383,14 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
             {hasConfiguredRing && (
                 <View>
                     <Text style={[styles.overallStatusTitle, { marginTop: MaterialSpacing.lg, marginBottom: MaterialSpacing.md }]}>
-                        Ring Controller
+                        Qring Controller
                     </Text>
                     <View style={styles.devicesContainer}>
                         <RingStatusCard
                             connected={ringConnected}
                             ringStatus={ringStatus}
                             isCompact={true}
+                            onToggleTouchPanel={onToggleTouchPanel}
                         />
                     </View>
                 </View>

@@ -75,7 +75,7 @@ class GlassesController extends BaseDeviceController {
 
         const packets = this.packetBuilder.prepareTextPackets(text);
         const results = await this.executeForDevices(GlassSide.BOTH, async (device) => {
-            return await BluetoothTransport.sendPacketsToDevice(device, packets, CHARACTERISTIC_SERVICE, 5);
+            return await BluetoothTransport.sendPacketsToDevice(CHARACTERISTIC_SERVICE, device, packets, 5);
         });
 
         return results.every(Boolean);
@@ -162,7 +162,10 @@ class GlassesController extends BaseDeviceController {
         this.heartbeat.start(
             () => this.connection.getDevices(),
             () => this.connection.getConnectionState(),
-            (state: { left: boolean; right: boolean }) => this.connection.updateConnectionState(state)
+            (state: { left: boolean; right: boolean }) => {
+                // @TODO: Check if hearthbeat will keep looping, if so, find a way to call disconnect (side based)
+                this.connection.updateConnectionState(state);
+            }
         );
     }
 

@@ -1,5 +1,5 @@
 import { Buffer } from 'buffer';
-import { GLASSES_EXIT_CMD } from '../constants/GlassesConstants';
+import { GLASSES_CMD_EXIT } from '../constants/GlassesConstants';
 import { TeleprompterTextProcessor } from '../TeleprompterTextProcessor';
 import { TextFormatter } from '../TextFormatter';
 import { GlassesProtocol } from '../transport/GlassesProtocol';
@@ -39,6 +39,6 @@ export class GlassesPacketBuilder {
     }
 
     prepareExitCommand(): Uint8Array {
-        return new Uint8Array([GLASSES_EXIT_CMD]);
+        return new Uint8Array([GLASSES_CMD_EXIT]);
     }
 }

@@ -34,8 +34,13 @@ export class RingConnection extends BaseDeviceController {
         return this.device;
     }
 
-    isConnected(): boolean {
+    getConnectionState(): boolean {
         return this.connectionState;
+    }
+
+    updateConnectionState(state: boolean): void {
+        this.connectionState = state;
+        this.connectionStateCallback?.(this.connectionState);
     }
 
     onConnectionStateChange(callback: (connected: boolean) => void): () => void {
@@ -44,5 +49,9 @@ export class RingConnection extends BaseDeviceController {
         return () => {
             this.connectionStateCallback = null;
         };
+    }
+
+    isConnected(): boolean {
+        return this.connectionState;
     }
 }

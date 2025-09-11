@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { useBluetoothConnection } from '../hooks/useBluetoothConnection';
 import { useSavedDevices } from '../hooks/useSavedDevices';
-import { AppView, OutputMode } from '../services/Types';
+import { AppView, OutputMode } from '../services/DeviceTypes';
 import { teleprompterAppStyles } from '../styles/AppStyles';
 import AppBottomNavigation from './AppBottomNavigation';
 import DevicesStatus from './DevicesStatus';
@@ -44,6 +44,7 @@ const TeleprompterApp: React.FC = () => {
         handleRingDisconnect,
         attemptGlassAutoReconnection,
         attemptRingAutoReconnection,
+        enableRingTouchPanel,
     } = useBluetoothConnection(
         (side, deviceId) => {
             saveGlassMacAddress(side, deviceId);
@@ -104,6 +105,11 @@ const TeleprompterApp: React.FC = () => {
     const handleSetupRing = async () => {
         setCurrentView('ringConnection');
         await loadPairedDevices('ring');
+    };
+
+    const handleToggleTouchPanel = async () => {
+        console.log(`ENABLE TOUCH PANEL`);
+        await enableRingTouchPanel();
     };
 
     const handleRetryRingConnection = async () => {
@@ -184,6 +190,7 @@ const TeleprompterApp: React.FC = () => {
                             onDisconnectRing={handleDisconnectRing}
                             onSetupGlasses={handleSetupGlasses}
                             onSetupRing={handleSetupRing}
+                            onToggleTouchPanel={handleToggleTouchPanel}
                             isReconnectingGlasses={isAutoConnecting}
                             isReconnectingRing={isAutoConnecting}
                             isDisconnectingGlasses={isDisconnectingGlasses}

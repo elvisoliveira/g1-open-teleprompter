@@ -15,7 +15,6 @@ export class GlassesHeartbeat {
         this.heartbeatInterval = setInterval(async () => {
             await this.performHeartbeat(getDevices, getConnectionState, updateConnectionState);
         }, GLASSES_HEARTBEAT_INTERVAL_MS);
-        this.performHeartbeat(getDevices, getConnectionState, updateConnectionState);
     }
 
     stop(): void {
