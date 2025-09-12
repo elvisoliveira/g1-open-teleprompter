@@ -64,22 +64,23 @@ class RingController extends BaseDeviceController {
 
     // Ring-specific methods
     async toggleRingTouchPanel(): Promise<void> {
-        console.log(`ENABLE TOUCH PANEL 3`);
         if (!this.isConnected()) {
             throw new Error('Ring not connected');
         }
+
         const status = this.status.getDeviceStatus();
         if (!status.panel) {
             throw new Error('Panel status not available');
         }
+
         const isTouchEnabled = status.panel.controlType === 'touch' && status.panel.mode === 'Music';
         if (isTouchEnabled) {
-            console.log(`ENABLE TOUCH PANEL 4`);
-            this.status.disablePanel(this.connection.getDevice());
+            await this.status.disablePanel(this.connection.getDevice());
         } else {
-            console.log(`ENABLE TOUCH PANEL 5`);
-            this.status.enablePanel(this.connection.getDevice());
+            await this.status.enablePanel(this.connection.getDevice());
         }
+
+        return;
     }
 }
 

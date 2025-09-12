@@ -164,10 +164,6 @@ export class RingProtocol {
     }
 
     private static parsePanelResponse(response: Uint8Array) {
-        // Sample response
-        // 0x3b 0x01 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x3c
-
-
         // Parse response according to protocol structure
         // const operation = response[1];
         const settingId = response[2];
@@ -253,6 +249,3 @@ export class RingProtocol {
         return this.parsePanelResponse(response);
     }
 }
-
-
-

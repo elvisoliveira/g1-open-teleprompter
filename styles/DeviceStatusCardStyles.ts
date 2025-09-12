@@ -56,6 +56,11 @@ export const deviceStatusCardStyles = StyleSheet.create({
         gap: MaterialSpacing.md,
         flex: 1,
     },
+    contentCols: {
+        ...ContainerStyles.spaceBetween,
+        gap: MaterialSpacing.md,
+        flex: 1,
+    },
     infoRow: {
         ...ContainerStyles.column,
         alignItems: 'flex-start',

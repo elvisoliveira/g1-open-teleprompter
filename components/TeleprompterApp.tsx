@@ -44,7 +44,7 @@ const TeleprompterApp: React.FC = () => {
         handleRingDisconnect,
         attemptGlassAutoReconnection,
         attemptRingAutoReconnection,
-        enableRingTouchPanel,
+        toggleRingTouchPanel,
     } = useBluetoothConnection(
         (side, deviceId) => {
             saveGlassMacAddress(side, deviceId);
@@ -107,9 +107,8 @@ const TeleprompterApp: React.FC = () => {
         await loadPairedDevices('ring');
     };
 
-    const handleToggleTouchPanel = async () => {
-        console.log(`ENABLE TOUCH PANEL`);
-        await enableRingTouchPanel();
+    const handleToggleTouchPanel = async () => {        
+        await toggleRingTouchPanel();
     };
 
     const handleRetryRingConnection = async () => {

@@ -385,7 +385,7 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
                     <Text style={[styles.overallStatusTitle, { marginTop: MaterialSpacing.lg, marginBottom: MaterialSpacing.md }]}>
                         Qring Controller
                     </Text>
-                    <View style={styles.devicesContainer}>
+                    <View>
                         <RingStatusCard
                             connected={ringConnected}
                             ringStatus={ringStatus}

@@ -170,7 +170,6 @@ export const ContainerStyles = StyleSheet.create({
   spaceBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
 });
 

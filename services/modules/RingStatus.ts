@@ -40,7 +40,6 @@ export class RingStatus {
     async disablePanel(device: Device | null): Promise<void> {
         if (!device) return;
 
-        console.log(`ENABLE TOUCH PANEL 6`);
         const panelStatus = await RingProtocol.disablePanel(device);
         console.log(panelStatus);
         if (panelStatus !== null) {
@@ -51,12 +50,13 @@ export class RingStatus {
     async enablePanel(device: Device | null): Promise<void> {
         if (!device) return;
 
-        console.log(`ENABLE TOUCH PANEL 7`);
         const panelStatus = await RingProtocol.enablePanel(device);
         console.log(panelStatus);
         if (panelStatus !== null) {
             this.status.panel = panelStatus;
         }
+
+        return;
     }
 
     getDeviceStatus(): RingStatusType {
