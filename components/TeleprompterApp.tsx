@@ -75,7 +75,7 @@ const TeleprompterApp: React.FC = () => {
     }, [ringConnected, currentView]);
 
     useEffect(() => {
-        if ((leftGlassConnected || rightGlassConnected) && currentView === 'glassesConnection') {
+        if ((leftGlassConnected && rightGlassConnected) && currentView === 'glassesConnection') {
             setCurrentView('device');
         }
     }, [leftGlassConnected, rightGlassConnected, currentView]);
