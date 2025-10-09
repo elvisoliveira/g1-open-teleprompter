@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "G1 OpenTeleprompter",
-    "slug": "g1ot",
+    "slug": "g1-open-teleprompter",
     "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "g1ot",
+    "scheme": "g1-open-teleprompter",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": ["android"],

@@ -87,9 +87,9 @@ jobs:
         APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
         echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
         if [ "${{ steps.release_info.outputs.is_prerelease }}" = "true" ]; then
-          echo "apk_name=g1ot-dev-${{ steps.release_info.outputs.tag_name }}.apk" >> $GITHUB_OUTPUT
+          echo "apk_name=g1-open-teleprompter-dev-${{ steps.release_info.outputs.tag_name }}.apk" >> $GITHUB_OUTPUT
         else
-          echo "apk_name=g1ot-v${{ steps.package_version.outputs.version }}.apk" >> $GITHUB_OUTPUT
+          echo "apk_name=g1-open-teleprompter-v${{ steps.package_version.outputs.version }}.apk" >> $GITHUB_OUTPUT
         fi
 
     - name: Upload Release Asset
@@ -105,6 +105,6 @@ jobs:
     - name: Upload APK as Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: g1ot-apk-${{ steps.release_info.outputs.tag_name }}
+        name: g1-open-teleprompter-apk-${{ steps.release_info.outputs.tag_name }}
         path: ${{ steps.find_apk.outputs.apk_path }}
         retention-days: 30
