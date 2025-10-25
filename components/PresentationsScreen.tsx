@@ -7,7 +7,7 @@ import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-
 import { OutputMode } from '../services/DeviceTypes';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
-import SlidesScreen from './SlidesScreen';
+import SlidesScreen from './SlidesScreenRefactored';
 
 interface Slide {
     id: string;
