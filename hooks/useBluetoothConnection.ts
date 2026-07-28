@@ -1,6 +1,6 @@
 import RingController from '@/services/RingController';
 import { useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, NativeModules, Platform } from 'react-native';
 import GlassesController from '../services/GlassesController';
 
 export interface PairedDevice {
@@ -48,6 +48,17 @@ export const useBluetoothConnection = (
             RingController.disconnect();
         };
     }, []);
+
+    // Foreground service keeps the JS heartbeats alive while the app is backgrounded
+    useEffect(() => {
+        if (Platform.OS !== 'android') return;
+        const { BluetoothAdapter } = NativeModules as any;
+        if (leftGlassConnected || rightGlassConnected || ringConnected) {
+            BluetoothAdapter?.startForegroundService?.();
+        } else {
+            BluetoothAdapter?.stopForegroundService?.();
+        }
+    }, [leftGlassConnected, rightGlassConnected, ringConnected]);
 
     // Auto-advance to next step when glasses connected
     useEffect(() => {

@@ -27,16 +27,7 @@ class RingController extends BaseDeviceController {
     }
 
     private startKeepAliveIfNeeded(): void {
-        this.keepAlive.start(
-            () => this.connection.getDevice(),
-            () => this.connection.isConnected(),
-            (state: boolean) => {
-                if (!state) {
-                    this.disconnect();
-                }
-                this.connection.updateConnectionState(state)
-            }
-        );
+        this.keepAlive.start(() => this.connection.getDevice());
     }
 
     async disconnect(): Promise<void> {

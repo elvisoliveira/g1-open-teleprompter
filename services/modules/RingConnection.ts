@@ -1,10 +1,11 @@
-import { Device } from 'react-native-ble-plx';
+import { Device, Subscription } from 'react-native-ble-plx';
 import { BaseDeviceController } from '../BaseDeviceController';
 
 export class RingConnection extends BaseDeviceController {
     private device: Device | null = null;
     private connectionState: boolean = false;
     private connectionStateCallbacks = new Set<(connected: boolean) => void>();
+    private disconnectSubscription: Subscription | null = null;
 
     protected getServiceName(): string {
         return 'RingConnection';
@@ -13,6 +14,17 @@ export class RingConnection extends BaseDeviceController {
     async connect(address: string): Promise<void> {
         try {
             const device = await this.establishBleConnection(address);
+
+            // The native GATT event is the source of truth for disconnection
+            this.disconnectSubscription?.remove();
+            this.disconnectSubscription = device.onDisconnected(() => {
+                if (this.device?.id === device.id) {
+                    this.device = null;
+                    this.connectionState = false;
+                    this.notifyConnectionState();
+                }
+            });
+
             this.device = device;
             this.connectionState = true;
             this.notifyConnectionState();
@@ -22,6 +34,8 @@ export class RingConnection extends BaseDeviceController {
     }
 
     async disconnect(): Promise<void> {
+        this.disconnectSubscription?.remove();
+        this.disconnectSubscription = null;
         if (this.device) {
             await this.device.cancelConnection();
             this.device = null;
@@ -36,11 +50,6 @@ export class RingConnection extends BaseDeviceController {
 
     getConnectionState(): boolean {
         return this.connectionState;
-    }
-
-    updateConnectionState(state: boolean): void {
-        this.connectionState = state;
-        this.notifyConnectionState();
     }
 
     onConnectionStateChange(callback: (connected: boolean) => void): () => void {

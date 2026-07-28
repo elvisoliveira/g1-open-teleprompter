@@ -147,14 +147,7 @@ class GlassesController extends BaseDeviceController {
     }
 
     private startHeartbeatIfNeeded(): void {
-        this.heartbeat.start(
-            () => this.connection.getDevices(),
-            () => this.connection.getConnectionState(),
-            (state: { left: boolean; right: boolean }) => {
-                // @TODO: Check if hearthbeat will keep looping, if so, find a way to call disconnect (side based)
-                this.connection.updateConnectionState(state);
-            }
-        );
+        this.heartbeat.start(() => this.connection.getDevices());
     }
 
     // Runs an operation on each connected side, tolerating per-device failures.

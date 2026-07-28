@@ -4,6 +4,9 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.os.ParcelUuid;
 
 import com.facebook.react.bridge.Arguments;
@@ -25,6 +28,23 @@ public class BluetoothAdapterModule extends ReactContextBaseJavaModule {
     @Override
     public String getName() {
         return "BluetoothAdapter";
+    }
+
+    @ReactMethod
+    public void startForegroundService() {
+        Context context = getReactApplicationContext();
+        Intent intent = new Intent(context, BleForegroundService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent);
+        } else {
+            context.startService(intent);
+        }
+    }
+
+    @ReactMethod
+    public void stopForegroundService() {
+        Context context = getReactApplicationContext();
+        context.stopService(new Intent(context, BleForegroundService.class));
     }
 
     @ReactMethod
