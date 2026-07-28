@@ -1,6 +1,7 @@
 import RingController from '@/services/RingController';
 import { useEffect, useState } from 'react';
 import { Alert, NativeModules, Platform } from 'react-native';
+import { BluetoothPermissions } from '../services/BluetoothPermissions';
 import GlassesController from '../services/GlassesController';
 
 export interface PairedDevice {
@@ -54,7 +55,8 @@ export const useBluetoothConnection = (
         if (Platform.OS !== 'android') return;
         const { BluetoothAdapter } = NativeModules as any;
         if (leftGlassConnected || rightGlassConnected || ringConnected) {
-            BluetoothAdapter?.startForegroundService?.();
+            BluetoothPermissions.requestNotificationPermission()
+                .finally(() => BluetoothAdapter?.startForegroundService?.());
         } else {
             BluetoothAdapter?.stopForegroundService?.();
         }

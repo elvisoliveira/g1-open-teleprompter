@@ -38,6 +38,15 @@ export class BluetoothPermissions {
     }
 
     /**
+     * Request notification permission (Android 13+) so the BLE foreground
+     * service notification is visible. The service runs either way.
+     */
+    static async requestNotificationPermission(): Promise<void> {
+        if (Platform.OS !== 'android' || Number(Platform.Version) < 33) return;
+        await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+    }
+
+    /**
      * Request Bluetooth connect permission for device connection
      * @returns Promise<boolean> - true if permission granted, false otherwise
      */
