@@ -1,13 +1,9 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { Slide } from '../services/DeviceTypes';
 import { ActionButtonStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
-
-interface Slide {
-    id: string;
-    text: string;
-}
 
 interface SlideItemProps {
     slide: Slide;

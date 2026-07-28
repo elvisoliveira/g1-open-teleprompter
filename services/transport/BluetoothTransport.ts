@@ -21,7 +21,6 @@ export class BluetoothTransport {
     ): Promise<boolean> {
         try {
             const base64 = Buffer.from(data).toString('base64');
-            console.log(`[BluetoothTransport] Writing ${requireResponse ? 'with' : 'without'} response: ${TextFormatter.arrayToHex(data)}`);
 
             if (requireResponse) {
                 await device.writeCharacteristicWithResponseForService(
@@ -61,7 +60,6 @@ export class BluetoothTransport {
         requestBytes: Uint8Array,
         expectedHeader: Uint8Array
     ): Promise<Uint8Array | null> {
-        console.log(`[BluetoothTransport] Command: ${TextFormatter.arrayToHex(requestBytes)}, expecting header: ${TextFormatter.arrayToHex(expectedHeader)}`);
         try {
             const responsePromise = new Promise<Uint8Array | null>((resolve) => {
                 const timeout = setTimeout(() => {
@@ -77,7 +75,6 @@ export class BluetoothTransport {
                     }
 
                     const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
-                    console.log(`[BluetoothTransport] Received notification: ${TextFormatter.arrayToHex(data)}`);
 
                     // Check if this response matches what we're expecting
                     if (expectedHeader.length === 0 || this.headerMatches(data, expectedHeader)) {
@@ -117,7 +114,6 @@ export class BluetoothTransport {
                 );
                 if (characteristic?.value) {
                     const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
-                    console.log(`[BluetoothTransport] Response: ${TextFormatter.arrayToHex(data)}`);
                     if (expectedHeader.length === 0 || this.headerMatches(data, expectedHeader)) {
                         return data;
                     }
@@ -139,15 +135,12 @@ export class BluetoothTransport {
         if (!device) return;
 
         try {
-            console.log('[BluetoothTransport] Reading device information...');
-
             const readCharacteristic = async (charUUID: string): Promise<string> => {
                 try {
                     const characteristic = await device.readCharacteristicForService(SERVICES.DEVICE_INFO, charUUID);
                     if (characteristic?.value) {
                         const data = new Uint8Array(Buffer.from(characteristic.value, 'base64'));
-                        console.log(`[BluetoothTransport] Response: ${TextFormatter.arrayToHex(data)}`);
-                        return new TextDecoder('utf-8').decode(data).trim();;
+                        return new TextDecoder('utf-8').decode(data).trim();
                     }
                     return 'N/A';
                 } catch {

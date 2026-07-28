@@ -4,21 +4,10 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { OutputMode } from '../services/DeviceTypes';
+import { OutputMode, Presentation } from '../services/DeviceTypes';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
-import SlidesScreen from './SlidesScreenRefactored';
-
-interface Slide {
-    id: string;
-    text: string;
-}
-
-interface Presentation {
-    id: string;
-    name: string;
-    slides: Slide[];
-}
+import SlidesScreen from './SlidesScreen';
 
 const STORAGE_KEY = 'presentations_data';
 

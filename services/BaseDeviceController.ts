@@ -3,12 +3,11 @@ import { BleManager, Device, State } from 'react-native-ble-plx';
 import { BluetoothPermissions } from './BluetoothPermissions';
 import { CONNECTION_TIMEOUT_MS, MTU_SIZE } from './constants/BluetoothConstants';
 
-export abstract class BaseDeviceController {
-    protected manager: BleManager;
+// ble-plx expects a single BleManager per app; controllers share this instance.
+const sharedBleManager = new BleManager();
 
-    constructor() {
-        this.manager = new BleManager();
-    }
+export abstract class BaseDeviceController {
+    protected manager: BleManager = sharedBleManager;
 
     // Shared Device Status Methods
     async isBluetoothEnabled(): Promise<boolean> {

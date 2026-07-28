@@ -66,27 +66,13 @@ export const deviceStatusCardStyles = StyleSheet.create({
         alignItems: 'flex-start',
         gap: MaterialSpacing.xs,
     },
-    infoLabel: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
     labelText: {
         ...MaterialTypography.bodySmall,
         color: MaterialColors.onSurfaceVariant,
         fontWeight: '400' as const,
     },
-    valueText: {
-        ...MaterialTypography.headlineSmall,
-        color: MaterialColors.onSurface,
-        fontWeight: '700' as const,
-    },
     valueTextBattery: {
         ...MaterialTypography.headlineSmall,
-        color: MaterialColors.onSurface,
-        fontWeight: '700' as const,
-    },
-    valueTextUptime: {
-        ...MaterialTypography.titleMedium,
         color: MaterialColors.onSurface,
         fontWeight: '700' as const,
     },

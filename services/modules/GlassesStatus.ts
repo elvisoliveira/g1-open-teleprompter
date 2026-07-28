@@ -1,15 +1,13 @@
 import { Device } from 'react-native-ble-plx';
-import { BatteryInfo, DeviceStatus, FirmwareInfo, GlassSide, UptimeInfo } from '../DeviceTypes';
+import { BatteryInfo, DeviceStatus, FirmwareInfo, GlassSide } from '../DeviceTypes';
 import { GlassesProtocol } from '../transport/GlassesProtocol';
 
 export class GlassesStatus {
     private batteryInfo: BatteryInfo;
-    private deviceUptime: UptimeInfo;
     private firmwareInfo: FirmwareInfo;
 
     constructor() {
         this.batteryInfo = this.resetBatteryInfo();
-        this.deviceUptime = this.resetDeviceUptime();
         this.firmwareInfo = this.resetFirmwareInfo();
     }
 
@@ -24,21 +22,6 @@ export class GlassesStatus {
             const rightBatteryLevel = await GlassesProtocol.requestBatteryLevel(devices.right);
             if (rightBatteryLevel !== null) {
                 this.batteryInfo.right = rightBatteryLevel;
-            }
-        }
-    }
-
-    async refreshUptime(devices: { left: Device | null; right: Device | null }): Promise<void> {
-        if (devices.left) {
-            const leftUptime = await GlassesProtocol.requestUptime(devices.left);
-            if (leftUptime !== null) {
-                this.deviceUptime.left = leftUptime;
-            }
-        }
-        if (devices.right) {
-            const rightUptime = await GlassesProtocol.requestUptime(devices.right);
-            if (rightUptime !== null) {
-                this.deviceUptime.right = rightUptime;
             }
         }
     }
@@ -63,13 +46,11 @@ export class GlassesStatus {
             left: {
                 connected: connectionState.left,
                 battery: this.batteryInfo.left,
-                uptime: this.deviceUptime.left,
                 firmware: this.firmwareInfo.left
             },
             right: {
                 connected: connectionState.right,
                 battery: this.batteryInfo.right,
-                uptime: this.deviceUptime.right,
                 firmware: this.firmwareInfo.right
             }
         };
@@ -77,7 +58,6 @@ export class GlassesStatus {
 
     reset(): void {
         this.batteryInfo = this.resetBatteryInfo();
-        this.deviceUptime = this.resetDeviceUptime();
         this.firmwareInfo = this.resetFirmwareInfo();
     }
 
@@ -87,14 +67,6 @@ export class GlassesStatus {
             right: -1
         };
     }
-
-
-    private resetDeviceUptime(): UptimeInfo {
-        return {
-            left: -1,
-            right: -1
-        }
-    };
 
     private resetFirmwareInfo(): FirmwareInfo {
         return {

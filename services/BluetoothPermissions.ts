@@ -1,5 +1,4 @@
-import { Platform } from 'react-native';
-import { PERMISSIONS, request } from 'react-native-permissions';
+import { PermissionsAndroid, Platform } from 'react-native';
 
 export class BluetoothPermissions {
     /**
@@ -8,25 +7,28 @@ export class BluetoothPermissions {
      */
     static async requestBluetoothPermissions(): Promise<boolean> {
         if (Platform.OS !== 'android') return true;
-        
+
         try {
-            if (Platform.Version >= 31) {
-                const bluetoothScanGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_SCAN);
-                const bluetoothConnectGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_CONNECT);
-                
-                if (bluetoothScanGranted !== 'granted' || bluetoothConnectGranted !== 'granted') {
-                    console.error('[BluetoothPermissions] Bluetooth permissions not granted:', {
-                        bluetoothScan: bluetoothScanGranted,
-                        bluetoothConnect: bluetoothConnectGranted
-                    });
-                    return false;
+            if (Number(Platform.Version) >= 31) {
+                const statuses = await PermissionsAndroid.requestMultiple([
+                    PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+                    PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+                ]);
+                const allGranted = Object.values(statuses).every(
+                    status => status === PermissionsAndroid.RESULTS.GRANTED
+                );
+                if (!allGranted) {
+                    console.error('[BluetoothPermissions] Bluetooth permissions not granted:', statuses);
                 }
-            } else {
-                const locationGranted = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
-                if (locationGranted !== 'granted') {
-                    console.error('[BluetoothPermissions] Location permission not granted:', locationGranted);
-                    return false;
-                }
+                return allGranted;
+            }
+
+            const locationStatus = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+            );
+            if (locationStatus !== PermissionsAndroid.RESULTS.GRANTED) {
+                console.error('[BluetoothPermissions] Location permission not granted:', locationStatus);
+                return false;
             }
             return true;
         } catch (error) {
@@ -40,16 +42,15 @@ export class BluetoothPermissions {
      * @returns Promise<boolean> - true if permission granted, false otherwise
      */
     static async requestBluetoothConnectPermission(): Promise<boolean> {
-        if (Platform.OS !== 'android') return true;
-        
-        if (Platform.Version >= 31) {
-            const bluetoothConnectGranted = await request(PERMISSIONS.ANDROID.BLUETOOTH_CONNECT);
-            if (bluetoothConnectGranted !== 'granted') {
-                console.error('[BluetoothPermissions] Bluetooth connect permission not granted');
-                return false;
-            }
+        if (Platform.OS !== 'android' || Number(Platform.Version) < 31) return true;
+
+        const status = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
+        );
+        if (status !== PermissionsAndroid.RESULTS.GRANTED) {
+            console.error('[BluetoothPermissions] Bluetooth connect permission not granted');
+            return false;
         }
-        
         return true;
     }
 }

@@ -13,11 +13,6 @@ export const deviceConnectionStyles = StyleSheet.create({
         ...ContainerStyles.center,
         paddingVertical: MaterialSpacing.xxl,
     },
-    emoji: {
-        fontSize: 24,
-        marginBottom: MaterialSpacing.sm,
-        color: MaterialColors.primary,
-    },
     title: {
         ...MaterialTypography.headlineSmall,
         color: MaterialColors.onSurface,
@@ -99,10 +94,6 @@ export const deviceConnectionStyles = StyleSheet.create({
         ...ButtonStyles.tertiaryButton,
         padding: MaterialSpacing.sm,
     },
-    refreshButtonText: {
-        ...ButtonStyles.tertiaryButtonText,
-        ...MaterialTypography.labelLarge,
-    },
     
     // Device Cards
     deviceCard: {
@@ -129,10 +120,6 @@ export const deviceConnectionStyles = StyleSheet.create({
     deviceInfo: {
         ...ContainerStyles.row,
         gap: MaterialSpacing.md,
-    },
-    deviceIcon: {
-        fontSize: 12,
-        color: MaterialColors.onSurfaceVariant,
     },
     deviceTextContainer: {
         flex: 1,
@@ -185,12 +172,6 @@ export const deviceConnectionStyles = StyleSheet.create({
     emptyState: {
         ...ContainerStyles.center,
         paddingVertical: MaterialSpacing.xxl,
-    },
-    emptyIcon: {
-        fontSize: 48,
-        marginBottom: MaterialSpacing.lg,
-        color: MaterialColors.onSurfaceVariant,
-        opacity: 0.6,
     },
     emptyTitle: {
         ...MaterialTypography.titleMedium,
@@ -276,68 +257,9 @@ export const deviceConnectionStyles = StyleSheet.create({
         marginBottom: MaterialSpacing.lg,
     },
     
-    // Additional styles for comprehensive device connection UI
-    instructionsContainer: {
-        backgroundColor: MaterialColors.surfaceVariant,
-        borderRadius: MaterialBorderRadius.md,
-        padding: MaterialSpacing.lg,
-        marginVertical: MaterialSpacing.md,
-    },
-    instructionTitle: {
-        ...MaterialTypography.titleMedium,
-        color: MaterialColors.onSurfaceVariant,
-        marginBottom: MaterialSpacing.sm,
-    },
-    instructionText: {
-        ...MaterialTypography.bodyMedium,
-        color: MaterialColors.onSurfaceVariant,
-        lineHeight: 20,
-    },
     
-    // Connection progress indicator
-    progressContainer: {
-        backgroundColor: MaterialColors.surface,
-        borderRadius: MaterialBorderRadius.lg,
-        padding: MaterialSpacing.lg,
-        marginVertical: MaterialSpacing.md
-    },
-    progressBar: {
-        height: 4,
-        backgroundColor: MaterialColors.surfaceVariant,
-        borderRadius: 2,
-        marginVertical: MaterialSpacing.md,
-    },
-    progressFill: {
-        height: '100%',
-        backgroundColor: MaterialColors.primary,
-        borderRadius: 2,
-    },
-    progressText: {
-        ...MaterialTypography.bodyMedium,
-        color: MaterialColors.onSurface,
-        textAlign: 'center',
-    },
     
-    // Device type indicators
-    deviceTypeChip: {
-        backgroundColor: MaterialColors.primaryContainer,
-        borderRadius: MaterialBorderRadius.xl,
-        paddingHorizontal: MaterialSpacing.md,
-        paddingVertical: MaterialSpacing.xs,
-        marginLeft: MaterialSpacing.sm,
-    },
-    deviceTypeText: {
-        ...MaterialTypography.labelSmall,
-        color: MaterialColors.onPrimaryContainer,
-        fontWeight: '500',
-    },
     
-    // Utility
-    sectionDivider: {
-        height: 1,
-        backgroundColor: MaterialColors.outlineVariant,
-        marginVertical: MaterialSpacing.lg,
-    },
     flatListContentContainer: {
         paddingBottom: MaterialSpacing.lg,
     },

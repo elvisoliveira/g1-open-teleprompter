@@ -5,7 +5,7 @@ import { GlassSide } from '../DeviceTypes';
 export class GlassesConnection extends BaseDeviceController {
     private devices: { left: Device | null; right: Device | null } = { left: null, right: null };
     private connectionState: { left: boolean; right: boolean } = { left: false, right: false };
-    private connectionStateCallback: ((state: { left: boolean; right: boolean }) => void) | null = null;
+    private connectionStateCallbacks = new Set<(state: { left: boolean; right: boolean }) => void>();
 
     protected getServiceName(): string {
         return 'GlassesConnection';
@@ -23,7 +23,7 @@ export class GlassesConnection extends BaseDeviceController {
                 this.connectionState.right = true;
             }
 
-            this.connectionStateCallback?.(this.connectionState);
+            this.notifyConnectionState();
         } catch (error: any) {
             throw new Error(`Failed to connect ${side === GlassSide.LEFT ? 'left' : 'right'} device: ${error?.message || 'Unknown error'}`);
         }
@@ -46,7 +46,7 @@ export class GlassesConnection extends BaseDeviceController {
         }
 
         this.connectionState = { left: false, right: false };
-        this.connectionStateCallback?.(this.connectionState);
+        this.notifyConnectionState();
     }
 
     getDevices(): { left: Device | null; right: Device | null } {
@@ -59,15 +59,19 @@ export class GlassesConnection extends BaseDeviceController {
 
     updateConnectionState(state: { left: boolean; right: boolean }): void {
         this.connectionState = state;
-        this.connectionStateCallback?.(this.connectionState);
+        this.notifyConnectionState();
     }
 
     onConnectionStateChange(callback: (state: { left: boolean; right: boolean }) => void): () => void {
         callback(this.connectionState);
-        this.connectionStateCallback = callback;
+        this.connectionStateCallbacks.add(callback);
         return () => {
-            this.connectionStateCallback = null;
+            this.connectionStateCallbacks.delete(callback);
         };
+    }
+
+    private notifyConnectionState(): void {
+        this.connectionStateCallbacks.forEach(callback => callback(this.connectionState));
     }
 
     isConnected(): boolean {

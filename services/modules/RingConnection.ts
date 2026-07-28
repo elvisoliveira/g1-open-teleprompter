@@ -4,7 +4,7 @@ import { BaseDeviceController } from '../BaseDeviceController';
 export class RingConnection extends BaseDeviceController {
     private device: Device | null = null;
     private connectionState: boolean = false;
-    private connectionStateCallback: ((connected: boolean) => void) | null = null;
+    private connectionStateCallbacks = new Set<(connected: boolean) => void>();
 
     protected getServiceName(): string {
         return 'RingConnection';
@@ -15,7 +15,7 @@ export class RingConnection extends BaseDeviceController {
             const device = await this.establishBleConnection(address);
             this.device = device;
             this.connectionState = true;
-            this.connectionStateCallback?.(this.connectionState);
+            this.notifyConnectionState();
         } catch (error: any) {
             throw new Error(`Failed to connect ring device: ${error?.message || 'Unknown error'}`);
         }
@@ -27,7 +27,7 @@ export class RingConnection extends BaseDeviceController {
             this.device = null;
         }
         this.connectionState = false;
-        this.connectionStateCallback?.(this.connectionState);
+        this.notifyConnectionState();
     }
 
     getDevice(): Device | null {
@@ -40,15 +40,19 @@ export class RingConnection extends BaseDeviceController {
 
     updateConnectionState(state: boolean): void {
         this.connectionState = state;
-        this.connectionStateCallback?.(this.connectionState);
+        this.notifyConnectionState();
     }
 
     onConnectionStateChange(callback: (connected: boolean) => void): () => void {
         callback(this.connectionState);
-        this.connectionStateCallback = callback;
+        this.connectionStateCallbacks.add(callback);
         return () => {
-            this.connectionStateCallback = null;
+            this.connectionStateCallbacks.delete(callback);
         };
+    }
+
+    private notifyConnectionState(): void {
+        this.connectionStateCallbacks.forEach(callback => callback(this.connectionState));
     }
 
     isConnected(): boolean {

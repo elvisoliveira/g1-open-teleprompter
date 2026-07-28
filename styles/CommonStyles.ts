@@ -232,50 +232,6 @@ export const InputStyles = StyleSheet.create({
   },
 });
 
-// Status Styles - Reusable status patterns
-export const StatusStyles = StyleSheet.create({
-  // Status indicator
-  statusIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: MaterialSpacing.xs,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusDotSuccess: {
-    backgroundColor: MaterialColors.success,
-  },
-  statusDotError: {
-    backgroundColor: MaterialColors.error,
-  },
-  statusDotWarning: {
-    backgroundColor: MaterialColors.warning,
-  },
-  statusDotInfo: {
-    backgroundColor: MaterialColors.primary,
-  },
-
-  // Status text
-  statusText: {
-    ...MaterialTypography.caption,
-    fontWeight: '500',
-  },
-  statusTextSuccess: {
-    color: MaterialColors.success,
-  },
-  statusTextError: {
-    color: MaterialColors.error,
-  },
-  statusTextWarning: {
-    color: MaterialColors.warning,
-  },
-  statusTextInfo: {
-    color: MaterialColors.primary,
-  },
-});
 
 // Action Button Styles - Reusable action button patterns for slides and items
 export const ActionButtonStyles = StyleSheet.create({
@@ -457,27 +413,3 @@ export const EmptyStateStyles = StyleSheet.create({
   },
 });
 
-// Common utility styles
-export const UtilityStyles = StyleSheet.create({
-  // Opacity states
-  disabled: {
-    opacity: 0.38,
-  },
-  pressed: {
-    opacity: 0.12,
-  },
-
-  // Common margins and paddings
-  marginBottom: {
-    marginBottom: MaterialSpacing.lg,
-  },
-  marginTop: {
-    marginTop: MaterialSpacing.lg,
-  },
-  paddingHorizontal: {
-    paddingHorizontal: MaterialSpacing.lg,
-  },
-  paddingVertical: {
-    paddingVertical: MaterialSpacing.lg,
-  },
-});

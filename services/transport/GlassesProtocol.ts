@@ -1,5 +1,4 @@
 import { Device } from 'react-native-ble-plx';
-import { ENABLE_TRANSFER_LOGGING } from '../constants/AppConstants';
 import {
     CHARACTERISTIC_SERVICE,
     GLASSES_BMP_CHUNK_SIZE,
@@ -15,12 +14,10 @@ import {
     GLASSES_CMD_FIRMWARE_REQUEST,
     GLASSES_CMD_HEARTBEAT,
     GLASSES_CMD_TEXT,
-    GLASSES_CMD_UPTIME,
     GLASSES_DEFAULT_MAX_PAGES,
     GLASSES_DEFAULT_PAGE_NUM,
     GLASSES_DEFAULT_POS,
-    GLASSES_NEW_SCREEN_FLAG,
-    GLASSES_PACKET_DELAY
+    GLASSES_NEW_SCREEN_FLAG
 } from '../constants/GlassesConstants';
 import { TextFormatter } from '../TextFormatter';
 import { BluetoothTransport } from './BluetoothTransport';
@@ -52,21 +49,6 @@ export class GlassesProtocol {
             } catch {
                 return null;
             }
-        }
-        return null;
-    }
-
-    /**
-     * Request device uptime
-     */
-    static async requestUptime(device: Device): Promise<number | null> {
-        const response = await BluetoothTransport.sendCommandWithResponse(CHARACTERISTIC_SERVICE, device, new Uint8Array([GLASSES_CMD_UPTIME]), new Uint8Array([GLASSES_CMD_UPTIME]));
-        console.log('uptime response');
-        console.log(response);
-        if (response && response.length >= 4) {
-            const low = response[2] & 0xFF;
-            const high = response[3] & 0xFF;
-            return (high << 8) | low; // seconds since boot
         }
         return null;
     }
@@ -138,8 +120,6 @@ export class GlassesProtocol {
         const packets: Uint8Array[] = [];
         let syncId = 0;
 
-        console.log(`[GlassesProtocol] Creating BMP packets with chunk size: ${GLASSES_BMP_CHUNK_SIZE} bytes`);
-
         for (let i = 0; i < bmpData.length; i += GLASSES_BMP_CHUNK_SIZE) {
             const end = Math.min(i + GLASSES_BMP_CHUNK_SIZE, bmpData.length);
             const chunk = bmpData.slice(i, end);
@@ -168,29 +148,15 @@ export class GlassesProtocol {
     }
 
     /**
-     * Send text packets to device
-     */
-    static async sendTextToDevice(device: Device, text: string): Promise<boolean> {
-        const packets = this.createTextPackets(text);
-        return await BluetoothTransport.sendPacketsToDevice(CHARACTERISTIC_SERVICE, device, packets, GLASSES_PACKET_DELAY);
-    }
-
-    /**
      * Send BMP data to a device
      */
     static async sendBmpToDevice(device: Device, bmpData: Uint8Array): Promise<boolean> {
         try {
-            const startTime = Date.now();
             const packets = this.createBmpPackets(bmpData);
-            console.log(`[GlassesProtocol] Starting BMP transfer: ${packets.length} packets, ${bmpData.length} bytes`);
 
             // Send all BMP packets sequentially
             for (let i = 0; i < packets.length; i++) {
                 const packet = packets[i];
-
-                if (ENABLE_TRANSFER_LOGGING) {
-                    console.log(`[GlassesProtocol] Sending packet ${i + 1}/${packets.length} (${packet.length} bytes)`);
-                }
 
                 if (!await BluetoothTransport.writeToDevice(CHARACTERISTIC_SERVICE, device, packet, false)) {
                     console.error(`[GlassesProtocol] Failed to send packet ${i + 1}`);
@@ -201,8 +167,6 @@ export class GlassesProtocol {
                     await TextFormatter.sleep(GLASSES_BMP_PACKET_DELAY);
                 }
             }
-
-            console.log('[GlassesProtocol] All packets sent, sending end command');
 
             // Send end command
             const endCommand = new Uint8Array(GLASSES_CMD_BMP_END);
@@ -215,8 +179,6 @@ export class GlassesProtocol {
 
             // Send CRC verification
             const crcValue = CrcCalculator.computeBmpCrc32(bmpData);
-            console.log(`[GlassesProtocol] CRC computed: 0x${crcValue.toString(16)}`);
-
             const crcBytes = new Uint8Array([
                 GLASSES_CMD_CRC,  // 0x16
                 (crcValue >> 24) & 0xFF,
@@ -230,8 +192,6 @@ export class GlassesProtocol {
                 return false;
             }
 
-            const totalTime = Date.now() - startTime;
-            console.log(`[GlassesProtocol] BMP transfer completed successfully in ${totalTime}ms`);
             return true;
 
         } catch (error) {

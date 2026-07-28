@@ -7,33 +7,57 @@ export class TeleprompterTextProcessor {
     private static charWidths = new Map(fontData.glyphs.map(g => [g.char, g.width]));
 
     /**
-     * Add line breaks to text based on character widths from font data
+     * Wrap text into lines measured in pixels using the G1 font widths.
+     * This is the canonical wrap for the official teleprompter — the preview
+     * (SlideStatsPreview) uses the same function so what you see matches what is sent.
+     *
      * @param text - Text to process
      * @param maxWidth - Maximum pixel width per line
-     * @returns Text with appropriate line breaks
+     * @returns Wrapped lines, their pixel widths, and any characters missing from the font data
      */
-    static addLineBreaks(text: string, maxWidth: number = 100): string {
+    static wrapMeasured(text: string, maxWidth: number): { lines: string[]; lineWidths: number[]; unknownChars: Set<string> } {
         const words = text.split(' ');
         const lines: string[] = [];
+        const lineWidths: number[] = [];
+        const unknownChars = new Set<string>();
+        const spaceWidth = this.charWidths.get(' ') || 2;
         let currentLine = '';
         let currentWidth = 0;
 
         for (const word of words) {
-            const wordWidth = [...word].reduce((w, char) => w + (this.charWidths.get(char) || 5), 0);
-            const spaceWidth = this.charWidths.get(' ') || 2;
+            const wordWidth = [...word].reduce((w, char) => {
+                const charWidth = this.charWidths.get(char);
+                if (charWidth === undefined) unknownChars.add(char);
+                return w + (charWidth ?? 5);
+            }, 0);
 
             if (currentWidth + spaceWidth + wordWidth <= maxWidth || !currentLine) {
                 currentLine += (currentLine ? ' ' : '') + word;
                 currentWidth += (currentLine === word ? 0 : spaceWidth) + wordWidth;
             } else {
                 lines.push(currentLine);
+                lineWidths.push(currentWidth);
                 currentLine = word;
                 currentWidth = wordWidth;
             }
         }
 
-        if (currentLine) lines.push(currentLine);
-        return lines.join('\n');
+        if (currentLine) {
+            lines.push(currentLine);
+            lineWidths.push(currentWidth);
+        }
+
+        return { lines, lineWidths, unknownChars };
+    }
+
+    /**
+     * Add line breaks to text based on character widths from font data
+     * @param text - Text to process
+     * @param maxWidth - Maximum pixel width per line
+     * @returns Text with appropriate line breaks
+     */
+    static addLineBreaks(text: string, maxWidth: number = 100): string {
+        return this.wrapMeasured(text, maxWidth).lines.join('\n');
     }
 
     /**
@@ -153,15 +177,6 @@ export class TeleprompterTextProcessor {
      * @returns Object with visible and next text portions
      */
     static splitTextForTeleprompter(text: string) {
-        // Split text optimally for teleprompter display
-        const result = this.splitTextForTeleprompterDisplay(text);
-
-        // Debug logging to help with optimization
-        console.log('Teleprompter text split:');
-        console.log(`Visible: ${this.getUtf8ByteLength(result.visible)} bytes`);
-        console.log(`Next: ${this.getUtf8ByteLength(result.next)} bytes`);
-        console.log(`Properly formatted: ${result.visible.endsWith('\n')}`);
-
-        return result;
+        return this.splitTextForTeleprompterDisplay(text);
     }
 }

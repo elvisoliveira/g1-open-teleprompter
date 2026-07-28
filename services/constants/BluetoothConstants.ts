@@ -2,32 +2,16 @@
 export const CHARACTERISTIC_WRITE = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 export const CHARACTERISTIC_NOTIFY = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
-// export const CHARACTERISTIC_NOTIFY_V2 = "de5bf729-d711-4e47-af26-65e3012a5dc7"
-// export const CHARACTERISTIC_COMMAND = "de5bf72a-d711-4e47-af26-65e3012a5dc7"
-
 // Shared BLE Configuration
 export const MTU_SIZE = 247;
 export const CONNECTION_TIMEOUT_MS = 10000;
 
-// Standard BLE service UUIDs
+// Standard BLE service/characteristic UUIDs (only the ones this app reads)
 export const SERVICES = {
-    BATTERY: '180F',
     DEVICE_INFO: '180A',
-    HEART_RATE: '180D',
-    CURRENT_TIME: '1805',
-    IMMEDIATE_ALERT: '1802',
 };
 
 export const CHARACTERISTICS = {
-    BATTERY_LEVEL: '2A19',
-    DEVICE_NAME: '2A00',
-    MODEL_NUMBER: '2A24',
-    SERIAL_NUMBER: '2A25',
     FIRMWARE_REVISION: '2A26',
     HARDWARE_REVISION: '2A27',
-    SOFTWARE_REVISION: '2A28',
-    MANUFACTURER_NAME: '2A29',
-    HEART_RATE_MEASUREMENT: '2A37',
-    CURRENT_TIME_CHAR: '2A2B',
-    ALERT_LEVEL: '2A06',
 };

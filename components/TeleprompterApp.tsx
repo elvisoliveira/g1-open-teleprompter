@@ -35,7 +35,8 @@ const TeleprompterApp: React.FC = () => {
         isScanning,
         pairedDevices,
         connectionStep,
-        isAutoConnecting,
+        isReconnectingGlasses,
+        isReconnectingRing,
         isBluetoothEnabled,
         loadPairedDevices,
         handleGlassConnection,
@@ -105,10 +106,6 @@ const TeleprompterApp: React.FC = () => {
     const handleSetupRing = async () => {
         setCurrentView('ringConnection');
         await loadPairedDevices('ring');
-    };
-
-    const handleToggleTouchPanel = async () => {        
-        await toggleRingTouchPanel();
     };
 
     const handleRetryRingConnection = async () => {
@@ -189,9 +186,9 @@ const TeleprompterApp: React.FC = () => {
                             onDisconnectRing={handleDisconnectRing}
                             onSetupGlasses={handleSetupGlasses}
                             onSetupRing={handleSetupRing}
-                            onToggleTouchPanel={handleToggleTouchPanel}
-                            isReconnectingGlasses={isAutoConnecting}
-                            isReconnectingRing={isAutoConnecting}
+                            onToggleTouchPanel={toggleRingTouchPanel}
+                            isReconnectingGlasses={isReconnectingGlasses}
+                            isReconnectingRing={isReconnectingRing}
                             isDisconnectingGlasses={isDisconnectingGlasses}
                             isDisconnectingRing={isDisconnectingRing}
                             hasConfiguredGlasses={!!(savedLeftGlassMac && savedRightGlassMac)}
@@ -213,21 +210,11 @@ const TeleprompterApp: React.FC = () => {
             }
         })();
 
-        // Show bottom navigation for all main views
-        // const showBottomNav = currentView === 'settings' || currentView === 'device' || currentView === 'presentations';
-        const showBottomNav = true;
-
-        // Show top app bar for all main views (not connection)
-        // const showTopAppBar = currentView === 'settings' || currentView === 'device' || currentView === 'presentations';
-        const showTopAppBar = true;
-
         return (
             <>
-                {showTopAppBar && <TopAppBar />}
+                <TopAppBar />
                 <View style={teleprompterAppStyles.flexContainer}>{view}</View>
-                {showBottomNav && (
-                    <AppBottomNavigation currentView={currentView} onNavigate={setCurrentView} />
-                )}
+                <AppBottomNavigation currentView={currentView} onNavigate={setCurrentView} />
             </>
         );
     };

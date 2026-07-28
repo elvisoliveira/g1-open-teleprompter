@@ -22,7 +22,8 @@ export const useBluetoothConnection = (
     const [isScanning, setIsScanning] = useState(false);
     const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
     const [connectionStep, setConnectionStep] = useState<ConnectionStep>('left');
-    const [isAutoConnecting, setIsAutoConnecting] = useState(false);
+    const [isReconnectingGlasses, setIsReconnectingGlasses] = useState(false);
+    const [isReconnectingRing, setIsReconnectingRing] = useState(false);
     const [isBluetoothEnabled, setIsBluetoothEnabled] = useState(true);
 
     useEffect(() => {
@@ -133,18 +134,18 @@ export const useBluetoothConnection = (
     const attemptGlassAutoReconnection = async (leftMac: string | null, rightMac: string | null) => {
         if (!leftMac || !rightMac) return false;
 
-        setIsAutoConnecting(true);
+        setIsReconnectingGlasses(true);
         try {
             await GlassesController.connectLeft(leftMac);
             await GlassesController.connectRight(rightMac);
 
             setConnectionStep('complete');
-            setIsAutoConnecting(false);
             return true;
         } catch (error) {
             console.error('Glass auto-reconnection failed:', error);
-            setIsAutoConnecting(false);
             return false;
+        } finally {
+            setIsReconnectingGlasses(false);
         }
     };
 
@@ -164,24 +165,23 @@ export const useBluetoothConnection = (
         try {
             await RingController.toggleRingTouchPanel();
         } catch (error) {
-            console.error('@TODO', error);
-            Alert.alert('@TODO');
+            console.error('Failed to toggle ring touch panel:', error);
+            Alert.alert('Error', 'Failed to toggle the ring touch panel');
         }
     };
 
     const attemptRingAutoReconnection = async (ringMac: string | null) => {
         if (!ringMac) return false;
 
-        setIsAutoConnecting(true);
+        setIsReconnectingRing(true);
         try {
             await RingController.connect(ringMac);
-
-            setIsAutoConnecting(false);
             return true;
         } catch (error) {
             console.error('Ring auto-reconnection failed:', error);
-            setIsAutoConnecting(false);
             return false;
+        } finally {
+            setIsReconnectingRing(false);
         }
     };
 
@@ -204,10 +204,6 @@ export const useBluetoothConnection = (
         }
     };
 
-    const resetConnection = () => {
-        setConnectionStep('left');
-    };
-
     return {
         leftGlassConnected,
         rightGlassConnected,
@@ -215,7 +211,8 @@ export const useBluetoothConnection = (
         isScanning,
         pairedDevices,
         connectionStep,
-        isAutoConnecting,
+        isReconnectingGlasses,
+        isReconnectingRing,
         isBluetoothEnabled,
         loadPairedDevices,
         handleGlassConnection,
@@ -224,13 +221,7 @@ export const useBluetoothConnection = (
         handleRingDisconnect,
         attemptGlassAutoReconnection,
         attemptRingAutoReconnection,
-        resetConnection,
         checkBluetoothStatus,
         toggleRingTouchPanel,
-        // Legacy exports for backward compatibility (deprecated)
-        leftConnected: leftGlassConnected,
-        rightConnected: rightGlassConnected,
-        handleDeviceConnection: handleGlassConnection,
-        attemptAutoReconnection: attemptGlassAutoReconnection,
     };
 };

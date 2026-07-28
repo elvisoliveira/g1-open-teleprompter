@@ -87,31 +87,6 @@ export const useSavedDevices = () => {
         }
     };
 
-    const clearSavedGlassMacAddresses = async () => {
-        try {
-            await Promise.all([
-                AsyncStorage.removeItem(STORAGE_KEYS.LEFT_GLASS_MAC),
-                AsyncStorage.removeItem(STORAGE_KEYS.RIGHT_GLASS_MAC),
-                // Also clear legacy keys
-                AsyncStorage.removeItem(STORAGE_KEYS.LEFT_DEVICE_MAC),
-                AsyncStorage.removeItem(STORAGE_KEYS.RIGHT_DEVICE_MAC)
-            ]);
-            setSavedLeftGlassMac(null);
-            setSavedRightGlassMac(null);
-        } catch (error) {
-            console.error('Failed to clear saved glass MAC addresses:', error);
-        }
-    };
-
-    const clearSavedRingMacAddress = async () => {
-        try {
-            await AsyncStorage.removeItem(STORAGE_KEYS.RING_MAC);
-            setSavedRingMac(null);
-        } catch (error) {
-            console.error('Failed to clear saved ring MAC address:', error);
-        }
-    };
-
     return {
         savedLeftGlassMac,
         savedRightGlassMac,
@@ -120,13 +95,5 @@ export const useSavedDevices = () => {
         saveRingMacAddress,
         loadSavedGlassMacAddresses,
         loadSavedRingMacAddress,
-        clearSavedGlassMacAddresses,
-        clearSavedRingMacAddress,
-        // Legacy exports for backward compatibility (deprecated)
-        savedLeftMac: savedLeftGlassMac,
-        savedRightMac: savedRightGlassMac,
-        saveMacAddress: saveGlassMacAddress,
-        loadSavedMacAddresses: loadSavedGlassMacAddresses,
-        clearSavedMacAddresses: clearSavedGlassMacAddresses,
     };
 };

@@ -37,13 +37,4 @@ export const connectionStatusStyles = StyleSheet.create({
         marginBottom: MaterialSpacing.lg,
     },
 
-    // Last Update Info - flat design with subtle background
-    lastUpdateContainer: {
-        ...ContainerStyles.center,
-        marginTop: MaterialSpacing.md,
-    },
-    lastUpdateText: {
-        ...MaterialTypography.labelSmall,
-        color: MaterialColors.onSurfaceVariant,
-    },
 });

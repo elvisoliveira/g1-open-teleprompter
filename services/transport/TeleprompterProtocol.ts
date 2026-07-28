@@ -153,26 +153,4 @@ export class TeleprompterProtocol {
     static formatTeleprompterPayload(text: string): Uint8Array {
         return new TextEncoder().encode(text);
     }
-
-    /**
-     * Send teleprompter content to device
-     */
-    static async sendTeleprompterToDevice(
-        device: Device,
-        visibleText: string,
-        nextText: string,
-        sequence: number,
-        slidePercentage?: number
-    ): Promise<boolean> {
-        const packets = this.buildTeleprompterPackets(visibleText, nextText, sequence, slidePercentage);
-        return await this.sendTeleprompterPackets(device, packets);
-    }
-
-    /**
-     * Send teleprompter end to device
-     */
-    static async sendTeleprompterEndToDevice(device: Device, sequence: number): Promise<boolean> {
-        const endPacket = this.buildTeleprompterEndPacket(sequence);
-        return await this.sendTeleprompterEndPacket(device, endPacket);
-    }
 }

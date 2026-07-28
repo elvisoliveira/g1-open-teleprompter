@@ -41,7 +41,6 @@ export class RingStatus {
         if (!device) return;
 
         const panelStatus = await RingProtocol.disablePanel(device);
-        console.log(panelStatus);
         if (panelStatus !== null) {
             this.status.panel = panelStatus;
         }
@@ -51,12 +50,9 @@ export class RingStatus {
         if (!device) return;
 
         const panelStatus = await RingProtocol.enablePanel(device);
-        console.log(panelStatus);
         if (panelStatus !== null) {
             this.status.panel = panelStatus;
         }
-
-        return;
     }
 
     getDeviceStatus(): RingStatusType {

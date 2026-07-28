@@ -8,9 +8,7 @@ export const GLASSES_CMD_BMP_DATA = 0x15;
 export const GLASSES_CMD_BMP_END = [0x20, 0x0d, 0x0e];
 export const GLASSES_CMD_CRC = 0x16;
 export const GLASSES_CMD_BATTERY = 0x2C;
-export const GLASSES_CMD_UPTIME = 0x37;
 export const GLASSES_CMD_FIRMWARE_REQUEST = [0x23, 0x74];
-export const GLASSES_CMD_INIT_LEFT = [0x4D, 0xFB];
 
 // G1 Teleprompter Protocol Constants
 export const GLASSES_CMD_TELEPROMPTER = 0x09;
@@ -25,7 +23,6 @@ export const GLASSES_TELEPROMPTER_NEW_SCREEN_MANUAL = 0x03;
 export const GLASSES_TELEPROMPTER_NEW_SCREEN_CONTINUATION = 0x07;
 export const GLASSES_TELEPROMPTER_FLAGS_NORMAL = 0x81;
 export const GLASSES_TELEPROMPTER_FLAGS_MANUAL = 0x00;
-export const GLASSES_TELEPROMPTER_START_DELAY = 0x00;
 
 // G1 Teleprompter Default Options
 export const GLASSES_TELEPROMPTER_CONTROL_SIZE = 10;
@@ -45,6 +42,8 @@ export const GLASSES_BMP_STORAGE_ADDRESS = [0x00, 0x1c, 0x00, 0x00];
 export const GLASSES_NEW_SCREEN_FLAG = 0x71;
 export const GLASSES_MAX_LINE_LENGTH = 60;
 export const GLASSES_MAX_DISPLAY_LINES = 5;
+// Max pixel width per line for the official teleprompter (measured via g1_fonts.json)
+export const GLASSES_TELEPROMPTER_MAX_LINE_WIDTH = 180;
 
 // G1 Timing Configuration
 export const GLASSES_PACKET_DELAY = 5;

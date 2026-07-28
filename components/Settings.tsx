@@ -1,4 +1,4 @@
-import { defaultBitmapRenderer } from '@/services/BitmapRenderer';
+import { textToBitmapBase64 } from '@/services/BitmapRenderer';
 import GlassesController from '@/services/GlassesController';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
@@ -47,14 +47,7 @@ const Settings: React.FC<SettingsProps> = ({
                 success = await GlassesController.sendText(messageText);
             } else if (outputMode === 'image') {
                 try {
-                    const bmpBuffer = await defaultBitmapRenderer.textToBitmap(messageText);
-
-                    if (!defaultBitmapRenderer.validateBmpFormat(bmpBuffer)) {
-                        throw new Error('Generated BMP format is invalid');
-                    }
-
-                    const base64Image = defaultBitmapRenderer.bufferToBase64(bmpBuffer);
-                    success = await GlassesController.sendImage(base64Image);
+                    success = await GlassesController.sendImage(textToBitmapBase64(messageText));
                 } catch (bitmapError) {
                     console.error('Error generating bitmap:', bitmapError);
                     Alert.alert('Error', 'Failed to generate image from text');

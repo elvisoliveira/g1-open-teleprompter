@@ -14,23 +14,12 @@ export interface BatteryInfo {
 export interface DeviceStatus {
     connected: boolean;
     battery: number;
-    uptime: number;
     firmware: string | null;
-}
-
-export interface GlassesInfo {
-    left: Device | null;
-    right: Device | null;
 }
 
 export interface FirmwareInfo {
     left: string | null;
     right: string | null;
-}
-
-export interface UptimeInfo {
-    left: number;
-    right: number;
 }
 
 // Ring Controller Types
@@ -63,9 +52,6 @@ export interface RingStandardDeviceInfo {
     hardware: string | null,
 }
 
-// Generic Connected Device Types
-export type ConnectedDeviceType = 'glasses' | 'ring';
-
 export type AppView = 'glassesConnection' | 'ringConnection' | 'settings' | 'device' | 'presentations';
 
 /**
@@ -73,9 +59,15 @@ export type AppView = 'glassesConnection' | 'ringConnection' | 'settings' | 'dev
  */
 export type OutputMode = 'text' | 'image' | 'official';
 
-export interface ConnectedDevice {
-    type: ConnectedDeviceType;
+// Presentation Types
+
+export interface Slide {
+    id: string;
+    text: string;
+}
+
+export interface Presentation {
     id: string;
     name: string;
-    isConnected: boolean;
+    slides: Slide[];
 }

@@ -32,26 +32,6 @@ const GlassSideStatusCard: React.FC<GlassSideStatusCardProps> = ({
         return 'Unknown';
     };
 
-    const formatUptime = (uptime: number) => {
-        if (uptime < 0) return 'Unknown';
-        
-        const days = Math.floor(uptime / 86400);
-        const hours = Math.floor((uptime % 86400) / 3600);
-        const minutes = Math.floor((uptime % 3600) / 60);
-        const seconds = uptime % 60;
-        
-        if (days > 0) {
-            return `${days}d ${hours}h ${minutes}m`;
-        } else if (hours > 0) {
-            return `${hours}h ${minutes}m`;
-        } else if (minutes > 0) {
-            return `${minutes}m ${seconds}s`;
-        } else {
-            return `${seconds}s`;
-        }
-    };
-
-    const uptime = formatUptime(glassSideStatus?.uptime || 0);
     const firmwareVersion = extractFirmwareVersion(glassSideStatus?.firmware || null);
 
     return (
@@ -89,12 +69,6 @@ const GlassSideStatusCard: React.FC<GlassSideStatusCardProps> = ({
                             <Text style={styles.valueTextBattery}>{glassSideStatus.battery}%</Text>
                         </View>
                     )}
-
-                    {/* Uptime Reading - Label in light gray, Value with color coding */}
-                    {/* <View style={styles.infoRow}>
-                        <Text style={styles.labelText}>Uptime</Text>
-                        <Text style={styles.valueTextUptime}>{uptime}</Text>
-                    </View> */}
 
                     {/* Firmware Reading - Label in light gray, Value with color coding */}
                     <View style={styles.infoRow}>
