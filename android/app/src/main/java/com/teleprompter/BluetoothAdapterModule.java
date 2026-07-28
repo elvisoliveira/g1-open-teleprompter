@@ -7,6 +7,8 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelUuid;
 
 import com.facebook.react.bridge.Arguments;
@@ -16,6 +18,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.util.Set;
 import java.util.HashSet;
@@ -30,6 +33,25 @@ public class BluetoothAdapterModule extends ReactContextBaseJavaModule {
         return "BluetoothAdapter";
     }
 
+    // RN freezes JS timers while the Activity is paused, so the BLE ping
+    // cadence comes from this native ticker instead of setInterval. The main
+    // looper keeps running in background because the foreground service holds
+    // the process alive. Must match BLE_TICK_INTERVAL_MS in BluetoothConstants.ts.
+    private static final long TICK_INTERVAL_MS = 5000;
+    private Handler tickHandler;
+    private final Runnable tickRunnable = new Runnable() {
+        @Override
+        public void run() {
+            ReactApplicationContext context = getReactApplicationContext();
+            if (context.hasActiveReactInstance()) {
+                context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("BleTick", null);
+            }
+            if (tickHandler != null) {
+                tickHandler.postDelayed(this, TICK_INTERVAL_MS);
+            }
+        }
+    };
+
     @ReactMethod
     public void startForegroundService() {
         Context context = getReactApplicationContext();
@@ -39,10 +61,19 @@ public class BluetoothAdapterModule extends ReactContextBaseJavaModule {
         } else {
             context.startService(intent);
         }
+
+        if (tickHandler == null) {
+            tickHandler = new Handler(Looper.getMainLooper());
+            tickHandler.postDelayed(tickRunnable, TICK_INTERVAL_MS);
+        }
     }
 
     @ReactMethod
     public void stopForegroundService() {
+        if (tickHandler != null) {
+            tickHandler.removeCallbacksAndMessages(null);
+            tickHandler = null;
+        }
         Context context = getReactApplicationContext();
         context.stopService(new Intent(context, BleForegroundService.class));
     }
