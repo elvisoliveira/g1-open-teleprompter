@@ -42,11 +42,11 @@ export const useBluetoothConnection = (
         // Check initial Bluetooth status
         checkBluetoothStatus();
 
+        // Only unsubscribe — the connection engine outlives the UI tree.
+        // Disconnecting is a user action, never a React lifecycle side effect.
         return () => {
             unsubscribeGlasses();
             unsubscribeRing();
-            GlassesController.disconnect();
-            RingController.disconnect();
         };
     }, []);
 
