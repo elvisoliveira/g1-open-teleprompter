@@ -10,6 +10,7 @@ import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypograp
 export const ButtonStyles = StyleSheet.create({
   // Primary filled button
   primaryButton: {
+    overflow: 'hidden',
     backgroundColor: MaterialColors.primary,
     borderRadius: MaterialBorderRadius.lg,
     paddingVertical: MaterialSpacing.md,
@@ -36,6 +37,7 @@ export const ButtonStyles = StyleSheet.create({
 
   // Secondary outlined button
   secondaryButton: {
+    overflow: 'hidden',
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: MaterialColors.primary,
@@ -64,6 +66,7 @@ export const ButtonStyles = StyleSheet.create({
 
   // Tertiary text button
   tertiaryButton: {
+    overflow: 'hidden',
     backgroundColor: 'transparent',
     borderRadius: MaterialBorderRadius.lg,
     paddingVertical: MaterialSpacing.md,
@@ -261,6 +264,7 @@ export const ActionButtonStyles = StyleSheet.create({
 
   // Navigation buttons (up/down arrows)
   navigationButton: {
+    overflow: 'hidden',
     width: 48,
     height: 48,
     borderRadius: MaterialBorderRadius.xl,
@@ -275,6 +279,7 @@ export const ActionButtonStyles = StyleSheet.create({
 
   // Edit button
   editButton: {
+    overflow: 'hidden',
     width: 48,
     height: 48,
     borderRadius: MaterialBorderRadius.xl,
@@ -285,6 +290,7 @@ export const ActionButtonStyles = StyleSheet.create({
 
   // Delete button
   deleteButton: {
+    overflow: 'hidden',
     width: 48,
     height: 48,
     borderRadius: MaterialBorderRadius.xl,
@@ -295,6 +301,7 @@ export const ActionButtonStyles = StyleSheet.create({
 
   // Present/Play button
   presentButton: {
+    overflow: 'hidden',
     width: 48,
     height: 48,
     borderRadius: MaterialBorderRadius.xl,
@@ -305,6 +312,7 @@ export const ActionButtonStyles = StyleSheet.create({
 
   // Stop presenting button
   stopButton: {
+    overflow: 'hidden',
     width: 48,
     height: 48,
     borderRadius: MaterialBorderRadius.xl,

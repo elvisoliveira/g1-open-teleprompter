@@ -5,7 +5,7 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { RingStatus } from '../services/DeviceTypes';
 import { ButtonStyles } from '../styles/CommonStyles';
 import { deviceStatusCardStyles as styles } from '../styles/DeviceStatusCardStyles';
-import { MaterialColors } from '../styles/MaterialTheme';
+import { batteryLevelColor, MaterialColors } from '../styles/MaterialTheme';
 
 interface RingStatusCardProps {
     connected: boolean;
@@ -114,7 +114,7 @@ const RingStatusCard: React.FC<RingStatusCardProps> = ({
                         {ringStatus.battery !== undefined && ringStatus.battery >= 0 && (
                             <View style={styles.infoRow}>
                                 <Text style={styles.labelText}>Battery</Text>
-                                <Text style={styles.valueTextBattery}>{ringStatus.battery}%</Text>
+                                <Text style={[styles.valueTextBattery, { color: batteryLevelColor(ringStatus.battery) }]}>{ringStatus.battery}%</Text>
                             </View>
                         )}
 

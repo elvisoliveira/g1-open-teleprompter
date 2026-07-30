@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { DeviceStatus } from '../services/DeviceTypes';
 import { deviceStatusCardStyles as styles } from '../styles/DeviceStatusCardStyles';
+import { batteryLevelColor } from '../styles/MaterialTheme';
 
 interface GlassSideStatusCardProps {
     side: 'left' | 'right';
@@ -66,7 +67,7 @@ const GlassSideStatusCard: React.FC<GlassSideStatusCardProps> = ({
                     {glassSideStatus?.battery !== undefined && glassSideStatus.battery >= 0 && (
                         <View style={styles.infoRow}>
                             <Text style={styles.labelText}>Battery</Text>
-                            <Text style={styles.valueTextBattery}>{glassSideStatus.battery}%</Text>
+                            <Text style={[styles.valueTextBattery, { color: batteryLevelColor(glassSideStatus.battery) }]}>{glassSideStatus.battery}%</Text>
                         </View>
                     )}
 

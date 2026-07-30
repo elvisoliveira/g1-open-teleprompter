@@ -1,9 +1,9 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { bottomNavigationStyles as styles } from '../styles/BottomNavigationStyles';
-import { MaterialColors } from '../styles/MaterialTheme';
+import { MaterialColors, rippleColor } from '../styles/MaterialTheme';
 
 const tabs = [
     { href: '/settings', icon: 'settings', label: 'Settings' },
@@ -19,11 +19,11 @@ const AppBottomNavigation: React.FC = () => {
             {tabs.map((tab) => {
                 const active = pathname === tab.href;
                 return (
-                    <TouchableOpacity
+                    <Pressable
                         key={tab.href}
                         style={styles.tab}
                         onPress={() => router.navigate(tab.href)}
-                        activeOpacity={0.6}
+                        android_ripple={{ color: rippleColor, borderless: true }}
                     >
                         <View style={styles.tabInner}>
                             <View style={[styles.iconContainer, active && styles.activeIconContainer]}>
@@ -35,7 +35,7 @@ const AppBottomNavigation: React.FC = () => {
                             </View>
                             <Text style={[styles.tabText, active && styles.activeTabText]}>{tab.label}</Text>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
                 );
             })}
         </View>

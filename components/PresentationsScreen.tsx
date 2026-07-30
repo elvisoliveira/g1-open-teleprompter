@@ -4,10 +4,10 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Presentation } from '../services/DeviceTypes';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
-import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
+import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography, rippleColor } from '../styles/MaterialTheme';
 
 const STORAGE_KEY = 'presentations_data';
 
@@ -384,10 +384,10 @@ const PresentationsScreen: React.FC = () => {
                                     </View>
                                 ) : (
                                     <View style={{ flex: 1 }}>
-                                        <TouchableOpacity
+                                        <Pressable
                                             onPress={() => router.push(`/presentation/${item.id}`)}
                                             style={{ flex: 1 }}
-                                            activeOpacity={0.8}
+                                            android_ripple={{ color: rippleColor }}
                                         >
                                             <Text style={[MaterialTypography.headlineSmall, {
                                                 color: MaterialColors.onSurface,
@@ -401,14 +401,15 @@ const PresentationsScreen: React.FC = () => {
                                             }]}>
                                                 {item.slides.length} slides
                                             </Text>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                         <View style={{
                                             flexDirection: 'row',
                                             justifyContent: 'flex-end',
                                             gap: MaterialSpacing.xs
                                         }}>
-                                            <TouchableOpacity
+                                            <Pressable
                                                 onPress={() => startEditingPresentation(item)}
+                                                android_ripple={{ color: rippleColor }}
                                                 style={ActionButtonStyles.editButton}
                                             >
                                                 <MaterialIcons
@@ -416,9 +417,10 @@ const PresentationsScreen: React.FC = () => {
                                                     size={24}
                                                     style={ActionButtonStyles.editIcon}
                                                 />
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
+                                            </Pressable>
+                                            <Pressable
                                                 onPress={() => deletePresentation(item.id)}
+                                                android_ripple={{ color: rippleColor }}
                                                 style={ActionButtonStyles.deleteButton}
                                             >
                                                 <MaterialIcons
@@ -426,7 +428,7 @@ const PresentationsScreen: React.FC = () => {
                                                     size={24}
                                                     style={ActionButtonStyles.deleteIcon}
                                                 />
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         </View>
                                     </View>
                                 )}

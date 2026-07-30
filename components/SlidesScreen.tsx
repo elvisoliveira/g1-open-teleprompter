@@ -2,11 +2,11 @@ import GlassesController from '@/services/GlassesController';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { textToBitmapBase64 } from '../services/BitmapRenderer';
 import { OutputMode, Presentation, Slide } from '../services/DeviceTypes';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
-import { MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
+import { MaterialColors, MaterialSpacing, MaterialTypography, rippleColor } from '../styles/MaterialTheme';
 import SlideEditor from './SlideEditor';
 import SlideItem from './SlideItem';
 
@@ -322,12 +322,13 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                 {/* Header */}
                 <View style={{ marginBottom: MaterialSpacing.md }}>
                     <View style={[ContainerStyles.row, { alignItems: 'center' }]}>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
+                            android_ripple={{ color: rippleColor, borderless: true }}
                             style={[ButtonStyles.tertiaryButton]}
                         >
                             <MaterialIcons name="arrow-back" size={20} color={MaterialColors.primary} />
-                        </TouchableOpacity>
+                        </Pressable>
                         <Text style={[MaterialTypography.headlineSmall, {
                             flex: 1,
                             color: MaterialColors.onSurface
@@ -425,12 +426,13 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
             </View>
 
             {/* Bottom Navigation */}
-            <View>
+            <View style={{ paddingHorizontal: MaterialSpacing.lg, paddingVertical: MaterialSpacing.md }}>
                 {presentingSlideId ? (
                     <View style={[ContainerStyles.row, { gap: MaterialSpacing.sm }]}>
                         <View style={{ flex: 1 }}>
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={navigateToPreviousSlide}
+                                android_ripple={{ color: rippleColor }}
                                 style={[
                                     ActionButtonStyles.navigationButton,
                                     { width: '100%' },
@@ -446,11 +448,11 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                         presentation.slides.findIndex(s => s.id === presentingSlideId) === 0 && ActionButtonStyles.navigationIconDisabled
                                     ]}
                                 />
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         <View style={{ flex: 2 }}>
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={async () => {
                                     if (outputMode === 'official') {
                                         await GlassesController.exitOfficialTeleprompter();
@@ -460,6 +462,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                     setPresentingSlideId(null);
                                     presentingSlideRef.current = null;
                                 }}
+                                android_ripple={{ color: rippleColor }}
                                 style={[ActionButtonStyles.stopButton, { width: '100%' }]}
                             >
                                 <MaterialIcons
@@ -467,12 +470,13 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                     size={24}
                                     style={ActionButtonStyles.stopIcon}
                                 />
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         <View style={{ flex: 1 }}>
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={navigateToNextSlide}
+                                android_ripple={{ color: rippleColor }}
                                 style={[
                                     ActionButtonStyles.navigationButton,
                                     { width: '100%' },
@@ -488,13 +492,14 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                         presentation.slides.findIndex(s => s.id === presentingSlideId) === presentation.slides.length - 1 && ActionButtonStyles.navigationIconDisabled
                                     ]}
                                 />
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </View>
                 ) : !editingSlideId ? (
-                    <View style={[ContainerStyles.row]}>
-                        <TouchableOpacity
+                    <View style={[ContainerStyles.row, { gap: MaterialSpacing.sm }]}>
+                        <Pressable
                             onPress={addSlide}
+                            android_ripple={{ color: rippleColor }}
                             style={[ButtonStyles.primaryButton, { flex: 2 }]}
                         >
                             <MaterialIcons
@@ -505,10 +510,10 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                             <Text style={ButtonStyles.primaryButtonText}>
                                 After {presentation.slides.length > currentViewIndex + 1 ? currentViewIndex + 1 : currentViewIndex}
                             </Text>
-                        </TouchableOpacity>
+                        </Pressable>
 
                         {(presentation.slides.length > 0 && isLastItemVisible) && (
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => {
                                     const newSlide: Slide = {
                                         id: Date.now().toString(),
@@ -526,6 +531,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                         flatListRef.current?.scrollToEnd({ animated: true });
                                     }, 250);
                                 }}
+                                android_ripple={{ color: rippleColor }}
                                 style={[ButtonStyles.secondaryButton, { flex: 1 }]}
                             >
                                 <MaterialIcons
@@ -534,7 +540,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
                                     color={MaterialColors.primary}
                                 />
                                 <Text style={ButtonStyles.secondaryButtonText}>at End</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         )}
                     </View>
                 ) : null}

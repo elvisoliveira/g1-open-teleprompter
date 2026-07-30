@@ -3,6 +3,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { PairedDevice } from '../hooks/useBluetoothConnection';
 import { deviceConnectionStyles as styles } from '../styles/DeviceConnectionStyles';
+import { MaterialColors } from '../styles/MaterialTheme';
 import DeviceConnectionScreen from './DeviceConnectionScreen';
 
 interface GlassesConnectionProps {
@@ -42,7 +43,7 @@ const GlassesConnection: React.FC<GlassesConnectionProps> = ({
                         <MaterialIcons
                             name="arrow-back"
                             size={11}
-                            color={leftConnected ? '#1C1B1F' : '#49454F'}
+                            color={leftConnected ? MaterialColors.onPrimary : MaterialColors.onSurfaceVariant}
                         />
                     </Text>
                 </View>
@@ -61,7 +62,7 @@ const GlassesConnection: React.FC<GlassesConnectionProps> = ({
                         <MaterialIcons
                             name="arrow-forward"
                             size={11}
-                            color={rightConnected ? '#1C1B1F' : '#49454F'}
+                            color={rightConnected ? MaterialColors.onPrimary : MaterialColors.onSurfaceVariant}
                         />
                     </Text>
                 </View>

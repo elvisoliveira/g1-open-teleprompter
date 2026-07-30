@@ -148,6 +148,13 @@ export const isDarkMode = systemScheme === 'dark';
 // Backward-compatible export name
 export const MaterialColors = isDarkMode ? MaterialColorsDark : MaterialColorsLight;
 
+// Android ripple feedback color for Pressable
+export const rippleColor = isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)';
+
+// Semantic color for battery level readouts
+export const batteryLevelColor = (level: number) =>
+    level > 50 ? MaterialColors.success : level > 20 ? MaterialColors.warning : MaterialColors.error;
+
 export const MaterialSpacing = {
     xs: 4,
     sm: 8,

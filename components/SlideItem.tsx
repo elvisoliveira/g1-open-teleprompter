@@ -1,9 +1,9 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Slide } from '../services/DeviceTypes';
 import { ActionButtonStyles } from '../styles/CommonStyles';
-import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
+import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography, rippleColor } from '../styles/MaterialTheme';
 
 interface SlideItemProps {
     slide: Slide;
@@ -43,20 +43,24 @@ const SlideItem: React.FC<SlideItemProps> = ({
             backgroundColor: isPresenting ? MaterialColors.primaryContainer : MaterialColors.surfaceContainer,
             borderRadius: MaterialBorderRadius.lg,
             marginBottom: MaterialSpacing.md,
+            overflow: 'hidden',
         }}>
-            <TouchableOpacity
+            <Pressable
                 style={{
                     flex: 1,
                     padding: MaterialSpacing.lg
                 }}
                 onPress={onPress}
-                activeOpacity={0.8}
+                android_ripple={{ color: rippleColor }}
             >
                 <View style={{ flex: 1 }}>
-                    <Text style={[MaterialTypography.bodyMedium, {
-                        color: isPresenting ? MaterialColors.onPrimaryContainer : MaterialColors.onSurfaceVariant,
-                        marginBottom: MaterialSpacing.md
-                    }]}>
+                    <Text
+                        numberOfLines={4}
+                        style={[MaterialTypography.bodyMedium, {
+                            color: isPresenting ? MaterialColors.onPrimaryContainer : MaterialColors.onSurfaceVariant,
+                            marginBottom: MaterialSpacing.md
+                        }]}
+                    >
                         {slide.text}
                     </Text>
                     <View style={{
@@ -70,20 +74,19 @@ const SlideItem: React.FC<SlideItemProps> = ({
                         justifyContent: 'space-between',
                         alignItems: 'center'
                     }}>
-                        <TouchableOpacity
-                            style={[ActionButtonStyles.indexButton]}
-                        >
+                        <View style={ActionButtonStyles.indexButton}>
                             <Text style={ActionButtonStyles.indexText}>{index + 1}</Text>
-                        </TouchableOpacity>
+                        </View>
                         <View style={{ flexDirection: 'row', gap: MaterialSpacing.xs }}>
                             {!isPresentingMode && (
                                 <>
                                     {/* Move Up Arrow */}
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={(e) => {
                                             e.stopPropagation();
                                             onMoveUp();
                                         }}
+                                        android_ripple={{ color: rippleColor }}
                                         style={[
                                             ActionButtonStyles.navigationButton,
                                             !canMoveUp && ActionButtonStyles.navigationButtonDisabled
@@ -98,14 +101,15 @@ const SlideItem: React.FC<SlideItemProps> = ({
                                                 !canMoveUp && ActionButtonStyles.navigationIconDisabled
                                             ]}
                                         />
-                                    </TouchableOpacity>
+                                    </Pressable>
 
                                     {/* Move Down Arrow */}
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={(e) => {
                                             e.stopPropagation();
                                             onMoveDown();
                                         }}
+                                        android_ripple={{ color: rippleColor }}
                                         style={[
                                             ActionButtonStyles.navigationButton,
                                             !canMoveDown && ActionButtonStyles.navigationButtonDisabled
@@ -120,14 +124,15 @@ const SlideItem: React.FC<SlideItemProps> = ({
                                                 !canMoveDown && ActionButtonStyles.navigationIconDisabled
                                             ]}
                                         />
-                                    </TouchableOpacity>
+                                    </Pressable>
 
                                     {/* Edit Slide */}
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={(e) => {
                                             e.stopPropagation();
                                             onEdit();
                                         }}
+                                        android_ripple={{ color: rippleColor }}
                                         style={ActionButtonStyles.editButton}
                                     >
                                         <MaterialIcons
@@ -135,14 +140,15 @@ const SlideItem: React.FC<SlideItemProps> = ({
                                             size={24}
                                             style={ActionButtonStyles.editIcon}
                                         />
-                                    </TouchableOpacity>
+                                    </Pressable>
 
                                     {/* Delete Slide */}
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={(e) => {
                                             e.stopPropagation();
                                             onDelete();
                                         }}
+                                        android_ripple={{ color: rippleColor }}
                                         style={ActionButtonStyles.deleteButton}
                                     >
                                         <MaterialIcons
@@ -150,17 +156,18 @@ const SlideItem: React.FC<SlideItemProps> = ({
                                             size={24}
                                             style={ActionButtonStyles.deleteIcon}
                                         />
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </>
                             )}
 
                             {/* Present Slide - only show when devices are connected */}
                             {(leftConnected || rightConnected) && (
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={(e) => {
                                         e.stopPropagation();
                                         onTogglePresenting();
                                     }}
+                                    android_ripple={{ color: rippleColor }}
                                     style={isPresenting ? ActionButtonStyles.stopButton : ActionButtonStyles.presentButton}
                                 >
                                     <MaterialIcons
@@ -168,12 +175,12 @@ const SlideItem: React.FC<SlideItemProps> = ({
                                         size={24}
                                         style={isPresenting ? ActionButtonStyles.stopIcon : ActionButtonStyles.presentIcon}
                                     />
-                                </TouchableOpacity>
+                                </Pressable>
                             )}
                         </View>
                     </View>
                 </View>
-            </TouchableOpacity>
+            </Pressable>
         </View>
     );
 };
