@@ -1,0 +1,45 @@
+# Production deployment: release APK published as a GitHub Release.
+# Triggered by version tags (v1.0.7, v1.1.0, ...).
+name: Deploy Production
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - run: npm ci
+
+      - run: ./gradlew :app:assembleRelease
+        working-directory: android
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          APK="g1-open-teleprompter-$TAG.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$APK"
+          gh release create "$TAG" "$APK" \
+            --title "G1 OpenTeleprompter $TAG" \
+            --notes "React Native teleprompter app for Even Realities G1 smart glasses.
+
+          Download the APK below and install on your Android device."

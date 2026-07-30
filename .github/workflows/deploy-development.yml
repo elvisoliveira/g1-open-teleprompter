@@ -1,12 +1,12 @@
-# Builds the dev (debug) APK. Debug builds don't bundle JS — the app loads it
-# from a local Metro server, so this APK only needs rebuilding when the native
-# side changes (android/, dependencies, app config).
+# Development deployment: debug APK that loads JS from a local Metro server.
+# It only needs rebuilding when the native side changes (android/, dependencies,
+# app config) — day-to-day TS/TSX work is served live by Metro.
 #
 # Local workflow after installing the APK on the phone:
 #   adb reverse tcp:8081 tcp:8081
 #   npx expo start
 # then open the app — it connects to the local Metro.
-name: dev-apk
+name: Deploy Development
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'app.json'
-      - '.github/workflows/dev-apk.yml'
+      - '.github/workflows/deploy-development.yml'
 
 jobs:
   build:
