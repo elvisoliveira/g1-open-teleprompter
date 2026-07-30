@@ -8,7 +8,8 @@ buildscript {
   dependencies {
     classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
-    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+    // Kotlin 2.1+ to read the haversine AAR's Kotlin 2.2 metadata (RN's default pin is 2.0.21)
+    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20')
   }
 }
 
