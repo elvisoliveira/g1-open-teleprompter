@@ -8,7 +8,9 @@
     "scheme": "g1-open-teleprompter",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "platforms": ["android"],
+    "platforms": [
+      "android"
+    ],
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -17,7 +19,9 @@
       "edgeToEdgeEnabled": true,
       "package": "com.teleprompter"
     },
-    "plugins": [],
+    "plugins": [
+      "expo-router"
+    ],
     "experiments": {}
   }
 }
