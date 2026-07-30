@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState } from 'react';
+import { RingType } from '../services/DeviceTypes';
 
 // Storage keys for saved devices
 const STORAGE_KEYS = {
@@ -8,14 +9,15 @@ const STORAGE_KEYS = {
     // Legacy keys for backward compatibility
     LEFT_DEVICE_MAC: 'left_device_mac',
     RIGHT_DEVICE_MAC: 'right_device_mac',
-    // Future ring controller key (placeholder)
     RING_MAC: 'ring_mac',
+    RING_TYPE: 'ring_type',
 };
 
 export const useSavedDevices = () => {
     const [savedLeftGlassMac, setSavedLeftGlassMac] = useState<string | null>(null);
     const [savedRightGlassMac, setSavedRightGlassMac] = useState<string | null>(null);
     const [savedRingMac, setSavedRingMac] = useState<string | null>(null);
+    const [savedRingType, setSavedRingType] = useState<RingType>('qring');
 
     const saveGlassMacAddress = async (side: 'left' | 'right', macAddress: string) => {
         try {
@@ -31,10 +33,12 @@ export const useSavedDevices = () => {
         }
     };
 
-    const saveRingMacAddress = async (macAddress: string) => {
+    const saveRingMacAddress = async (macAddress: string, type: RingType = 'qring') => {
         try {
             await AsyncStorage.setItem(STORAGE_KEYS.RING_MAC, macAddress);
+            await AsyncStorage.setItem(STORAGE_KEYS.RING_TYPE, type);
             setSavedRingMac(macAddress);
+            setSavedRingType(type);
         } catch (error) {
             console.error('Failed to save ring MAC:', error);
         }
@@ -79,7 +83,10 @@ export const useSavedDevices = () => {
     const loadSavedRingMacAddress = async () => {
         try {
             const ringMac = await AsyncStorage.getItem(STORAGE_KEYS.RING_MAC);
+            // Rings saved before ring types existed are QRing
+            const ringType = (await AsyncStorage.getItem(STORAGE_KEYS.RING_TYPE) as RingType | null) ?? 'qring';
             setSavedRingMac(ringMac);
+            setSavedRingType(ringType);
             return ringMac;
         } catch (error) {
             console.error('Failed to load saved ring MAC address:', error);
@@ -91,6 +98,7 @@ export const useSavedDevices = () => {
         savedLeftGlassMac,
         savedRightGlassMac,
         savedRingMac,
+        savedRingType,
         saveGlassMacAddress,
         saveRingMacAddress,
         loadSavedGlassMacAddresses,

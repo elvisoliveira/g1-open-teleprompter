@@ -1,4 +1,5 @@
 import GlassesController from '@/services/GlassesController';
+import PebbleController from '@/services/PebbleController';
 import QRingController from '@/services/QRingController';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
@@ -107,9 +108,11 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
                 setGlassSidesStatus(glassesStatus);
             }
 
-            // Refresh ring status
+            // Refresh ring status from whichever driver is active
             if (ringConnected) {
-                const ringStatus = QRingController.getDeviceStatus();
+                const ringStatus = QRingController.isConnected()
+                    ? QRingController.getDeviceStatus()
+                    : PebbleController.getDeviceStatus();
                 setRingStatus(ringStatus);
             }
         } catch (error) {

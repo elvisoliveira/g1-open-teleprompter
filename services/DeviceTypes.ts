@@ -40,6 +40,8 @@ export interface QRingGestureControlStatus {
 
 export type QRingPanelStatus = QRingTouchControlStatus | QRingGestureControlStatus;
 
+export type RingType = 'qring' | 'pebble';
+
 export interface RingStatus {
     connected: boolean;
     battery: number;

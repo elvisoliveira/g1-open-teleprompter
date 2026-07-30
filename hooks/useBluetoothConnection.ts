@@ -1,8 +1,10 @@
+import PebbleController, { PEBBLE_DEVICE_NAME } from '@/services/PebbleController';
 import QRingController from '@/services/QRingController';
 import { QRING_DEVICE_NAME_PREFIX } from '@/services/constants/QRingConstants';
 import { useEffect, useState } from 'react';
 import { Alert, NativeModules, Platform } from 'react-native';
 import { BluetoothPermissions } from '../services/BluetoothPermissions';
+import { RingType } from '../services/DeviceTypes';
 import GlassesController from '../services/GlassesController';
 
 export interface PairedDevice {
@@ -14,13 +16,21 @@ export interface PairedDevice {
 export type ConnectionStep = 'left' | 'right' | 'complete';
 export type DeviceType = 'glasses' | 'ring' | 'all';
 
+const isRingDevice = (name: string | null) =>
+    !!name && (name.startsWith(QRING_DEVICE_NAME_PREFIX) || name.includes(PEBBLE_DEVICE_NAME));
+
+const ringTypeFor = (name: string | null): RingType =>
+    name?.includes(PEBBLE_DEVICE_NAME) ? 'pebble' : 'qring';
+
 export const useBluetoothConnection = (
     onGlassConnected?: (side: 'left' | 'right', deviceId: string) => void,
-    onRingConnected?: (deviceId: string) => void
+    onRingConnected?: (deviceId: string, type: RingType) => void
 ) => {
     const [leftGlassConnected, setLeftGlassConnected] = useState(false);
     const [rightGlassConnected, setRightGlassConnected] = useState(false);
-    const [ringConnected, setRingConnected] = useState(false);
+    const [qringConnected, setQringConnected] = useState(false);
+    const [pebbleConnected, setPebbleConnected] = useState(false);
+    const ringConnected = qringConnected || pebbleConnected;
     const [isScanning, setIsScanning] = useState(false);
     const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
     const [connectionStep, setConnectionStep] = useState<ConnectionStep>('left');
@@ -35,10 +45,9 @@ export const useBluetoothConnection = (
             setRightGlassConnected(state.right);
         });
 
-        // Subscribe to connection state changes from QRingController
-        const unsubscribeRing = QRingController.onConnectionStateChange((connected) => {
-            setRingConnected(connected);
-        });
+        // Subscribe to connection state changes from both ring drivers
+        const unsubscribeQRing = QRingController.onConnectionStateChange(setQringConnected);
+        const unsubscribePebble = PebbleController.onConnectionStateChange(setPebbleConnected);
 
         // Check initial Bluetooth status
         checkBluetoothStatus();
@@ -47,7 +56,8 @@ export const useBluetoothConnection = (
         // Disconnecting is a user action, never a React lifecycle side effect.
         return () => {
             unsubscribeGlasses();
-            unsubscribeRing();
+            unsubscribeQRing();
+            unsubscribePebble();
         };
     }, []);
 
@@ -115,9 +125,7 @@ export const useBluetoothConnection = (
                     device.name?.startsWith('Even G1')
                 );
             } else if (deviceType === 'ring') {
-                filteredDevices = allDevices.filter(device =>
-                    device.name?.startsWith(QRING_DEVICE_NAME_PREFIX)
-                );
+                filteredDevices = allDevices.filter(device => isRingDevice(device.name));
             }
             // If deviceType is 'all', return all devices without filtering
 
@@ -167,10 +175,16 @@ export const useBluetoothConnection = (
 
     const handleRingConnection = async (deviceId: string) => {
         try {
-            await QRingController.connect(deviceId);
+            // The selected device's name decides which driver handles it
+            const type = ringTypeFor(pairedDevices.find(d => d.id === deviceId)?.name ?? null);
+            if (type === 'pebble') {
+                await PebbleController.connect(deviceId);
+            } else {
+                await QRingController.connect(deviceId);
+            }
 
             // Notify parent component about successful connection
-            onRingConnected?.(deviceId);
+            onRingConnected?.(deviceId, type);
         } catch (error) {
             console.error('Failed to connect ring:', error);
             Alert.alert('Connection Error', 'Failed to connect to the ring controller');
@@ -186,12 +200,16 @@ export const useBluetoothConnection = (
         }
     };
 
-    const attemptRingAutoReconnection = async (ringMac: string | null) => {
+    const attemptRingAutoReconnection = async (ringMac: string | null, ringType: RingType = 'qring') => {
         if (!ringMac) return false;
 
         setIsReconnectingRing(true);
         try {
-            await QRingController.connect(ringMac);
+            if (ringType === 'pebble') {
+                await PebbleController.connect(ringMac);
+            } else {
+                await QRingController.connect(ringMac);
+            }
             return true;
         } catch (error) {
             console.error('Ring auto-reconnection failed:', error);
@@ -213,7 +231,9 @@ export const useBluetoothConnection = (
 
     const handleRingDisconnect = async () => {
         try {
+            // Disconnecting an inactive driver is a safe no-op
             await QRingController.disconnect();
+            await PebbleController.disconnect();
         } catch (error) {
             console.error('Failed to disconnect ring:', error);
             Alert.alert('Disconnect Error', 'Failed to disconnect ring controller');

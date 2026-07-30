@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Alert, DeviceEventEmitter, FlatList, Pressable, Text, View } from 'react-native';
 import { textToBitmapBase64 } from '../services/BitmapRenderer';
 import { OutputMode, Presentation, Slide } from '../services/DeviceTypes';
+import { PEBBLE_BUTTON_SEQUENCE_EVENT } from '../services/PebbleController';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
 import { MaterialColors, MaterialSpacing, MaterialTypography, rippleColor } from '../styles/MaterialTheme';
 import SlideEditor from './SlideEditor';
@@ -71,7 +72,7 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
     // Pebble Index 01 ring navigation (button sequences from the native sync client).
     // Resubscribes every render on purpose so the handler never closes over stale state.
     useEffect(() => {
-        const subscription = DeviceEventEmitter.addListener('PebbleButtonSequence', (sequence: string) => {
+        const subscription = DeviceEventEmitter.addListener(PEBBLE_BUTTON_SEQUENCE_EVENT, (sequence: string) => {
             if (sequence === 'short') navigateToNextSlide();
             else if (sequence === 'short short') navigateToPreviousSlide();
         });

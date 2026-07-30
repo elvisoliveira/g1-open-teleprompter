@@ -10,6 +10,7 @@ export default function DeviceScreen() {
         savedLeftGlassMac,
         savedRightGlassMac,
         savedRingMac,
+        savedRingType,
         loadSavedGlassMacAddresses,
         loadSavedRingMacAddress
     } = useSavedDevices();
@@ -43,7 +44,7 @@ export default function DeviceScreen() {
     };
 
     const handleRetryRingConnection = async () => {
-        const reconnected = await attemptRingAutoReconnection(savedRingMac);
+        const reconnected = await attemptRingAutoReconnection(savedRingMac, savedRingType);
         if (!reconnected) {
             Alert.alert('Connection Failed', 'Could not reconnect to the saved ring controller. Please try connecting manually.');
         }

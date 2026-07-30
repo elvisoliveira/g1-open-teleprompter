@@ -3,6 +3,7 @@ package com.teleprompter
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.util.Log
+import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -63,16 +64,24 @@ class PebbleRingModule(reactContext: ReactApplicationContext) : ReactContextBase
     }
 
     @ReactMethod
-    fun start() {
-        if (scope != null) return
+    fun start(address: String, promise: Promise) {
+        if (scope != null) {
+            promise.resolve(null)
+            return
+        }
 
         val context = reactApplicationContext
         val ring = try {
             context.getSystemService(BluetoothManager::class.java)?.adapter?.bondedDevices
-                ?.firstOrNull { it.name?.contains("Pebble Index", ignoreCase = true) == true }
+                ?.firstOrNull { it.address.equals(address, ignoreCase = true) }
         } catch (e: SecurityException) {
-            null // BLUETOOTH_CONNECT not granted yet — stay off, JS can call start() again
-        } ?: return
+            promise.reject("E_PERMISSION", "BLUETOOTH_CONNECT not granted")
+            return
+        }
+        if (ring == null) {
+            promise.reject("E_NOT_BONDED", "Ring $address is not bonded — pair it via the official Pebble app first")
+            return
+        }
 
         Log.i(TAG, "Starting sync for ${ring.address}")
 
@@ -108,6 +117,7 @@ class PebbleRingModule(reactContext: ReactApplicationContext) : ReactContextBase
                 }
             }
         }
+        promise.resolve(null)
     }
 
     @ReactMethod

@@ -13,7 +13,7 @@ export default function RingConnectionScreen() {
         isBluetoothEnabled,
         loadPairedDevices,
         handleRingConnection,
-    } = useBluetoothConnection(undefined, (deviceId) => saveRingMacAddress(deviceId));
+    } = useBluetoothConnection(undefined, (deviceId, type) => saveRingMacAddress(deviceId, type));
 
     useEffect(() => {
         loadPairedDevices('ring');
