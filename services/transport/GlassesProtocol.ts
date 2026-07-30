@@ -45,7 +45,9 @@ export class GlassesProtocol {
         const response = await BluetoothTransport.sendCommandWithResponse(CHARACTERISTIC_SERVICE, device, new Uint8Array(GLASSES_CMD_FIRMWARE_REQUEST), new Uint8Array([]));
         if (response && response.length > 0) {
             try {
-                return new TextDecoder('utf-8').decode(response).trim();
+                const text = new TextDecoder('utf-8').decode(response).trim();
+                // The empty expected header accepts any notification; only printable ASCII is firmware text
+                return /^[\x20-\x7E\s]+$/.test(text) ? text : null;
             } catch {
                 return null;
             }
@@ -187,8 +189,10 @@ export class GlassesProtocol {
                 crcValue & 0xFF,
             ]);
 
-            if (!await BluetoothTransport.writeToDevice(CHARACTERISTIC_SERVICE, device, crcBytes, false)) {
-                console.error('[GlassesProtocol] Failed to send CRC');
+            // The glasses answer the CRC packet with the transfer verdict — silence means failure
+            const crcResponse = await BluetoothTransport.sendCommandWithResponse(CHARACTERISTIC_SERVICE, device, crcBytes, new Uint8Array([GLASSES_CMD_CRC]));
+            if (crcResponse === null) {
+                console.error('[GlassesProtocol] BMP CRC not acknowledged');
                 return false;
             }
 

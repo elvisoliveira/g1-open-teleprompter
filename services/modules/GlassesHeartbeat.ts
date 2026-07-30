@@ -17,11 +17,15 @@ export class GlassesHeartbeat {
     private tickCount: number = 0;
     private readonly ticksPerBeat = Math.max(1, Math.round(GLASSES_HEARTBEAT_INTERVAL_MS / BLE_TICK_INTERVAL_MS));
 
-    start(getDevices: () => { left: Device | null; right: Device | null }): void {
+    start(
+        getDevices: () => { left: Device | null; right: Device | null },
+        isPaused: () => boolean = () => false
+    ): void {
         this.stop();
         this.tickCount = 0;
         this.subscription = DeviceEventEmitter.addListener(BLE_TICK_EVENT, async () => {
             if (++this.tickCount % this.ticksPerBeat !== 0) return;
+            if (isPaused()) return;
 
             const seq = this.heartbeatSeq++ & 0xFF;
             const { left, right } = getDevices();

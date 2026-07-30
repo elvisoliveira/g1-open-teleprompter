@@ -37,6 +37,8 @@ export const GLASSES_TELEPROMPTER_DEFAULT_SCROLL_POSITION = 0;
 
 // G1 Display Parameters
 export const GLASSES_CHUNK_SIZE = 200;
+// Largest packet: GLASSES_CHUNK_SIZE + 9-byte text header + 3-byte ATT header
+export const GLASSES_MIN_MTU = 212;
 export const GLASSES_BMP_CHUNK_SIZE = 194;
 export const GLASSES_BMP_STORAGE_ADDRESS = [0x00, 0x1c, 0x00, 0x00];
 export const GLASSES_NEW_SCREEN_FLAG = 0x71;
