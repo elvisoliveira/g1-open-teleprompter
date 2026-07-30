@@ -1,5 +1,5 @@
 import GlassesController from '@/services/GlassesController';
-import RingController from '@/services/RingController';
+import QRingController from '@/services/QRingController';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -91,7 +91,7 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
         setIsUpdatingBattery(true);
         try {
             await GlassesController.refreshBatteryInfo();
-            await RingController.refreshBatteryInfo();
+            await QRingController.refreshBatteryInfo();
         } catch (error) {
             console.warn('Failed to update battery status:', error);
         } finally {
@@ -109,7 +109,7 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
 
             // Refresh ring status
             if (ringConnected) {
-                const ringStatus = RingController.getDeviceStatus();
+                const ringStatus = QRingController.getDeviceStatus();
                 setRingStatus(ringStatus);
             }
         } catch (error) {

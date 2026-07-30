@@ -1,9 +1,9 @@
 import { Device } from 'react-native-ble-plx';
 import { RingStatus as RingStatusType } from '../DeviceTypes';
-import { RingProtocol } from '../transport/RingProtocol';
+import { QRingProtocol } from '../transport/QRingProtocol';
 
 
-export class RingStatus {
+export class QRingStatus {
     private status: RingStatusType;
 
     constructor() {
@@ -13,7 +13,7 @@ export class RingStatus {
     async refreshBatteryInfo(device: Device | null): Promise<void> {
         if (!device) return;
 
-        const batteryLevel = await RingProtocol.requestBatteryLevel(device);
+        const batteryLevel = await QRingProtocol.requestBatteryLevel(device);
         if (batteryLevel !== null) {
             this.status.battery = batteryLevel;
         }
@@ -22,7 +22,7 @@ export class RingStatus {
     async getFirmwareInfo(device: Device | null): Promise<void> {
         if (!device) return;
 
-        const firmwareInfo = await RingProtocol.requestFirmwareInfo(device);
+        const firmwareInfo = await QRingProtocol.requestFirmwareInfo(device);
         if (firmwareInfo !== null) {
             this.status.firmware = firmwareInfo;
         }
@@ -31,7 +31,7 @@ export class RingStatus {
     async getPanelStatus(device: Device | null): Promise<void> {
         if (!device) return;
 
-        const panelStatus = await RingProtocol.requestPanelStatus(device);
+        const panelStatus = await QRingProtocol.requestPanelStatus(device);
         if (panelStatus !== null) {
             this.status.panel = panelStatus;
         }
@@ -40,7 +40,7 @@ export class RingStatus {
     async disablePanel(device: Device | null): Promise<void> {
         if (!device) return;
 
-        const panelStatus = await RingProtocol.disablePanel(device);
+        const panelStatus = await QRingProtocol.disablePanel(device);
         if (panelStatus !== null) {
             this.status.panel = panelStatus;
         }
@@ -49,7 +49,7 @@ export class RingStatus {
     async enablePanel(device: Device | null): Promise<void> {
         if (!device) return;
 
-        const panelStatus = await RingProtocol.enablePanel(device);
+        const panelStatus = await QRingProtocol.enablePanel(device);
         if (panelStatus !== null) {
             this.status.panel = panelStatus;
         }

@@ -1,19 +1,19 @@
 import { BaseDeviceController } from './BaseDeviceController';
 import { RingConnection } from './modules/RingConnection';
-import { RingKeepAlive } from './modules/RingKeepAlive';
-import { RingStatus } from './modules/RingStatus';
+import { QRingKeepAlive } from './modules/QRingKeepAlive';
+import { QRingStatus } from './modules/QRingStatus';
 
-class RingController extends BaseDeviceController {
+class QRingController extends BaseDeviceController {
     private connection = new RingConnection();
-    private keepAlive = new RingKeepAlive();
-    private status = new RingStatus();
+    private keepAlive = new QRingKeepAlive();
+    private status = new QRingStatus();
 
     constructor() {
         super();
     }
 
     protected getServiceName(): string {
-        return 'RingController';
+        return 'QRingController';
     }
 
     // Public API Methods
@@ -75,4 +75,4 @@ class RingController extends BaseDeviceController {
     }
 }
 
-export default new RingController();
+export default new QRingController();

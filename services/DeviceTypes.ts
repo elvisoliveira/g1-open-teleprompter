@@ -24,27 +24,27 @@ export interface FirmwareInfo {
 
 // Ring Controller Types
 
-export interface TouchControlStatus {
+export interface QRingTouchControlStatus {
     controlType: string;
     mode: string;
     modeValue: number;
     sleepMinutes?: number;
 }
 
-export interface GestureControlStatus {
+export interface QRingGestureControlStatus {
     controlType: string;
     mode: string;
     modeValue: number;
     enabled: boolean;
 }
 
-export type PanelStatus = TouchControlStatus | GestureControlStatus;
+export type QRingPanelStatus = QRingTouchControlStatus | QRingGestureControlStatus;
 
 export interface RingStatus {
     connected: boolean;
     battery: number;
     firmware: string | null;
-    panel: PanelStatus | null;
+    panel: QRingPanelStatus | null;
 }
 
 export interface RingStandardDeviceInfo {

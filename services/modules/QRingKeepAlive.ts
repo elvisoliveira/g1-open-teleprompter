@@ -1,7 +1,7 @@
 import { DeviceEventEmitter, EmitterSubscription } from 'react-native';
 import { Device } from 'react-native-ble-plx';
 import { BLE_TICK_EVENT } from '../constants/BluetoothConstants';
-import { RingProtocol } from '../transport/RingProtocol';
+import { QRingProtocol } from '../transport/QRingProtocol';
 
 /**
  * Periodic keep-alive that stops the ring firmware from dropping an idle connection.
@@ -10,7 +10,7 @@ import { RingProtocol } from '../transport/RingProtocol';
  * It does not drive connection state; GATT disconnects are reported natively
  * via device.onDisconnected in RingConnection.
  */
-export class RingKeepAlive {
+export class QRingKeepAlive {
     private subscription: EmitterSubscription | null = null;
 
     start(getDevice: () => Device | null): void {
@@ -19,7 +19,7 @@ export class RingKeepAlive {
             const device = getDevice();
             if (!device) return;
             try {
-                await RingProtocol.sendKeepAlive(device);
+                await QRingProtocol.sendKeepAlive(device);
             } catch (error) {
                 // A real drop fires onDisconnected; a missed response is not a disconnect
             }

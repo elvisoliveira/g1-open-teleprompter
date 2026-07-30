@@ -19,15 +19,15 @@ import {
     RING_TOUCH_MODE_PHOTO,
     RING_TOUCH_MODE_SHORT_VIDEO,
     RING_TOUCH_MODE_TASBIH
-} from '../constants/RingConstants';
-import { GestureControlStatus, PanelStatus, TouchControlStatus } from '../DeviceTypes';
+} from '../constants/QRingConstants';
+import { QRingGestureControlStatus, QRingPanelStatus, QRingTouchControlStatus } from '../DeviceTypes';
 import { BluetoothTransport } from './BluetoothTransport';
 
 /**
- * RingProtocol - Handles ring device-specific communication
+ * QRingProtocol - Handles ring device-specific communication
  * This module handles the ring's 16-byte packet protocol with checksum validation
  */
-export class RingProtocol {
+export class QRingProtocol {
 
     // Operation mappings
     private static readonly operationModes: { [key: number]: 'READ' | 'WRITE' } = {
@@ -98,13 +98,13 @@ export class RingProtocol {
     }
 
     static async sendKeepAlive(device: Device): Promise<boolean> {
-        console.log('[RingProtocol] Send Keep Alive');
+        console.log('[QRingProtocol] Send Keep Alive');
 
         const requestBytes = this.createPacket(RING_CMD_KEEPALIVE);
         const response = await BluetoothTransport.sendCommandWithResponse(CHARACTERISTIC_SERVICE, device, requestBytes, new Uint8Array([RING_CMD_KEEPALIVE]));
 
         if (!response || response.length < 16) {
-            console.log('[RingProtocol] Invalid keep alive response, isn\'t alive');
+            console.log('[QRingProtocol] Invalid keep alive response, isn\'t alive');
             return false;
         }
 
@@ -116,7 +116,7 @@ export class RingProtocol {
         const distance = (response[11] << 8) | response[12]; // 16-bit distance in meters
         const sequence = response[14];
 
-        console.log(`[RingProtocol] Keep Alive Response:`, {
+        console.log(`[QRingProtocol] Keep Alive Response:`, {
             reqType: `0x${reqType.toString(16).padStart(2, '0')}`,
             steps,
             calories: `${calories.toFixed(1)} kcal`,
@@ -130,7 +130,7 @@ export class RingProtocol {
 
 
     static async requestBatteryLevel(device: Device): Promise<number | null> {
-        console.log('[RingProtocol] Ring battery level request');
+        console.log('[QRingProtocol] Ring battery level request');
         const response = await BluetoothTransport.sendCommandWithResponse(
             CHARACTERISTIC_SERVICE,
             device,
@@ -141,13 +141,13 @@ export class RingProtocol {
     }
 
     static async requestFirmwareInfo(device: Device): Promise<string | null> {
-        console.log('[RingProtocol] Ring firmware version request');
+        console.log('[QRingProtocol] Ring firmware version request');
         const response = await BluetoothTransport.getDeviceInfo(device);
         return response ? response.firmware : null;
     }
 
-    static async requestPanelStatus(device: Device): Promise<PanelStatus | null> {
-        console.log('[RingProtocol] Ring Touchpanel request');
+    static async requestPanelStatus(device: Device): Promise<QRingPanelStatus | null> {
+        console.log('[QRingProtocol] Ring Touchpanel request');
         const response = await BluetoothTransport.sendCommandWithResponse(
             CHARACTERISTIC_SERVICE,
             device,
@@ -156,7 +156,7 @@ export class RingProtocol {
         );
 
         if (!response) {
-            console.log('[RingProtocol] Invalid touchpanel response');
+            console.log('[QRingProtocol] Invalid touchpanel response');
             return null;
         }
 
@@ -173,14 +173,14 @@ export class RingProtocol {
             const modeValue = response[3];
             const sleepMinutes = response[4];
 
-            const result: TouchControlStatus = {
+            const result: QRingTouchControlStatus = {
                 controlType: 'touch',
                 mode: this.getModeName(this.touchModes, modeValue),
                 modeValue,
                 sleepMinutes: sleepMinutes
             };
 
-            console.log(`[RingProtocol] Touch Control Status:`, result);
+            console.log(`[QRingProtocol] Touch Control Status:`, result);
             return result;
         }
 
@@ -189,23 +189,23 @@ export class RingProtocol {
             const modeValue = response[3];
             const enabled = response[4] === 1;
 
-            const result: GestureControlStatus = {
+            const result: QRingGestureControlStatus = {
                 controlType: 'gesture',
                 mode: this.getModeName(this.gestureModes, modeValue),
                 modeValue,
                 enabled
             };
 
-            console.log(`[RingProtocol] Gesture Control Status:`, result);
+            console.log(`[QRingProtocol] Gesture Control Status:`, result);
             return result;
         }
 
-        console.log(`[RingProtocol] Unknown control mode: ${settingId}`);
+        console.log(`[QRingProtocol] Unknown control mode: ${settingId}`);
         return null;
     }
 
-    static async disablePanel(device: Device): Promise<PanelStatus | null> {
-        console.log('[RingProtocol] Disable ring touch control');
+    static async disablePanel(device: Device): Promise<QRingPanelStatus | null> {
+        console.log('[QRingProtocol] Disable ring touch control');
 
         // Write operation
         // Touch Control
@@ -219,7 +219,7 @@ export class RingProtocol {
         );
 
         if (!response) {
-            console.log('[RingProtocol] Invalid touchpanel response');
+            console.log('[QRingProtocol] Invalid touchpanel response');
             return null;
         }
 
@@ -227,8 +227,8 @@ export class RingProtocol {
     }
 
 
-    static async enablePanel(device: Device): Promise<PanelStatus | null> {
-        console.log('[RingProtocol] Disable ring touch control');
+    static async enablePanel(device: Device): Promise<QRingPanelStatus | null> {
+        console.log('[QRingProtocol] Disable ring touch control');
 
         // Write operation
         // Touch Control
@@ -242,7 +242,7 @@ export class RingProtocol {
         );
 
         if (!response) {
-            console.log('[RingProtocol] Invalid touchpanel response');
+            console.log('[QRingProtocol] Invalid touchpanel response');
             return null;
         }
 

@@ -1,4 +1,7 @@
 export const CHARACTERISTIC_SERVICE = '6e40fff0-b5a3-f393-e0a9-e50e24dcca9e';
+
+// Device name prefix of QRing-protocol models (e.g. R08 family)
+export const QRING_DEVICE_NAME_PREFIX = 'R08';
 // export const CHARACTERISTIC_SERVICE_V2 = 'de5bf728-d711-4e47-af26-65e3012a5dc7';
 
 // Ring Protocol Commands

@@ -1,4 +1,5 @@
-import RingController from '@/services/RingController';
+import QRingController from '@/services/QRingController';
+import { QRING_DEVICE_NAME_PREFIX } from '@/services/constants/QRingConstants';
 import { useEffect, useState } from 'react';
 import { Alert, NativeModules, Platform } from 'react-native';
 import { BluetoothPermissions } from '../services/BluetoothPermissions';
@@ -34,8 +35,8 @@ export const useBluetoothConnection = (
             setRightGlassConnected(state.right);
         });
 
-        // Subscribe to connection state changes from RingController
-        const unsubscribeRing = RingController.onConnectionStateChange((connected) => {
+        // Subscribe to connection state changes from QRingController
+        const unsubscribeRing = QRingController.onConnectionStateChange((connected) => {
             setRingConnected(connected);
         });
 
@@ -99,12 +100,12 @@ export const useBluetoothConnection = (
             // Get devices from appropriate service(s)
             if (deviceType === 'all') {
                 const glassesDevices = await GlassesController.getPairedDevices();
-                const ringDevices = await RingController.getPairedDevices();
+                const ringDevices = await QRingController.getPairedDevices();
                 allDevices = [...glassesDevices, ...ringDevices];
             } else if (deviceType === 'glasses') {
                 allDevices = await GlassesController.getPairedDevices();
             } else if (deviceType === 'ring') {
-                allDevices = await RingController.getPairedDevices();
+                allDevices = await QRingController.getPairedDevices();
             }
 
             // Filter devices based on type
@@ -115,7 +116,7 @@ export const useBluetoothConnection = (
                 );
             } else if (deviceType === 'ring') {
                 filteredDevices = allDevices.filter(device =>
-                    device.name?.startsWith('R08')
+                    device.name?.startsWith(QRING_DEVICE_NAME_PREFIX)
                 );
             }
             // If deviceType is 'all', return all devices without filtering
@@ -166,7 +167,7 @@ export const useBluetoothConnection = (
 
     const handleRingConnection = async (deviceId: string) => {
         try {
-            await RingController.connect(deviceId);
+            await QRingController.connect(deviceId);
 
             // Notify parent component about successful connection
             onRingConnected?.(deviceId);
@@ -178,7 +179,7 @@ export const useBluetoothConnection = (
 
     const toggleRingTouchPanel = async () => {
         try {
-            await RingController.toggleRingTouchPanel();
+            await QRingController.toggleRingTouchPanel();
         } catch (error) {
             console.error('Failed to toggle ring touch panel:', error);
             Alert.alert('Error', 'Failed to toggle the ring touch panel');
@@ -190,7 +191,7 @@ export const useBluetoothConnection = (
 
         setIsReconnectingRing(true);
         try {
-            await RingController.connect(ringMac);
+            await QRingController.connect(ringMac);
             return true;
         } catch (error) {
             console.error('Ring auto-reconnection failed:', error);
@@ -212,7 +213,7 @@ export const useBluetoothConnection = (
 
     const handleRingDisconnect = async () => {
         try {
-            await RingController.disconnect();
+            await QRingController.disconnect();
         } catch (error) {
             console.error('Failed to disconnect ring:', error);
             Alert.alert('Disconnect Error', 'Failed to disconnect ring controller');
