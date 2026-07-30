@@ -32,6 +32,7 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 *.keystore
+!android/app/debug.keystore
 
 # Android
 android/app/build/

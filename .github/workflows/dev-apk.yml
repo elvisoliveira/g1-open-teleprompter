@@ -1,0 +1,47 @@
+# Builds the dev (debug) APK. Debug builds don't bundle JS — the app loads it
+# from a local Metro server, so this APK only needs rebuilding when the native
+# side changes (android/, dependencies, app config).
+#
+# Local workflow after installing the APK on the phone:
+#   adb reverse tcp:8081 tcp:8081
+#   npx expo start
+# then open the app — it connects to the local Metro.
+name: dev-apk
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, simplify]
+    paths:
+      - 'android/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'app.json'
+      - '.github/workflows/dev-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - run: npm ci
+
+      - run: ./gradlew :app:assembleDebug
+        working-directory: android
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
