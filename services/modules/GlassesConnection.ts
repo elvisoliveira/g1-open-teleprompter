@@ -1,6 +1,5 @@
 import { Device, Subscription } from 'react-native-ble-plx';
 import { BaseDeviceController } from '../BaseDeviceController';
-import { GLASSES_MIN_MTU } from '../constants/GlassesConstants';
 import { GlassSide } from '../DeviceTypes';
 
 export class GlassesConnection extends BaseDeviceController {
@@ -16,7 +15,7 @@ export class GlassesConnection extends BaseDeviceController {
     async connectDevice(address: string, side: GlassSide.LEFT | GlassSide.RIGHT): Promise<void> {
         const key = side === GlassSide.LEFT ? 'left' : 'right';
         try {
-            const device = await this.establishBleConnection(address, GLASSES_MIN_MTU);
+            const device = await this.establishBleConnection(address);
 
             // The native GATT event is the source of truth for disconnection
             this.disconnectSubscriptions[key]?.remove();

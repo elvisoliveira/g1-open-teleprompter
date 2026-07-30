@@ -21,7 +21,6 @@ class GlassesController extends BaseDeviceController {
     private status = new GlassesStatus();
     private heartbeat = new GlassesHeartbeat();
     private teleprompterSeq: number = 0;
-    private transferInProgress = false;
 
     protected getServiceName(): string {
         return 'GlassesController';
@@ -75,8 +74,6 @@ class GlassesController extends BaseDeviceController {
 
     async sendImage(base64ImageData: string): Promise<boolean> {
         this.assertConnected();
-        // Pause heartbeats while the multi-second BMP stream is on the wire
-        this.transferInProgress = true;
         try {
             const bmpData = new Uint8Array(Buffer.from(base64ImageData, 'base64'));
             const results = await this.executeForDevices(async (device) => {
@@ -86,8 +83,6 @@ class GlassesController extends BaseDeviceController {
         } catch (error) {
             console.error('[GlassesController] Error sending BMP image:', error);
             return false;
-        } finally {
-            this.transferInProgress = false;
         }
     }
 
@@ -152,10 +147,7 @@ class GlassesController extends BaseDeviceController {
     }
 
     private startHeartbeatIfNeeded(): void {
-        this.heartbeat.start(
-            () => this.connection.getDevices(),
-            () => this.transferInProgress
-        );
+        this.heartbeat.start(() => this.connection.getDevices());
     }
 
     // Runs an operation on each connected side, tolerating per-device failures.

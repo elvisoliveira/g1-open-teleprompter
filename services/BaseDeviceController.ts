@@ -46,27 +46,21 @@ export abstract class BaseDeviceController {
     }
 
     // Shared Connection Helper
-    protected async establishBleConnection(address: string, minMtu?: number): Promise<Device> {
+    protected async establishBleConnection(address: string): Promise<Device> {
         if (!await BluetoothPermissions.requestBluetoothConnectPermission()) {
             throw new Error('Bluetooth permission not granted');
         }
 
-        let device = await this.manager.connectToDevice(address, {
+        const device = await this.manager.connectToDevice(address, {
             autoConnect: false,
             timeout: CONNECTION_TIMEOUT_MS
-        });
-        await device.discoverAllServicesAndCharacteristics();
+        }); 
+       await device.discoverAllServicesAndCharacteristics();
 
         try {
-            device = await device.requestMTU(MTU_SIZE);
+            await device.requestMTU(MTU_SIZE);
         } catch (error) {
             console.warn(`[${this.getServiceName()}] MTU request failed for device ${address}:`, error);
-        }
-
-        // A connection that can't carry the protocol's largest packet is useless — fail loudly
-        if (minMtu && device.mtu !== null && device.mtu < minMtu) {
-            await device.cancelConnection().catch(() => { });
-            throw new Error(`Negotiated MTU ${device.mtu} is below the required ${minMtu}`);
         }
 
         return device;
