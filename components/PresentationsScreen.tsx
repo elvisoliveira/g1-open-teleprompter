@@ -2,32 +2,26 @@ import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import { Alert, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { OutputMode, Presentation } from '../services/DeviceTypes';
+import { Presentation } from '../services/DeviceTypes';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
 import { MaterialBorderRadius, MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
-import SlidesScreen from './SlidesScreen';
 
 const STORAGE_KEY = 'presentations_data';
 
-interface PresentationsScreenProps {
-    outputMode: OutputMode;
-    leftConnected: boolean;
-    rightConnected: boolean;
-}
-
-const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ outputMode, leftConnected, rightConnected }) => {
+const PresentationsScreen: React.FC = () => {
     const [presentations, setPresentations] = useState<Presentation[]>([]);
-    const [selectedPresentation, setSelectedPresentation] = useState<Presentation | null>(null);
     const [newPresentationName, setNewPresentationName] = useState('');
     const [showAddPresentation, setShowAddPresentation] = useState(false);
     const [editingPresentationId, setEditingPresentationId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
 
-    useEffect(() => {
+    // Reload on focus — the slides screen edits the same storage
+    useFocusEffect(useCallback(() => {
         loadPresentations();
-    }, []);
+    }, []));
 
     const loadPresentations = async () => {
         try {
@@ -76,9 +70,6 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ outputMode, l
                     onPress: () => {
                         const updated = presentations.filter(p => p.id !== id);
                         savePresentations(updated);
-                        if (selectedPresentation?.id === id) {
-                            setSelectedPresentation(null);
-                        }
                     }
                 }
             ]
@@ -100,9 +91,6 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ outputMode, l
         );
 
         savePresentations(updatedPresentations);
-        if (selectedPresentation?.id === editingPresentationId) {
-            setSelectedPresentation({ ...selectedPresentation, name: editText.trim() });
-        }
         setEditingPresentationId(null);
         setEditText('');
     };
@@ -110,14 +98,6 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ outputMode, l
     const cancelEdit = () => {
         setEditingPresentationId(null);
         setEditText('');
-    };
-
-    const handleUpdatePresentation = (updatedPresentation: Presentation) => {
-        const updatedPresentations = presentations.map(p =>
-            p.id === updatedPresentation.id ? updatedPresentation : p
-        );
-        savePresentations(updatedPresentations);
-        setSelectedPresentation(updatedPresentation);
     };
 
     const exportPresentations = async () => {
@@ -299,19 +279,6 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ outputMode, l
         }
     };
 
-    if (selectedPresentation) {
-        return (
-            <SlidesScreen
-                leftConnected={leftConnected}
-                rightConnected={rightConnected}
-                presentation={selectedPresentation}
-                onGoBack={() => setSelectedPresentation(null)}
-                onUpdatePresentation={handleUpdatePresentation}
-                outputMode={outputMode}
-            />
-        );
-    }
-
     return (
         <View style={ContainerStyles.screen}>
             <View style={ContainerStyles.content}>
@@ -418,7 +385,7 @@ const PresentationsScreen: React.FC<PresentationsScreenProps> = ({ outputMode, l
                                 ) : (
                                     <View style={{ flex: 1 }}>
                                         <TouchableOpacity
-                                            onPress={() => setSelectedPresentation(item)}
+                                            onPress={() => router.push(`/presentation/${item.id}`)}
                                             style={{ flex: 1 }}
                                             activeOpacity={0.8}
                                         >

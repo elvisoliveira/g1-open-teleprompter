@@ -62,10 +62,12 @@ export const useBluetoothConnection = (
         }
     }, [leftGlassConnected, rightGlassConnected, ringConnected]);
 
-    // Auto-advance to next step when glasses connected
+    // Keep the step in sync with what is already connected
     useEffect(() => {
         if (leftGlassConnected && rightGlassConnected && connectionStep !== 'complete') {
             setConnectionStep('complete');
+        } else if (leftGlassConnected && !rightGlassConnected && connectionStep === 'left') {
+            setConnectionStep('right');
         }
     }, [leftGlassConnected, rightGlassConnected, connectionStep]);
 

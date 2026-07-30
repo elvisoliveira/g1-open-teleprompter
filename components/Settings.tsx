@@ -1,26 +1,21 @@
 import { textToBitmapBase64 } from '@/services/BitmapRenderer';
 import GlassesController from '@/services/GlassesController';
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useOutputMode } from '../hooks/useOutputMode';
 import { OutputMode } from '../services/DeviceTypes';
 import { ButtonStyles, ContainerStyles } from '../styles/CommonStyles';
 import { MaterialColors, MaterialSpacing, MaterialTypography } from '../styles/MaterialTheme';
 import { settingsStyles as styles } from '../styles/SettingsStyles';
 
-interface SettingsProps {
-    outputMode: OutputMode;
-    onOutputModeChange: (mode: OutputMode) => void;
-    leftConnected: boolean;
-    rightConnected: boolean;
-}
+const Settings: React.FC = () => {
+    const { outputMode, setOutputMode } = useOutputMode();
+    const [glasses, setGlasses] = useState({ left: false, right: false });
+    useEffect(() => GlassesController.onConnectionStateChange(setGlasses), []);
+    const leftConnected = glasses.left;
+    const rightConnected = glasses.right;
 
-const Settings: React.FC<SettingsProps> = ({
-    outputMode,
-    onOutputModeChange,
-    leftConnected,
-    rightConnected,
-}) => {
     // Message state managed internally
     const [inputText, setInputText] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -154,7 +149,7 @@ const Settings: React.FC<SettingsProps> = ({
                                 styles.modeOption,
                                 outputMode === mode.value && styles.modeOptionSelected
                             ]}
-                            onPress={() => onOutputModeChange(mode.value)}
+                            onPress={() => setOutputMode(mode.value)}
                             accessibilityRole="radio"
                             accessibilityState={{ checked: outputMode === mode.value }}
                         >

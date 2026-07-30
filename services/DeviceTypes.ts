@@ -52,8 +52,6 @@ export interface RingStandardDeviceInfo {
     hardware: string | null,
 }
 
-export type AppView = 'glassesConnection' | 'ringConnection' | 'settings' | 'device' | 'presentations';
-
 /**
  * Output mode types for the teleprompter app
  */
