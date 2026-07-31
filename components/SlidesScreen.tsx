@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Alert, DeviceEventEmitter, FlatList, Pressable, Text, View } from 'react-native';
 import { textToBitmapBase64 } from '../services/BitmapRenderer';
 import { OutputMode, Presentation, Slide } from '../services/DeviceTypes';
-import { PEBBLE_BUTTON_SEQUENCE_EVENT } from '../services/PebbleController';
+import { PEBBLE_ADVERT_CLICK_EVENT } from '../services/PebbleController';
 import { ActionButtonStyles, ButtonStyles, ContainerStyles, EmptyStateStyles } from '../styles/CommonStyles';
 import { MaterialColors, MaterialSpacing, MaterialTypography, rippleColor } from '../styles/MaterialTheme';
 import SlideEditor from './SlideEditor';
@@ -69,12 +69,13 @@ const SlidesScreen: React.FC<SlidesScreenProps> = ({
         }
     }, [keyEvent]);
 
-    // Pebble Index 01 ring navigation (button sequences from the native sync client).
+    // Pebble Index 01 ring: a button press is one click event → next slide.
+    // The advertisement can't distinguish single from double click, so the
+    // ring is forward-only.
     // Resubscribes every render on purpose so the handler never closes over stale state.
     useEffect(() => {
-        const subscription = DeviceEventEmitter.addListener(PEBBLE_BUTTON_SEQUENCE_EVENT, (sequence: string) => {
-            if (sequence === 'short') navigateToNextSlide();
-            else if (sequence === 'short short') navigateToPreviousSlide();
+        const subscription = DeviceEventEmitter.addListener(PEBBLE_ADVERT_CLICK_EVENT, () => {
+            navigateToNextSlide();
         });
         return () => subscription.remove();
     });

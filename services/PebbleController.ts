@@ -4,8 +4,9 @@ import { RingStatus } from './DeviceTypes';
 // Device name marker of Pebble Index rings (bonded via the official Pebble app)
 export const PEBBLE_DEVICE_NAME = 'Pebble Index';
 
-// Emitted by PebbleRingModule with the final debounced button sequence
-export const PEBBLE_BUTTON_SEQUENCE_EVENT = 'PebbleButtonSequence';
+// Emitted by PebbleRingModule when the ring's wake advertisement reveals a
+// button press (single vs double is not distinguishable — one press, one event)
+export const PEBBLE_ADVERT_CLICK_EVENT = 'PebbleAdvertClick';
 
 /**
  * Driver for the Pebble Index 01 ring. The protocol lives in the native
