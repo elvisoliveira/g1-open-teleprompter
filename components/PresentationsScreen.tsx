@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { router, useFocusEffect } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import React, { useCallback, useState } from 'react';
 import { Alert, FlatList, Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Presentation } from '../services/DeviceTypes';
@@ -115,36 +116,26 @@ const PresentationsScreen: React.FC = () => {
 
             const fileName = `presentations_backup_${new Date().toISOString().split('T')[0]}.json`;
 
-            // Try to save to Downloads folder first, fallback to document directory
-            let fileUri: string;
-            let locationMessage: string;
+            // Share sheet instead of the SAF folder picker: SAF's onActivityResult
+            // crashes (MissingActivity) when Android recreates the activity while
+            // the picker is open.
+            const fileUri = FileSystem.cacheDirectory + fileName;
+            await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
 
-            try {
-                // For Android, try to save to Downloads folder
-                if (FileSystem.StorageAccessFramework) {
-                    const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-                    if (permissions.granted) {
-                        const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, fileName, 'application/json');
-                        await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
-                        locationMessage = 'Backup saved to your selected folder.';
-                    } else {
-                        throw new Error('Permission denied');
-                    }
-                } else {
-                    throw new Error('Storage Access Framework not available');
-                }
-            } catch (storageError) {
-                // Fallback to document directory
-                fileUri = FileSystem.documentDirectory + fileName;
-                await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
-                locationMessage = `Backup saved to app documents folder.\n\nFile: ${fileName}\nLocation: ${fileUri}`;
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(fileUri, {
+                    mimeType: 'application/json',
+                    dialogTitle: 'Save presentations backup',
+                });
+            } else {
+                const savedUri = FileSystem.documentDirectory + fileName;
+                await FileSystem.writeAsStringAsync(savedUri, JSON.stringify(exportData, null, 2));
+                Alert.alert(
+                    'Backup Created',
+                    `Sharing is not available on this device.\n\nBackup saved to app documents folder:\n${savedUri}`,
+                    [{ text: 'OK' }]
+                );
             }
-
-            Alert.alert(
-                'Backup Created Successfully!',
-                `${locationMessage}\n\nYou can now access your backup file through your device's file manager.`,
-                [{ text: 'OK' }]
-            );
         } catch (error) {
             console.error('Export failed:', error);
             Alert.alert('Export Failed', 'Failed to export presentations. Please try again.');
