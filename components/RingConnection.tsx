@@ -8,7 +8,6 @@ interface RingConnectionProps {
     onRingSelect: (deviceId: string) => Promise<void>;
     onRefresh: () => void;
     onShowAllDevices: () => void;
-    ringConnected: boolean;
     isBluetoothEnabled: boolean;
 }
 

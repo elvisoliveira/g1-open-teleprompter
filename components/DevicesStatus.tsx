@@ -287,53 +287,49 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
         }
 
         // Manual setup options (always show for troubleshooting)
-        if (!hasConfiguredGlasses || !hasConfiguredRing) {
-            actions.push(
-                <View key="manual-options" style={{ flexDirection: 'row', gap: MaterialSpacing.sm }}>
-                    {!hasConfiguredGlasses && (
-                        <TouchableOpacity
-                            onPress={() => onSetupGlasses?.()}
-                            disabled={!onSetupGlasses}
-                            style={[
-                                ButtonStyles.secondaryButton,
-                                { flex: 1 },
-                                !onSetupGlasses && ButtonStyles.secondaryButtonDisabled
-                            ]}
-                        >
-                            <MaterialIcons
-                                name="bluetooth-searching"
-                                size={18}
-                                color={MaterialColors.primary}
-                            />
-                            <Text style={[ButtonStyles.secondaryButtonText, { fontSize: 14 }]}>
-                                Setup Glasses
-                            </Text>
-                        </TouchableOpacity>
-                    )}
+        actions.push(
+            <View key="manual-options" style={{ flexDirection: 'row', gap: MaterialSpacing.sm }}>
+                {!hasConfiguredGlasses && (
+                    <TouchableOpacity
+                        onPress={() => onSetupGlasses?.()}
+                        disabled={!onSetupGlasses}
+                        style={[
+                            ButtonStyles.secondaryButton,
+                            { flex: 1 },
+                            !onSetupGlasses && ButtonStyles.secondaryButtonDisabled
+                        ]}
+                    >
+                        <MaterialIcons
+                            name="bluetooth-searching"
+                            size={18}
+                            color={MaterialColors.primary}
+                        />
+                        <Text style={[ButtonStyles.secondaryButtonText, { fontSize: 14 }]}>
+                            Setup Glasses
+                        </Text>
+                    </TouchableOpacity>
+                )}
 
-                    {!hasConfiguredRing && (
-                        <TouchableOpacity
-                            onPress={() => onSetupRing?.()}
-                            disabled={!onSetupRing}
-                            style={[
-                                ButtonStyles.secondaryButton,
-                                { flex: 1 },
-                                !onSetupRing && ButtonStyles.secondaryButtonDisabled
-                            ]}
-                        >
-                            <MaterialIcons
-                                name="radio-button-unchecked"
-                                size={18}
-                                color={MaterialColors.primary}
-                            />
-                            <Text style={[ButtonStyles.secondaryButtonText, { fontSize: 14 }]}>
-                                Setup Ring
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-            );
-        }
+                <TouchableOpacity
+                    onPress={() => onSetupRing?.()}
+                    disabled={!onSetupRing}
+                    style={[
+                        ButtonStyles.secondaryButton,
+                        { flex: 1 },
+                        !onSetupRing && ButtonStyles.secondaryButtonDisabled
+                    ]}
+                >
+                    <MaterialIcons
+                        name="radio-button-unchecked"
+                        size={18}
+                        color={MaterialColors.primary}
+                    />
+                    <Text style={[ButtonStyles.secondaryButtonText, { fontSize: 14 }]}>
+                        {hasConfiguredRing ? 'Change Ring' : 'Setup Ring'}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        );
 
         return actions.length > 0 ? <View>{actions}</View> : null;
     };
@@ -386,7 +382,7 @@ const DevicesStatus: React.FC<DevicesStatusProps> = ({
             {hasConfiguredRing && (
                 <View>
                     <Text style={[styles.overallStatusTitle, { marginTop: MaterialSpacing.lg, marginBottom: MaterialSpacing.md }]}>
-                        Qring Controller
+                        Ring Controller
                     </Text>
                     <View>
                         <RingStatusCard

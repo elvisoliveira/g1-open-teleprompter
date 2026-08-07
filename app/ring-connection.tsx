@@ -7,24 +7,21 @@ import { useSavedDevices } from '../hooks/useSavedDevices';
 export default function RingConnectionScreen() {
     const { saveRingMacAddress } = useSavedDevices();
     const {
-        ringConnected,
         isScanning,
         pairedDevices,
         isBluetoothEnabled,
         loadPairedDevices,
         handleRingConnection,
-    } = useBluetoothConnection(undefined, (deviceId, type) => saveRingMacAddress(deviceId, type));
+    } = useBluetoothConnection(undefined, (deviceId, type) => {
+        saveRingMacAddress(deviceId, type);
+        // Leave only on a fresh connection, so the screen stays reachable
+        // while another ring is already connected (switching rings)
+        router.back();
+    });
 
     useEffect(() => {
         loadPairedDevices('ring');
     }, []);
-
-    // Ring connected → this screen is done
-    useEffect(() => {
-        if (ringConnected) {
-            router.back();
-        }
-    }, [ringConnected]);
 
     return (
         <RingConnection
@@ -33,7 +30,6 @@ export default function RingConnectionScreen() {
             onRingSelect={handleRingConnection}
             onRefresh={() => loadPairedDevices('ring')}
             onShowAllDevices={() => loadPairedDevices('all')}
-            ringConnected={ringConnected}
             isBluetoothEnabled={isBluetoothEnabled}
         />
     );

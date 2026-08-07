@@ -177,6 +177,8 @@ export const useBluetoothConnection = (
         try {
             // The selected device's name decides which driver handles it
             const type = ringTypeFor(pairedDevices.find(d => d.id === deviceId)?.name ?? null);
+            // Switching rings: drop the other driver first (safe no-op if inactive)
+            await (type === 'pebble' ? QRingController : PebbleController).disconnect();
             if (type === 'pebble') {
                 await PebbleController.connect(deviceId);
             } else {
