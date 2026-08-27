@@ -6,10 +6,7 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
-import android.content.Context
 import android.os.Build
-import android.os.ParcelUuid
-import android.os.SystemClock
 import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -19,97 +16,70 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.modules.core.DeviceEventManagerModule
-import coredevices.haversine.CollectionIndexStorage
-import coredevices.haversine.KMPHaversineDebugDelegate
-import coredevices.haversine.KMPHaversineDebugInfo
-import coredevices.haversine.KMPHaversineHacksDelegate
-import coredevices.haversine.KMPHaversineSatellite
-import coredevices.haversine.KMPHaversineSatelliteManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 private const val TAG = "PebbleRing"
 private const val ADVERT_CLICK_EVENT = "PebbleAdvertClick"
 
-private val RING_SERVICE_UUID = ParcelUuid.fromString("607B5C9B-3700-4E94-F44A-2DF900BCB0C3")
-private const val RING_COMPANY_ID = 0x0EEA
-// Manufacturer data layout: FF FF 3C F0 CC SS — CC increments once per button press
-private const val COUNTER_OFFSET = 4
-private const val STATE_OFFSET = 5
-// Gap that separates two wake bursts; within a burst the ring emits ~30 packets/s
-private const val BURST_GAP_MS = 2_000L
-// A burst starting this soon after a counter change is the post-sync burst of the
-// same click (only separate from it when the GATT link was held > BURST_GAP_MS;
-// with a fast sync everything merges into one continuous burst), not a new click
-private const val POST_SYNC_WINDOW_MS = 10_000L
-// State byte of a wake-from-idle press: needsServicing (0x40) + inCollectionState (0x20)
-private const val WAKE_STATE = 0x60
+// CFW click beacon: manufacturer company 0xFFFF, payload[0] = click counter, one
+// step per button press. (The official firmware used company 0x0EEA with the count
+// buried at offset 4 behind a mandatory haversine GATT sync — slow, ~1.3 s per click.
+// The CFW advertises the new count in a burst the instant the button is pressed, with
+// no connection and no bonding, so a counter change *is* the click.)
+private const val CFW_COMPANY_ID = 0xFFFF
+// A counter that drops by more than this is a reboot (POR / 5-click / long-press reset
+// the count to 0), not a wrap-around or a real click — don't fire on it.
+private const val REBOOT_DROP = 8
+// Android silently stops delivering scan results after a fixed window (~10 min measured).
+// Re-issuing startScan opens a fresh one, so restart well inside it — a teleprompter
+// session runs long and the clicker must not die mid-presentation.
+private const val SCAN_RESTART_MS = 4L * 60 * 1000
 
 /**
- * Click detector for the Pebble Index 01 ring: clicks come from the ring's
- * advertisements (a press is one event; single vs double is indistinguishable),
- * while the haversine sync loop runs only to ack collections so the ring goes
- * back to sleep. Full protocol notes and rationale: docs/pebble-ring.md.
+ * Click detector for the Pebble Index 01 ring running the CFW. A connectionless BLE
+ * scan is the whole protocol: the ring advertises company 0xFFFF with a one-byte click
+ * counter and sleeps between presses. Each increment emits [ADVERT_CLICK_EVENT] to JS
+ * (plus a short haptic). No GATT, no sync, no pairing.
  */
 class PebbleRingModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
     private var scope: CoroutineScope? = null
     private var scanner: BluetoothLeScanner? = null
+    private var address: String? = null
     private var lastCounter: Int? = null
-    private var lastPacketMs = 0L
-    private var counterChangedAtMs = 0L
-    private var burstFiredForCounter: Int? = null
 
-    /**
-     * Hybrid click detection — fastest signal available per click: burst start
-     * after radio silence fires instantly (the ring wakes advertising its OLD
-     * counter); the counter change (~1.3s after the press) is the fallback that
-     * never misses. Detection rules and measurements: docs/pebble-ring.md §6.
-     */
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            val data = result.scanRecord?.getManufacturerSpecificData(RING_COMPANY_ID) ?: return
-            if (data.size <= STATE_OFFSET) return
-            val counter = data[COUNTER_OFFSET].toInt() and 0xFF
-            val state = data[STATE_OFFSET].toInt() and 0xFF
-            val now = SystemClock.elapsedRealtime()
-            val newBurst = now - lastPacketMs > BURST_GAP_MS
-            lastPacketMs = now
+            val data = result.scanRecord?.getManufacturerSpecificData(CFW_COMPANY_ID) ?: return
+            if (data.isEmpty()) return
+            val counter = data[0].toInt() and 0xFF
             val last = lastCounter
             lastCounter = counter
             when {
-                last == null -> Log.i(TAG, "Primed at counter $counter (state 0x%02X)".format(state))
+                last == null -> Log.i(TAG, "Primed at counter $counter")
                 counter != last -> {
-                    val alreadyFired = burstFiredForCounter == last
-                    burstFiredForCounter = null
-                    counterChangedAtMs = now
-                    if (alreadyFired) {
-                        Log.i(TAG, "Counter $last -> $counter (state 0x%02X) — click already fired at burst start".format(state))
+                    val delta = (counter - last + 256) % 256
+                    // A large backward jump is a reboot (counter reset to 0), not a press.
+                    if (counter < last && delta > REBOOT_DROP) {
+                        Log.i(TAG, "Ring rebooted (counter $last -> $counter) — not a click")
                     } else {
-                        Log.i(TAG, "Counter-change click ($last -> $counter, state 0x%02X, newBurst=$newBurst)".format(state))
-                        emitClick()
-                    }
-                }
-                newBurst -> {
-                    if (now - counterChangedAtMs < POST_SYNC_WINDOW_MS) {
-                        Log.i(TAG, "Post-sync burst (counter $counter, state 0x%02X) — suppressed".format(state))
-                    } else if (state != WAKE_STATE) {
-                        // Only a wake-from-idle press carries 0x60; anything else
-                        // bursting after silence is a retry/zombie beacon, not a click
-                        Log.i(TAG, "Non-wake burst (counter $counter, state 0x%02X) — ignored".format(state))
-                    } else {
-                        Log.i(TAG, "Burst-start click (counter $counter, state 0x%02X)".format(state))
-                        burstFiredForCounter = counter
+                        // One event per change (matches the previous contract). `delta`
+                        // is the exact number of presses since the last packet if a
+                        // per-click advance is ever wanted.
+                        Log.i(TAG, "Click (counter $last -> $counter)")
                         emitClick()
                     }
                 }
             }
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            Log.w(TAG, "Scan failed: $errorCode")
         }
     }
 
@@ -132,18 +102,36 @@ class PebbleRingModule(reactContext: ReactApplicationContext) : ReactContextBase
 
     override fun getName() = "PebbleRing"
 
-    /** Cursor of the last synced collection; the haversine manager advances it. */
-    private class PrefsIndexStorage(context: Context) : CollectionIndexStorage {
-        private val prefs = context.getSharedPreferences("pebble_sync", Context.MODE_PRIVATE)
-        private val state = MutableStateFlow(
-            if (prefs.contains("lastIndex")) prefs.getInt("lastIndex", 0) else null
-        )
-        override val lastSuccessfulCollectionIndex: StateFlow<Int?> = state
-        override fun setLastSuccessfulCollectionIndex(index: Int?) {
-            prefs.edit().apply {
-                if (index == null) remove("lastIndex") else putInt("lastIndex", index)
-            }.apply()
-            state.value = index
+    /** Start (or re-issue) the CFW click scan for the current [address]. Returns false
+     *  if the scanner is unavailable (Bluetooth off) or the permission is missing. */
+    private fun openScan(): Boolean {
+        val ble = reactApplicationContext.getSystemService(BluetoothManager::class.java)
+            ?.adapter?.bluetoothLeScanner ?: return false
+        // Hardware filter: only this ring's CFW beacons (company 0xFFFF + its address)
+        // ever reach the callback, so a stranger's 0xFFFF beacon can't fake a click.
+        val filter = ScanFilter.Builder()
+            .setManufacturerData(CFW_COMPANY_ID, byteArrayOf())
+            .apply { address?.takeIf { it.isNotBlank() }?.let { setDeviceAddress(it) } }
+            .build()
+        return try {
+            ble.startScan(
+                listOf(filter),
+                ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(),
+                scanCallback,
+            )
+            scanner = ble
+            true
+        } catch (e: SecurityException) {
+            Log.w(TAG, "BLUETOOTH_SCAN not granted")
+            false
+        }
+    }
+
+    private fun closeScan() {
+        try {
+            scanner?.stopScan(scanCallback)
+        } catch (e: SecurityException) {
+            // scan never started without the permission
         }
     }
 
@@ -153,75 +141,20 @@ class PebbleRingModule(reactContext: ReactApplicationContext) : ReactContextBase
             promise.resolve(null)
             return
         }
-
-        val context = reactApplicationContext
-        val ring = try {
-            context.getSystemService(BluetoothManager::class.java)?.adapter?.bondedDevices
-                ?.firstOrNull { it.address.equals(address, ignoreCase = true) }
-        } catch (e: SecurityException) {
-            promise.reject("E_PERMISSION", "BLUETOOTH_CONNECT not granted")
+        this.address = address
+        Log.i(TAG, "Starting CFW click scan for $address")
+        if (!openScan()) {
+            promise.reject("E_SCAN", "Could not start BLE scan (Bluetooth off or scan permission missing)")
             return
         }
-        if (ring == null) {
-            promise.reject("E_NOT_BONDED", "Ring $address is not bonded — pair it via the official Pebble app first")
-            return
-        }
-
-        Log.i(TAG, "Starting sync for ${ring.address}")
-
-        // Passive advertisement scan alongside the sync (validated in the PoC).
-        // Hardware-filtered by service UUID + address, so the callback only fires
-        // on this ring's rare wake bursts; advertising stops while GATT is open.
-        try {
-            scanner = context.getSystemService(BluetoothManager::class.java)?.adapter?.bluetoothLeScanner
-            scanner?.startScan(
-                listOf(
-                    ScanFilter.Builder()
-                        .setServiceUuid(RING_SERVICE_UUID)
-                        .setDeviceAddress(ring.address)
-                        .build()
-                ),
-                ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(),
-                scanCallback,
-            )
-        } catch (e: SecurityException) {
-            Log.w(TAG, "No BLUETOOTH_SCAN permission — advertisement fast path disabled")
-            scanner = null
-        }
-
-        val manager = KMPHaversineSatelliteManager(
-            pairedSatelliteIdProvider = { ring.address.replace(":", "") },
-            debugDelegate = object : KMPHaversineDebugDelegate {
-                override fun handleHaversineDebugInfo(info: KMPHaversineDebugInfo) {}
-                override fun shouldReadRxRSSI(satellite: KMPHaversineSatellite) = false
-                override fun handleRxRSSI(rssi: Float, satellite: KMPHaversineSatellite) {}
-            },
-            hacksDelegate = object : KMPHaversineHacksDelegate {
-                // Wipe-instead-of-transfer bricks the ring — tested, never enable
-                // (docs/pebble-ring.md §7). Only transfer+ack puts it to sleep.
-                override fun shouldWipeCollectionsBeforeTransfer(satellite: KMPHaversineSatellite) = false
-                override fun wipedCollectionsBeforeTransfer(satellite: KMPHaversineSatellite) {}
-            },
-            collectionIndexStorage = PrefsIndexStorage(context),
-            context = context,
-            hwVersion = Pair(11, 0),
-            CoroutineScope(Dispatchers.Default),
-        )
-
-        val syncScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-        scope = syncScope
-        syncScope.launch {
-            // Same loop as the official app's RingSync: scan, sync, pause, repeat.
-            // Statuses are ignored — the sync only acks so the ring goes back to sleep.
+        val healScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+        scope = healScope
+        // Auto-heal: restart the scan well inside Android's silent-stop window.
+        healScope.launch {
             while (isActive) {
-                try {
-                    manager.awaitBluetoothReady()
-                    manager.startScanning().collect { }
-                    delay(3_000)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Sync error: ${e.message}")
-                    delay(3_000)
-                }
+                delay(SCAN_RESTART_MS)
+                closeScan()
+                openScan()
             }
         }
         promise.resolve(null)
@@ -229,18 +162,11 @@ class PebbleRingModule(reactContext: ReactApplicationContext) : ReactContextBase
 
     @ReactMethod
     fun stop() {
-        try {
-            scanner?.stopScan(scanCallback)
-        } catch (e: SecurityException) {
-            // scan never started without the permission
-        }
+        closeScan()
         scanner = null
+        address = null
         lastCounter = null
-        lastPacketMs = 0L
-        counterChangedAtMs = 0L
-        burstFiredForCounter = null
         scope?.cancel()
         scope = null
     }
-
 }

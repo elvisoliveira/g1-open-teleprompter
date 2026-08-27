@@ -4,7 +4,7 @@ import { BluetoothPermissions } from './BluetoothPermissions';
 import { CONNECTION_TIMEOUT_MS, MTU_SIZE } from './constants/BluetoothConstants';
 
 // ble-plx expects a single BleManager per app; controllers share this instance.
-const sharedBleManager = new BleManager();
+export const sharedBleManager = new BleManager();
 
 export abstract class BaseDeviceController {
     protected manager: BleManager = sharedBleManager;

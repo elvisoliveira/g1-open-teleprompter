@@ -1,4 +1,4 @@
-import PebbleController, { PEBBLE_DEVICE_NAME } from '@/services/PebbleController';
+import PebbleController, { PEBBLE_DEVICE_NAME, scanForPebbleCfwRings } from '@/services/PebbleController';
 import QRingController from '@/services/QRingController';
 import { QRING_DEVICE_NAME_PREFIX } from '@/services/constants/QRingConstants';
 import { useEffect, useState } from 'react';
@@ -126,6 +126,17 @@ export const useBluetoothConnection = (
                 );
             } else if (deviceType === 'ring') {
                 filteredDevices = allDevices.filter(device => isRingDevice(device.name));
+                // CFW Pebble rings advertise connectionlessly and may not be bonded —
+                // discover them by scan and merge in any not already listed.
+                try {
+                    const scanned = await scanForPebbleCfwRings();
+                    const seen = new Set(filteredDevices.map(d => d.id.toLowerCase()));
+                    for (const r of scanned) {
+                        if (!seen.has(r.id.toLowerCase())) filteredDevices.push(r);
+                    }
+                } catch (e) {
+                    console.warn('CFW ring scan failed:', e);
+                }
             }
             // If deviceType is 'all', return all devices without filtering
 
