@@ -1,8 +1,9 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useKeyEvent } from "expo-key-event";
 import React, { useEffect, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { DeviceEventEmitter, Text, TouchableOpacity, View } from 'react-native';
 import { RingStatus } from '../services/DeviceTypes';
+import { PEBBLE_ADVERT_CLICK_EVENT } from '../services/PebbleController';
 import { ButtonStyles } from '../styles/CommonStyles';
 import { deviceStatusCardStyles as styles } from '../styles/DeviceStatusCardStyles';
 import { batteryLevelColor, MaterialColors } from '../styles/MaterialTheme';
@@ -25,6 +26,23 @@ const RingStatusCard: React.FC<RingStatusCardProps> = ({
     const [lastPanelState, setLastPanelState] = useState<string>();
     const [upButtonPressed, setUpButtonPressed] = useState(false);
     const [downButtonPressed, setDownButtonPressed] = useState(false);
+    // Pebble click test: flash + count each PebbleAdvertClick so the user can verify
+    // the physical button registers (mirrors the QRing touch-panel arrow test). The
+    // Pebble is the ring with no touch panel — same way the QRing block keys off panel.
+    const [clickCount, setClickCount] = useState(0);
+    const [clickFlash, setClickFlash] = useState(false);
+    const showClickTest = connected && !!ringStatus && !ringStatus.panel;
+
+    useEffect(() => {
+        if (!showClickTest) return;
+        setClickCount(0);
+        const sub = DeviceEventEmitter.addListener(PEBBLE_ADVERT_CLICK_EVENT, () => {
+            setClickCount(c => c + 1);
+            setClickFlash(true);
+            setTimeout(() => setClickFlash(false), 150);
+        });
+        return () => sub.remove();
+    }, [showClickTest]);
 
     // Reset isToggling when panel status changes
     useEffect(() => {
@@ -109,6 +127,27 @@ const RingStatusCard: React.FC<RingStatusCardProps> = ({
                                 {connected ? 'Online' : 'Offline'}
                             </Text>
                         </View>
+
+                        {/* Pebble click test — flashes + counts each button press, in place of
+                            the battery/firmware/panel rows the Pebble does not have */}
+                        {showClickTest && (
+                            <View style={styles.infoRow}>
+                                <Text style={styles.labelText}>Button</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <MaterialIcons
+                                        name="touch-app"
+                                        size={18}
+                                        color={clickFlash ? MaterialColors.primary : MaterialColors.onSurfaceVariant}
+                                    />
+                                    <Text style={[
+                                        styles.statusText,
+                                        clickFlash ? styles.statusTextConnected : styles.statusTextDisconnected
+                                    ]}>
+                                        {clickCount === 0 ? 'Press to test' : `${clickCount} click${clickCount === 1 ? '' : 's'}`}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
 
                         {/* Battery Reading */}
                         {ringStatus.battery !== undefined && ringStatus.battery >= 0 && (
@@ -225,6 +264,7 @@ const RingStatusCard: React.FC<RingStatusCardProps> = ({
                     </View>
                 );
             })()}
+
         </>
     );
 };
